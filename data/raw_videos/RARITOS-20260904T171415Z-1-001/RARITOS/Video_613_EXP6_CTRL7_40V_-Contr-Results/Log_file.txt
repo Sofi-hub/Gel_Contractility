@@ -1,0 +1,67 @@
+Log started...
+Date: 11-5-2026
+Time: 11:26:45
+***
+Algorithm tool version number: 1.0
+recordedFramerate: 30
+speedWindow: 1
+referenceFrameSlice: 1
+maxProject: 1
+MPstartRange: 1
+MPendRange: -1
+hideIntermediateResults: 1
+checkClip: 1
+checkSpeedlinearity: 1
+autodetectReferenceFrame: 1
+***autodetectReferenceFrame parameters
+*lowValueN: 20
+*unitySelectionN: 10
+*autoDetectStart: 1
+*autoDetectStop: 300
+***
+manualReferenceFrame: 0	NOTE:overruled if autodetectReferenceFrame is true
+automaticTransientDetection: 1
+***automaticTransientDetection parameters
+*PeakDetectionWindow: 20
+*peakThreshold: 30
+*drawPeaks: 1
+*percentages: 
+10, 50, 90
+*baselineThreshold: 2
+*baselineNumberOfPoints: 5
+*highFreqBaselineDetection: 1
+*guassianBlur10: No
+*tiffImSequence: No
+***
+batchDirLoad: 0
+ 
+----------------- Evaluating file:Video_613_EXP6_CTRL7_40V_ -----------------
+WARNING: Recorded framerate is low
+Automatic detected reference frame: frame 191
+automaticTransientDetection starting..
+lowUp false at peak: 2
+lowDown false at peak: 2
+lowDown false at peak: 5
+lowDown false at peak: 9
+lowDown false at peak: 11
+lowUp false at peak: 13
+lowUp false at peak: 14
+lowUp false at peak: 19
+lowUp false at peak: 20
+lowDown false at peak: 22
+lowDown false at peak: 23
+lowUp false at peak: 25
+lowUp false at peak: 28
+lowDown false at peak: 30
+lowDown false at peak: 32
+lowDown false at peak: 33
+lowUp false at peak: 37
+lowUp false at peak: 39
+lowDown false at peak: 39
+lowDown false at peak: 41
+lowDown false at peak: 42
+lowUp false at peak: 44
+Peaks detected at points (frames):
+16, 43, 67, 91, 123, 152, 242, 327, 354, 661, 677, 1192, 1286, 1330, 1344, 1387, 1438, 1474, 1528, 1569, 1590, 1602, 1625, 1657, 1698, 1716, 1728, 1749, 1765, 1785, 1829, 1864, 1904, 1916, 1930, 1945, 1969, 1985, 2014, 2040, 2075, 2109, 2135, 2155
+Elapsed time (ms): 350161
+----------------- Evaluation finished -----------------

@@ -1,0 +1,46 @@
+Log started...
+Date: 10-5-2026
+Time: 16:42:56
+***
+Algorithm tool version number: 1.0
+recordedFramerate: 30
+speedWindow: 1
+referenceFrameSlice: 1
+maxProject: 1
+MPstartRange: 1
+MPendRange: -1
+hideIntermediateResults: 1
+checkClip: 1
+checkSpeedlinearity: 1
+autodetectReferenceFrame: 1
+***autodetectReferenceFrame parameters
+*lowValueN: 20
+*unitySelectionN: 10
+*autoDetectStart: 1
+*autoDetectStop: 300
+***
+manualReferenceFrame: 0	NOTE:overruled if autodetectReferenceFrame is true
+automaticTransientDetection: 1
+***automaticTransientDetection parameters
+*PeakDetectionWindow: 20
+*peakThreshold: 30
+*drawPeaks: 1
+*percentages: 
+10, 50, 90
+*baselineThreshold: 2
+*baselineNumberOfPoints: 5
+*highFreqBaselineDetection: 1
+*guassianBlur10: No
+*tiffImSequence: No
+***
+batchDirLoad: 0
+ 
+----------------- Evaluating file:Video_583_EXP6_CTRL4_40V_ -----------------
+WARNING: Recorded framerate is low
+Automatic detected reference frame: frame 136
+automaticTransientDetection starting..
+lowUp false at peak: 1
+Peaks detected at points (frames):
+311, 608, 905, 1202, 1499, 1787, 2114
+Elapsed time (ms): 372714
+----------------- Evaluation finished -----------------

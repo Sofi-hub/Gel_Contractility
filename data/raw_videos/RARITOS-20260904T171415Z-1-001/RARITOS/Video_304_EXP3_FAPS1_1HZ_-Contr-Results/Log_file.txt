@@ -1,0 +1,54 @@
+Log started...
+Date: 11-4-2026
+Time: 12:44:37
+***
+Algorithm tool version number: 1.0
+recordedFramerate: 30
+speedWindow: 1
+referenceFrameSlice: 1
+maxProject: 1
+MPstartRange: 1
+MPendRange: -1
+hideIntermediateResults: 1
+checkClip: 1
+checkSpeedlinearity: 1
+autodetectReferenceFrame: 1
+***autodetectReferenceFrame parameters
+*lowValueN: 20
+*unitySelectionN: 10
+*autoDetectStart: 1
+*autoDetectStop: 300
+***
+manualReferenceFrame: 0	NOTE:overruled if autodetectReferenceFrame is true
+automaticTransientDetection: 1
+***automaticTransientDetection parameters
+*PeakDetectionWindow: 20
+*peakThreshold: 30
+*drawPeaks: 1
+*percentages: 
+10, 50, 90
+*baselineThreshold: 2
+*baselineNumberOfPoints: 5
+*highFreqBaselineDetection: 1
+*guassianBlur10: No
+*tiffImSequence: No
+***
+batchDirLoad: 0
+ 
+----------------- Evaluating file:Video_304_EXP3_FAPS1_1HZ_ -----------------
+WARNING: Recorded framerate is low
+Automatic detected reference frame: frame 95
+automaticTransientDetection starting..
+lowUp false at peak: 6
+lowDown false at peak: 6
+lowUp false at peak: 8
+lowDown false at peak: 8
+lowUp false at peak: 11
+lowUp false at peak: 13
+lowDown false at peak: 17
+lowDown false at peak: 19
+lowDown false at peak: 22
+Peaks detected at points (frames):
+12, 33, 56, 68, 78, 88, 98, 109, 119, 130, 140, 151, 180, 194, 229, 268, 301, 326, 343, 387, 417, 459, 507, 523, 560
+Elapsed time (ms): 9868
+----------------- Evaluation finished -----------------

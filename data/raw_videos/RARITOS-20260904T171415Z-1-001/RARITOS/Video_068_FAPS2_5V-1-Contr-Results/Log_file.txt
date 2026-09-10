@@ -1,0 +1,119 @@
+Log started...
+Date: 24-3-2026
+Time: 16:28:43
+***
+Algorithm tool version number: 1.0
+recordedFramerate: 30
+speedWindow: 1
+referenceFrameSlice: 1
+maxProject: 1
+MPstartRange: 1
+MPendRange: -1
+hideIntermediateResults: 1
+checkClip: 1
+checkSpeedlinearity: 1
+autodetectReferenceFrame: 1
+***autodetectReferenceFrame parameters
+*lowValueN: 20
+*unitySelectionN: 10
+*autoDetectStart: 1
+*autoDetectStop: 300
+***
+manualReferenceFrame: 0	NOTE:overruled if autodetectReferenceFrame is true
+automaticTransientDetection: 1
+***automaticTransientDetection parameters
+*PeakDetectionWindow: 20
+*peakThreshold: 30
+*drawPeaks: 1
+*percentages: 
+10, 50, 90
+*baselineThreshold: 2
+*baselineNumberOfPoints: 5
+*highFreqBaselineDetection: 1
+*guassianBlur10: No
+*tiffImSequence: No
+***
+batchDirLoad: 0
+ 
+----------------- Evaluating file:Video_068_FAPS2_5V-1 -----------------
+WARNING: Recorded framerate is low
+Automatic detected reference frame: frame 225
+automaticTransientDetection starting..
+lowUp false at peak: 2
+lowDown false at peak: 2
+lowDown false at peak: 3
+lowDown false at peak: 4
+lowDown false at peak: 5
+lowDown false at peak: 6
+lowDown false at peak: 7
+lowDown false at peak: 8
+lowDown false at peak: 9
+lowDown false at peak: 10
+lowDown false at peak: 12
+lowDown false at peak: 13
+lowDown false at peak: 15
+lowUp false at peak: 19
+lowDown false at peak: 19
+lowDown false at peak: 20
+lowUp false at peak: 22
+lowDown false at peak: 23
+lowDown false at peak: 24
+lowDown false at peak: 25
+lowDown false at peak: 26
+lowDown false at peak: 28
+lowUp false at peak: 30
+lowDown false at peak: 31
+lowUp false at peak: 33
+lowDown false at peak: 33
+lowDown false at peak: 35
+lowUp false at peak: 37
+lowDown false at peak: 37
+lowUp false at peak: 40
+lowDown false at peak: 40
+lowUp false at peak: 44
+lowDown false at peak: 45
+lowUp false at peak: 49
+lowDown false at peak: 49
+lowDown false at peak: 52
+lowDown false at peak: 53
+lowDown false at peak: 55
+lowDown false at peak: 56
+lowDown false at peak: 57
+lowDown false at peak: 58
+lowDown false at peak: 62
+lowUp false at peak: 64
+lowDown false at peak: 65
+lowDown false at peak: 68
+lowDown false at peak: 69
+lowDown false at peak: 72
+lowUp false at peak: 74
+lowDown false at peak: 74
+lowUp false at peak: 76
+lowDown false at peak: 76
+lowDown false at peak: 78
+lowDown false at peak: 79
+lowUp false at peak: 81
+lowDown false at peak: 81
+lowDown false at peak: 82
+lowDown false at peak: 83
+lowDown false at peak: 84
+lowDown false at peak: 85
+lowDown false at peak: 86
+lowDown false at peak: 87
+lowDown false at peak: 90
+lowDown false at peak: 91
+lowDown false at peak: 92
+lowDown false at peak: 93
+lowDown false at peak: 95
+lowDown false at peak: 96
+lowDown false at peak: 97
+lowUp false at peak: 99
+lowUp false at peak: 100
+lowDown false at peak: 100
+lowUp false at peak: 102
+lowDown false at peak: 103
+lowDown false at peak: 105
+Peaks detected at points (frames):
+18, 41, 52, 64, 78, 92, 105, 125, 136, 160, 171, 183, 208, 219, 229, 254, 265, 288, 300, 323, 334, 345, 382, 428, 450, 461, 483, 498, 511, 536, 546, 568, 583, 594, 605, 626, 649, 666, 694, 713, 732, 748, 760, 784, 799, 820, 830, 854, 867, 887, 902, 917, 928, 939, 949, 959, 977, 997, 1007, 1017, 1028, 1046, 1057, 1076, 1100, 1121, 1150, 1171, 1184, 1195, 1205, 1226, 1247, 1260, 1281, 1294, 1308, 1319, 1330, 1348, 1361, 1392, 1408, 1428, 1458, 1471, 1488, 1504, 1514, 1532, 1544, 1555, 1575, 1588, 1609, 1623, 1634, 1644, 1655, 1674, 1689, 1701, 1722, 1734, 1746, 1771
+Elapsed time (ms): 334770
+----------------- Evaluation finished -----------------

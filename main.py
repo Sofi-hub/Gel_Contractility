@@ -151,11 +151,13 @@ def main():
 
     out_dir = Path(args.output_dir) if args.output_dir else video_output_dir(args.video)
     out_dir.mkdir(parents=True, exist_ok=True)
+    video_name = Path(args.video).stem
 
     # Perfil de ROI: el gráfico que explica por dónde quedó la gauge region
+    roi_profile_path = out_dir / f"00_roi_profile_{video_name}.png"
     try:
-        plot_roi_profile(roi, out_dir / "00_roi_profile.png")
-        print(f"Perfil de ROI guardado en {out_dir / '00_roi_profile.png'}")
+        plot_roi_profile(roi, roi_profile_path)
+        print(f"Perfil de ROI guardado en {roi_profile_path}")
     except Exception as e:  # nunca dejar que un gráfico rompa el análisis
         print(f"(no se pudo graficar el perfil de ROI: {e})")
 
@@ -191,6 +193,7 @@ def main():
             df, out_dir,
             unit_label="mm" if calibrated else "px (SIN CALIBRAR)",
             calibrated=calibrated,
+            name=f"01_serie_temporal_{video_name}",
         )
         print(f"Gráfico guardado en {p}")
 

@@ -98,7 +98,8 @@ def main():
     print(f"Control de falsos positivos: {fp['n_abajo']} abajo / {fp['n_arriba']} arriba "
           f"-> {fp['veredicto']}")
 
-    plotting.plot_threshold_stability(scan, out, amp_k_used=a.amp_k)
+    plotting.plot_threshold_stability(scan, out, amp_k_used=a.amp_k,
+                                      name=f"05_estabilidad_umbral_{name}")
 
     if len(r.events) == 0:
         print("\n>>> NO se detectaron contracciones en este video.")
@@ -110,11 +111,12 @@ def main():
     seg = ed.analyze_segments(ev, r.signal, tt)
     freq = ed.frequency_profile(r.signal, tt, window_s=a.freq_window_s)
 
-    plotting.plot_events(df, r, ev, out)
-    plotting.plot_amplitudes(ev, r, out)
-    plotting.plot_frequency_profile(freq, out, window_s=a.freq_window_s)
+    plotting.plot_events(df, r, ev, out, name=f"02_eventos_detectados_{name}")
+    plotting.plot_amplitudes(ev, r, out, name=f"03_amplitudes_{name}")
+    plotting.plot_frequency_profile(freq, out, window_s=a.freq_window_s,
+                                    name=f"04_perfil_frecuencia_{name}")
     windows = [tuple(z) for z in a.zoom] if a.zoom else plotting.auto_windows_from_segments(seg)
-    plotting.plot_segment_comparison(df, r, ev, out, windows)
+    plotting.plot_segment_comparison(df, r, ev, out, windows, name=f"06_comparacion_tramos_{name}")
 
     xlsx = out / "eventos.xlsx"
     _write_xlsx(ev, xlsx, summary={

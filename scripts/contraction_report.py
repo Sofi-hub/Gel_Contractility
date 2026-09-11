@@ -46,6 +46,7 @@ Uso:
 
 from __future__ import annotations
 import argparse
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -54,6 +55,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src import rhythm_split as rs
 
 
 # --------------------------------------------------------------------------
@@ -119,9 +123,45 @@ def promedio_alineado(r: np.ndarray, picos: np.ndarray, fps: float,
     return lag, segs.mean(axis=0), len(segs)
 
 
+def _poblaciones(tiempos: np.ndarray, amplitudes: np.ndarray):
+    """Separa los eventos en dos poblaciones por amplitud, si las hay.
+
+    Un mismo video puede tener contracciones espontaneas (chicas y rapidas) y
+    contracciones estimuladas (grandes y lentas). Promediar las dos juntas da
+    una amplitud y un intervalo que no describen a ninguna. El corte se pone
+    en el hueco mas grande de las amplitudes ordenadas en escala log, y solo
+    se acepta si separa de verdad (razon de medianas >= 2 y al menos 3 eventos
+    de cada lado).
+    """
+    if len(amplitudes) < 6:
+        return None
+    orden = np.argsort(amplitudes)
+    a = amplitudes[orden]
+    huecos = np.diff(np.log(np.maximum(a, 1e-9)))
+    i = int(np.argmax(huecos))
+    if i < 2 or i > len(a) - 4:
+        return None
+    chica, grande = a[:i + 1], a[i + 1:]
+    if np.median(grande) / max(np.median(chica), 1e-9) < 2.0:
+        return None
+
+    corte = 0.5 * (a[i] + a[i + 1])
+    out = []
+    for nombre, sel in (("chicos", amplitudes <= corte), ("grandes", amplitudes > corte)):
+        tt = tiempos[sel]
+        iv = float(np.median(np.diff(tt))) if len(tt) > 1 else float("nan")
+        out.append({"grupo": nombre, "n": int(sel.sum()),
+                    "amplitud_mediana_px": float(np.median(amplitudes[sel])),
+                    "intervalo_mediano_s": iv,
+                    "frecuencia_Hz": (1 / iv) if iv and np.isfinite(iv) and iv > 0 else float("nan"),
+                    "t_inicio_s": float(tt.min()), "t_fin_s": float(tt.max())})
+    return out
+
+
 # --------------------------------------------------------------------------
 def analizar(df: pd.DataFrame, canal: str, k: float, win_s: float,
-             sep_s: float, half_s: float) -> dict:
+             sep_s: float, half_s: float, separar: bool = True,
+             min_captura: float = 0.75) -> dict:
     t = df["time_s"].to_numpy(float)
     fps = 1.0 / float(np.median(np.diff(t)))
 
@@ -154,11 +194,23 @@ def analizar(df: pd.DataFrame, canal: str, k: float, win_s: float,
         "_prom_g": prom_g, "_prom_c": prom_c, "_n_prom": n_ev,
     }
 
+    _SEPARAR, _MINCAP = separar, min_captura
+    # Aviso de fusion: si bajando sep_s aparecen bastantes mas picos, es que
+    # sep_s esta borrando eventos reales seguidos, no ruido.
+    finos, _ = find_peaks(r, height=k * m, distance=max(1, int(0.1 * fps)))
+    if len(finos) > len(picos) * 1.15 + 1:
+        res["picos_con_sep_menor"] = int(len(finos))
+
     if len(picos):
         res["tiempos_s"] = t[picos]
         res["intervalo_mediano_s"] = (float(np.median(np.diff(t[picos])))
                                       if len(picos) > 1 else float("nan"))
         res["amplitud_traslacion_px"] = float(np.median(r[picos]))
+        res["poblaciones"] = _poblaciones(t[picos], r[picos])
+        if _SEPARAR and len(picos) >= 4:
+            res["ritmo"] = rs.separar(t[picos], r[picos], duracion_s=float(t[-1] - t[0]),
+                                      resolucion_s=1.0 / fps, min_captura=_MINCAP)
+            res["fps_medido"] = fps
     if prom_g is not None and n_ev:
         ruido_prom = mg / np.sqrt(n_ev)
         i = int(np.argmin(prom_g))
@@ -214,6 +266,42 @@ def imprimir(nombre: str, a: dict) -> None:
         iv = a["intervalo_mediano_s"]
         print(f"    intervalo mediano: {iv:.3f} s  ({1 / iv:.4f} Hz)")
     print(f"    traslacion (amplitud mediana): {a['amplitud_traslacion_px']:.3f} px")
+    if a.get("poblaciones"):
+        print("    DOS POBLACIONES de eventos (separadas por amplitud):")
+        print("        %-8s %4s %14s %14s %10s %14s" % (
+            "grupo", "n", "amplitud_px", "intervalo_s", "Hz", "ventana_s"))
+        for g in a["poblaciones"]:
+            print("        %-8s %4d %14.3f %14.3f %10.2f %6.1f - %-6.1f" % (
+                g["grupo"], g["n"], g["amplitud_mediana_px"], g["intervalo_mediano_s"],
+                g["frecuencia_Hz"], g["t_inicio_s"], g["t_fin_s"]))
+    rit = a.get("ritmo")
+    if rit is not None:
+        print()
+        if not rit["hay_estimulacion"]:
+            print(f"    RITMO: no se detecto un tren periodico -> todos los eventos se toman "
+                  f"como espontaneos.  ({rit.get('motivo', '')})")
+        else:
+            print(f"    TREN ESTIMULADO (enganche de fase, z={rit['z']:.1f}, p={rit['p_valor']:.4f})")
+            print(f"       periodo    : {rit['periodo_s']:.5f} +- {rit['periodo_err_s']:.5f} s")
+            print(f"       frecuencia : {rit['frecuencia_Hz']:.5f} +- {rit['frecuencia_err_Hz']:.6f} Hz")
+            print(f"       jitter     : {rit['jitter_s']*1000:.1f} ms"
+                  + ("  (por debajo de un fotograma: es el piso de resolucion)"
+                     if rit.get("jitter_limitado_por_resolucion") else ""))
+            print(f"       captura    : {rit['tasa_captura_pct']:.0f}%  "
+                  f"({rit['n_estimulados']}/{rit['n_ranuras']} ranuras), "
+                  f"tren de {rit['tren_inicio_s']:.1f} a {rit['tren_fin_s']:.1f} s")
+            if rit.get("n_estimulados_dudosos"):
+                print(f"       DUDOSOS    : {rit['n_estimulados_dudosos']} evento(s) cerca de una "
+                      f"ranura pero fuera de tolerancia. Comparar su amplitud con la de los "
+                      f"estimulados: si coincide, es un latido del tren con el instante corrido.")
+        print("    Grupos (la amplitud NO se uso para clasificar; que difiera es evidencia aparte):")
+        for ln in rit["resumen_grupos"].to_string(index=False).split("\n"):
+            print("       " + ln)
+    if "picos_con_sep_menor" in a:
+        print(f"    AVISO: con una separacion minima menor apareceria(n) "
+              f"{a['picos_con_sep_menor']} pico(s) en vez de {a['n_eventos']}. "
+              f"--sep-s se queda con el pico MAS ALTO de cada ventana, asi que si hay "
+              f"un tren rapido lo esta borrando. Baja --sep-s.")
     if "adelgazamiento_px" in a:
         print(f"    adelgazamiento (promedio de {a['_n_prom']} eventos alineados)")
         print(f"       minimo:  {a['adelgazamiento_px']:.4f} px  "
@@ -262,6 +350,53 @@ def graficar(resultados, out_png: Path) -> None:
     plt.close(fig)
 
 
+def graficar_ritmo(resultados, out_png: Path):
+    """Una fila por serie: eventos coloreados por grupo, y el error de cada
+    latido estimulado respecto de su ranura."""
+    filas = [(n, a) for n, a in resultados if a.get("ritmo") is not None]
+    if not filas:
+        return None
+    fig, axes = plt.subplots(len(filas), 2, figsize=(13, 3.0 * len(filas)), squeeze=False,
+                             gridspec_kw={"width_ratios": [3, 1]})
+    for i, (nombre, a) in enumerate(filas):
+        rit, ax, ax2 = a["ritmo"], axes[i, 0], axes[i, 1]
+        t, r, pk = a["_t"], a["_r"], a["_picos"]
+        ax.plot(t, r, color="#bdc3c7", lw=0.6, zorder=1)
+        colores = {"estimulados": "#c0392b", "estimulados_dudosos": "#e67e22",
+                   "espontaneos": "#2980b9"}
+        for grupo, col in colores.items():
+            idx = rit.get(grupo if grupo != "espontaneos" else "espontaneos",
+                          np.array([], int))
+            if len(idx) == 0:
+                continue
+            ax.plot(t[pk][idx], r[pk][idx], "v", color=col, ms=8, zorder=5,
+                    label=f"{grupo} (n={len(idx)})")
+        if rit["hay_estimulacion"]:
+            for _, g in rit["grilla"].iterrows():
+                ax.axvline(g.t_esperado_s, color="#c0392b", lw=0.8, ls="--", alpha=0.5, zorder=0)
+        ax.set_title(f"{nombre}" + (f"   tren a {rit['frecuencia_Hz']:.4f} Hz "
+                                    f"(T={rit['periodo_s']:.4f} s), captura "
+                                    f"{rit['tasa_captura_pct']:.0f}%"
+                                    if rit["hay_estimulacion"] else "   sin tren periodico"),
+                     fontsize=10)
+        ax.set_ylabel("senal sin deriva (px)", fontsize=8)
+        ax.legend(fontsize=7, loc="upper right"); ax.grid(alpha=0.25)
+
+        if rit["hay_estimulacion"] and len(rit["grilla"]):
+            g = rit["grilla"]
+            ax2.axhline(0, color="gray", lw=0.8)
+            ax2.plot(g.ranura, 1000 * g.error_s, "o-", color="#c0392b", ms=4)
+            ax2.axhspan(-1000 * rit["tolerancia_s"], 1000 * rit["tolerancia_s"],
+                        color="#c0392b", alpha=0.10)
+            ax2.set_xlabel("ranura del tren"); ax2.set_ylabel("error (ms)", fontsize=8)
+            ax2.set_title("desvio de cada latido", fontsize=9); ax2.grid(alpha=0.25)
+        else:
+            ax2.axis("off")
+    axes[-1, 0].set_xlabel("Tiempo (s)")
+    fig.tight_layout(); fig.savefig(out_png, dpi=140); plt.close(fig)
+    return out_png
+
+
 def _leer(path: str) -> pd.DataFrame:
     p = Path(path)
     return pd.read_csv(p) if p.suffix == ".csv" else pd.read_excel(p, sheet_name="diagnostics")
@@ -283,10 +418,22 @@ def parse_args():
                    help="Umbral en unidades de MAD. Elegilo en la meseta del escaneo.")
     p.add_argument("--win-s", type=float, default=2.0,
                    help="Ventana (s) de la mediana movil que quita la deriva.")
-    p.add_argument("--sep-s", type=float, default=2.0,
-                   help="Separacion minima entre eventos (s).")
+    p.add_argument("--sep-s", type=float, default=0.3,
+                   help="Separacion minima entre eventos (s). CUIDADO: find_peaks se queda "
+                        "con el pico MAS ALTO de cada ventana de este ancho, asi que un valor "
+                        "grande no 'limpia ruido': BORRA eventos reales seguidos. Con 2.0 s, "
+                        "un tren espontaneo a 1.75 Hz se reduce de 23 eventos a 5. Solo subilo "
+                        "si un mismo evento se esta contando dos veces.")
     p.add_argument("--half-s", type=float, default=1.5,
                    help="Semiventana (s) del promedio de eventos alineados.")
+    p.add_argument("--frecuencia-estimulo", type=float, default=None,
+                   help="Frecuencia (Hz) configurada en el estimulador. Si se da, se contrasta "
+                        "contra la medida y se reporta la diferencia con su significancia.")
+    p.add_argument("--min-captura", type=float, default=0.75,
+                   help="Fraccion minima de ranuras de la grilla que tienen que estar ocupadas. "
+                        "Bajarlo solo si se sospecha bloqueo (captura 2:1 o peor).")
+    p.add_argument("--sin-separar", action="store_true",
+                   help="No intentar separar estimuladas de espontaneas.")
     p.add_argument("--output-dir", default=None)
     return p.parse_args()
 
@@ -299,7 +446,8 @@ def main():
 
     resultados = []
     for nombre, df in entradas:
-        r = analizar(df, a.canal, a.k, a.win_s, a.sep_s, a.half_s)
+        r = analizar(df, a.canal, a.k, a.win_s, a.sep_s, a.half_s,
+                     separar=not a.sin_separar, min_captura=a.min_captura)
         imprimir(nombre, r)
         resultados.append((nombre, r))
 
@@ -308,16 +456,38 @@ def main():
     print("  y 'falsos_control' es 0 en esa meseta, los eventos son reales. Si el conteo")
     print("  cae monotonamente y hay falsos parecidos al conteo real, es ruido.")
 
+    if a.frecuencia_estimulo:
+        print()
+        for nombre, r in resultados:
+            rit = r.get("ritmo")
+            if rit is None:
+                continue
+            c = rs.comparar_con_equipo(rit, a.frecuencia_estimulo, fps_nominal=r.get("fps_medido"))
+            print(f"  {nombre[:26]:26s} equipo vs medido")
+            for kk, vv in c.items():
+                print(f"       {kk:28s} {vv}")
+
     out = Path(a.output_dir) if a.output_dir else Path(a.input).parent
     out.mkdir(parents=True, exist_ok=True)
     graficar(resultados, out / "09_contracciones.png")
+    png_ritmo = graficar_ritmo(resultados, out / "10_ritmo.png")
 
     with pd.ExcelWriter(out / "contracciones.xlsx", engine="openpyxl") as w:
         for nombre, r in resultados:
             r["estabilidad"].to_excel(w, sheet_name=f"estab_{nombre[:20]}", index=False)
             fila = {kk: vv for kk, vv in r.items()
-                    if not kk.startswith("_") and kk not in ("estabilidad", "tiempos_s")}
+                    if not kk.startswith("_") and kk not in ("estabilidad", "tiempos_s", "poblaciones")}
             pd.DataFrame([fila]).to_excel(w, sheet_name=f"resumen_{nombre[:18]}", index=False)
+            rit = r.get("ritmo")
+            if rit is not None:
+                rit["resumen_grupos"].to_excel(w, sheet_name=f"ritmo_{nombre[:19]}", index=False)
+                if len(rit.get("grilla", [])):
+                    rit["grilla"].to_excel(w, sheet_name=f"grilla_{nombre[:18]}", index=False)
+                if len(rit.get("espontaneas_instantanea", [])):
+                    rit["espontaneas_instantanea"].to_excel(
+                        w, sheet_name=f"espont_{nombre[:18]}", index=False)
+            if r.get("poblaciones"):
+                pd.DataFrame(r["poblaciones"]).to_excel(w, sheet_name=f"poblac_{nombre[:19]}", index=False)
             if r["n_eventos"]:
                 pd.DataFrame({"evento": np.arange(1, r["n_eventos"] + 1),
                               "tiempo_s": r["tiempos_s"],
@@ -325,6 +495,8 @@ def main():
                              ).to_excel(w, sheet_name=f"eventos_{nombre[:18]}", index=False)
 
     print(f"\nGrafico: {out / '09_contracciones.png'}")
+    if png_ritmo:
+        print(f"Grafico: {png_ritmo}")
     print(f"Tabla:   {out / 'contracciones.xlsx'}")
 
 

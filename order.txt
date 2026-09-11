@@ -1,0 +1,40 @@
+1. Carga parametros principales (video, calibracion, etc)
+2. Adquisicion de metadata del video: fps, # de frames, ancho, alto
+3. Estimar ROI: maxProjectStack -> para cada píxel se guarda la intensidad máxima observada durante el video
+4. Detectar ROI: se queda con la zona central mas uniforme; excluye zona de anclaje
+    - blur gausseano para bajar ruido
+    - Otsu -> mascara binaria
+
+    - _track_gel_band()
+        1. encuentra tramos verticales contiguos de píxeles activos;
+        2. comienza en las columnas centrales;
+        3. elige el tramo más probable del gel;
+        4. avanza hacia la izquierda y la derecha;
+        5. exige que el centro y el grosor no cambien bruscamente entre columnas.
+        6. Para cada colullmna se calcua borde sup, inf y grosor aprox
+    
+    - se arman dos perfiles a lo largo del eje x
+        - thickness_profile: grosor estimado en cada col
+        - sharpness_profile: nitidez mínima entre los dos bordes (se calcula usando el menor gradiente vertical de la imagen)
+    
+    - la col se agrega al ROI si cumple:
+        - se localiza franja del gel
+        - ambos bordes tienen suficiente nitidez
+        - el grosor está cerca de la cintura del gel
+        - la pendiente del grosor es suficientemente pequeña
+    
+    EL USUARIO PUEDE ASIGNAR UNA ROI Y PARAMETROS MANUALES
+    {
+    "x_start": ...,
+    "x_end": ...,
+    "top_guess": ...,
+    "bottom_guess": ...,
+    "roi_quality": ...,
+    "thickness_profile": ...,
+    "sharpness_profile": ...
+    }
+
+5. Se seleccionan por defecto las 60 columnas mas representativas4
+6. Se procesa cada frame y se puede elegir para reducir ruido
+    - CLAHE para reducir ruido local de iluminacion -> puede empeorar la calidad si hay burbujas
+    - Denoise opcional

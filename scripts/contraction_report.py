@@ -469,8 +469,10 @@ def main():
 
     out = Path(a.output_dir) if a.output_dir else Path(a.input).parent
     out.mkdir(parents=True, exist_ok=True)
-    graficar(resultados, out / "09_contracciones.png")
-    png_ritmo = graficar_ritmo(resultados, out / "10_ritmo.png")
+    nombre_video = resultados[0][0]
+    png_contracciones = out / f"09_contracciones_{nombre_video}.png"
+    graficar(resultados, png_contracciones)
+    png_ritmo = graficar_ritmo(resultados, out / f"10_ritmo_{nombre_video}.png")
 
     with pd.ExcelWriter(out / "contracciones.xlsx", engine="openpyxl") as w:
         for nombre, r in resultados:
@@ -494,7 +496,7 @@ def main():
                               "amplitud_px": r["_r"][r["_picos"]]}
                              ).to_excel(w, sheet_name=f"eventos_{nombre[:18]}", index=False)
 
-    print(f"\nGrafico: {out / '09_contracciones.png'}")
+    print(f"\nGrafico: {png_contracciones}")
     if png_ritmo:
         print(f"Grafico: {png_ritmo}")
     print(f"Tabla:   {out / 'contracciones.xlsx'}")

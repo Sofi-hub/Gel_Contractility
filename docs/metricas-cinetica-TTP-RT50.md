@@ -72,7 +72,8 @@ meseta), compatible con una respuesta fusionada o con la mecánica del gel más
 que con el twitch.
 
 Eso no es un problema a esconder, es un **resultado**: la cinética difiere
-entre muestras, y en las rápidas sólo se puede afirmar "TTP < 67 ms". Lo que
+entre muestras, y en las rápidas sólo se puede afirmar "TTP < 100 ms" (ver
+la corrección en "Implementación"). Lo que
 no se puede hacer es tabular 67 ms como si fuera una medición y comparar
 muestras con ese número.
 
@@ -142,7 +143,7 @@ Calculando sobre `center_px` el problema desaparece.
    cuantización). Mismo criterio que usamos con la meseta del umbral: mejor
    decir "no medible" que publicar el intervalo de muestreo.
 4. **Emitir un intervalo, no un punto**, cuando el evento está poco
-   muestreado: "TTP < 67 ms" en vez de "TTP = 67 ms".
+   muestreado: "TTP < 100 ms" en vez de "TTP = 67 ms".
 5. **Plantearle al equipo la adquisición a alta velocidad.** Con 200–300 fps
    en un subconjunto de muestras, TTP y RT50 pasan a ser medibles de verdad,
    y de paso se podría calibrar cuánto sesga el submuestreo a 30 fps.
@@ -158,3 +159,59 @@ Ojo con una cosa distinta: los papers (sobre todo el de eLife) discuten
 **fuerza contráctil normalizada por área de sección**, que sí requiere
 calibración y un modelo mecánico del gel. Eso es otro pedido, mucho más
 grande, y conviene no confundirlo con este.
+
+---
+
+## Implementación (2026-09-29)
+
+Hecha en `src/cinetica.py`, llamada desde `scripts/contraction_report.py`.
+Puntos 1 a 4 de la propuesta; el 5 (adquisición rápida) sigue pendiente y es
+del equipo.
+
+**Definiciones.** Sobre `center_px` sin deriva, con la amplitud `A` igual a
+la `amplitud_px` que ya se reportaba. Onset y offset: cruces del 10 % de `A`.
+TTP: onset → pico. RT50: pico → cruce del 50 % de `A` (la del paper, no la del
+script). Amplitud relativa: `A` / **grosor en reposo**, no / valor crudo del
+canal: el crudo de `center_px` es una fila de la imagen y no significa nada.
+Sin el corrimiento de −5 muestras ni la distancia mínima fija del script.
+
+**Corrección a lo escrito arriba: la cota es 100 ms, no 67 ms.** El pico
+muestreado no es el pico verdadero: éste puede caer hasta un fotograma
+después. Con el onset entre los fotogramas −2 y −1, el TTP verdadero está en
+(0, 3 fotogramas) = (0, 100 ms). La tabla de arriba medía sobre la muestra y
+subestimaba la incertidumbre.
+
+**Hallazgo nuevo: el pico de las muestras lentas es una meseta.** En
+Video_466 y Video_583 hay 4–5 fotogramas entre el 96 y el 100 % de `A`,
+indistinguibles dentro del ruido. El instante del pico queda indeterminado
+en ±2 fotogramas, y eso ensancha el intervalo de TTP y RT50 de cada evento
+(p. ej. 583: TTP 258 ms con intervalo [129, 335] ms). No es un defecto del
+método: "tiempo al pico" está mal definido cuando el pico es plano. El
+**onset**, en cambio, está bien definido: en Video_583 cae a 10.995, 20.999,
+30.997, 41.000, 50.996 y 60.998 s, enganchado al estimulador con ~2 ms de
+dispersión, mientras que los picos se dispersan ±35 ms.
+
+**Resultados sobre los seis videos:**
+
+| video | TTP | RT50 | fotogramas (subida / bajada 50 %) | amplitud relativa |
+|---|---|---|---|---|
+| Video_prueba | **< 102 ms** (no medible) | **< 103 ms** | 2 / 2 | 0.71 % |
+| Video_063 | **< 100 ms** (no medible) | **< 99 ms** | 2 / 2 | 0.53 % |
+| Video_268 | **< 101 ms** (no medible) | **< 100 ms** | 2 / 2 | 0.57 % |
+| Video_466 | 284 ms [137, 365] | 160 ms [70, 260] | 9 / 5 | 2.13 % |
+| Video_583 | 258 ms [129, 335] | 181 ms [99, 301] | 8 / 6 | 1.31 % |
+| Video_491 | no reportable (sin meseta de umbral) | — | — | no reportable |
+
+Los valores de 466 y 583 son medianas por evento; entre corchetes, la mediana
+del intervalo [min, max]. Concuerdan con la medición sobre el promedio de
+eventos de la tabla de arriba (300/167 y 300/200 ms).
+
+**Verificación.**
+- Regresión: en los seis videos, todas las hojas y columnas que ya existían en
+  `contracciones.xlsx` dan exactamente lo mismo; la cinética sólo agrega.
+- `tests/test_seleccion_k.py`: 10/10.
+- `tests/test_cinetica.py` (nuevo), con eventos sintéticos de cinética
+  conocida muestreados a 30 fps con fase aleatoria y ruido: evento lento (TTP
+  270 ms), error de la mediana 0.05 fotogramas en TTP y 0.18 en RT50;
+  twitch (TTP 36 ms), declarado no medible con valor NaN. En los dos casos el
+  intervalo [min, max] contiene al valor verdadero en 319 de 320 eventos.

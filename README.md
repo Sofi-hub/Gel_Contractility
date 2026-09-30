@@ -1,40 +1,114 @@
-# Pipeline de contractilidad de geles 3D — bordes subpíxel + RANSAC
+# Pipeline de contractilidad de geles 3D
+
+Mide la contractilidad de geles 3D a partir de video de microscopía, sin
+depender de ImageJ ni de MuscleMotion. Lee un `.mp4`/`.avi` crudo y hace todo
+internamente: detecta la zona útil del gel, localiza los dos bordes con
+precisión subpíxel en ~60 columnas por fotograma, ajusta un polinomio robusto
+que descarta columnas arruinadas por burbujas, y de ahí saca las series
+temporales, los eventos de contracción y la separación entre contracciones
+estimuladas y espontáneas.
 
 ## Instalación
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ## Uso
+
 ```bash
-python main.py \
-    --video mi_video.avi \
-    --maxproj maxProjectStack.png \
-    --px-to-mm 0.0021 \
-    --output resultados.csv \
-    --plot
+python main.py --video "data/raw_videos/mi_video.mp4" \
+               --output-dir data/processed_data/mi_video \
+               --base-tiempo pts
+
+python scripts/contraction_report.py \
+       --input data/processed_data/mi_video/serie_temporal.xlsx \
+       --frecuencia-estimulo 0.1
 ```
 
-`--px-to-mm` es OBLIGATORIO calibrarlo con tu propio setup óptico
-(regla/retícula en el mismo aumento que usás para grabar). Sin esto
-el pipeline reporta grosor en píxeles, no en mm.
+Eso es todo: los dos comandos generan los `.xlsx` y los PNG numerados en la
+carpeta de salida. `--frecuencia-estimulo` es opcional; sin él igual se mide la
+frecuencia del tren, sólo que no se contrasta contra el valor configurado.
 
-## Qué hace cada módulo (ver también los docstrings/comentarios en el código)
-- `src/io_utils.py` — lee el video frame a frame (generador, no carga todo en RAM) y el maxProjectStack.
-- `src/preprocessing.py` — CLAHE (normalización de contraste local) y auto-detección de ROI/posición aproximada de bordes a partir del maxProjectStack.
-- `src/edge_detection.py` — localización subpíxel del borde por columna (interpolación parabólica del gradiente, o sigmoide como alternativa).
-- `src/robust_fitting.py` — RANSAC (o mediana+MAD) para descartar columnas corrompidas por burbujas u otros artefactos.
-- `src/pipeline.py` — orquesta todo lo anterior y arma la serie temporal de grosor con métricas de calidad por frame.
-- `main.py` — CLI.
+Flags que conviene conocer:
 
-## Cosas para ajustar con tus datos reales (no van a andar "perfectas" de entrada)
-1. **`half_window` en `PipelineConfig`**: tiene que cubrir el rango máximo de deformación esperado en Y. Si tus macro-contracciones son grandes, subilo.
-2. **`ransac_residual_threshold`**: empezá en 1.5 px y ajustá mirando cuántas columnas se descartan en frames que SABÉS que están limpios (no debería descartar casi nada ahí).
-3. **`min_gradient` en `subpixel_edge_parabolic`**: depende del contraste real de tus videos (no del maxProjectStack). Medilo empíricamente en un par de frames representativos.
-4. **Validación cruzada sugerida**: antes de confiar en el pipeline para todo el dataset, corré `edge_method="sigmoid"` en una submuestra de frames y compará contra `"parabolic"` — si divergen mucho, el ruido de tus videos amerita usar sigmoide como método principal (más lento pero más robusto).
-5. **DIC como validación**: como discutimos, correr DIC (ej. `py2DIC`/`OpenPIV`) sobre una submuestra de videos para confirmar que el grosor por bordes correlaciona con el campo de deformación completo — buen respaldo metodológico para publicación.
+| flag | para qué |
+|---|---|
+| `--base-tiempo pts` | eje temporal desde los timestamps del contenedor. **Usarlo siempre** (ver abajo) |
+| `--exigir-roi` | aborta si la ROI no cumple el criterio de aceptación, en vez de avisar y seguir |
+| `--x-start` / `--x-end` | fuerza la zona de medición a mano cuando la automática no sirve |
+| `--k` | fuerza el umbral de detección. Por defecto es `auto` y lo elige la meseta del escaneo |
 
-## Qué falta para producción
-- Loop batch sobre una carpeta con muchos videos (fácil de agregar sobre `process_video`).
-- Export de un frame con los bordes ajustados dibujados encima (control de calidad visual) — útil para auditar rápidamente si el auto-ROI se calculó bien.
-- Manejo de casos "REJECTED" (frame completamente degradado): decidir si interpolar, marcar como missing, o excluir el experimento.
+## Tres cosas que hay que saber antes de usarlo
+
+**1. La detección se hace sobre `center_px`, no sobre el grosor.** En este
+montaje la contracción es mayormente un desplazamiento vertical de toda la
+franja. Como el grosor es la resta de los dos bordes, es **ciego a la
+traslación** por construcción: si los dos bordes bajan 1 px, no cambia. Medido,
+el SNR por fotograma es 44 en `center_px` contra 3 en `thickness_px`. El grosor
+se sigue midiendo, pero promediando eventos alineados en el tiempo.
+
+**2. El eje temporal sale de los timestamps del contenedor.** El `fps` que
+declara un `.mp4` es el **promedio** `(n−1)/duración`, y baja cuando la
+grabación pierde fotogramas: entonces `fotograma / fps` se come los huecos y los
+eventos aparecen más juntos de lo que fueron. Uno de nuestros videos perdió el
+4.7 % de sus fotogramas y su período de estimulación medía 9.51 s en vez de
+10.01 s, un error del +5 %. Con `--base-tiempo pts` el problema desaparece.
+
+**3. Ningún número se reporta sin verificarlo.** El pipeline aplica tres
+chequeos de aceptación y los deja por escrito en las salidas: variación de
+grosor dentro de la ROI < 6 %, `outlier_frac` medio < 10 %, y una meseta en el
+escaneo de umbral con cero falsos de control. **Si no hay meseta, el conteo de
+eventos se marca como no reportable** en vez de publicarse igual.
+
+## Calibración: fuera de alcance por decisión del proyecto
+
+**No se calibra píxeles a milímetros.** Los videos no se graban todos al mismo
+aumento, así que un factor único no tendría sentido. `--px-to-mm` queda en 1.0
+y **todos los resultados se reportan en píxeles**; las figuras lo indican con
+"SIN CALIBRAR" en el título. Las comparaciones entre videos se hacen en términos
+relativos (porcentaje del grosor, cocientes) o dentro de un mismo aumento.
+
+## Estructura
+
+    src/io_utils.py          lectura del video y de sus timestamps
+    src/preprocessing.py     CLAHE + detección automática de la zona útil
+    src/edge_detection.py    borde subpíxel por columna
+    src/robust_fitting.py    RANSAC grado 2 con umbral adaptativo
+    src/pipeline.py          orquestador -> 4 series por fotograma
+    src/event_detection.py   detección de eventos escala-invariante
+    src/rhythm_split.py      estimuladas vs espontáneas por enganche de fase
+    src/qc_visualization.py  overlays de diagnóstico
+    src/plotting.py          figuras numeradas
+    scripts/contraction_report.py   el script principal de análisis
+    scripts/motion_check.py         diagnóstico: qué se mueve
+    scripts/signal_check.py         diagnóstico: ¿hay población de eventos?
+    tests/test_seleccion_k.py       regresión de la elección automática del umbral
+
+## Documentación
+
+`Analisis_Contractilidad_v4.ipynb` recorre el flujo entero paso a paso,
+mostrando la salida de cada etapa. Es el mejor punto de entrada.
+
+En `docs/`:
+
+| documento | para qué |
+|---|---|
+| `ESTADO-arranque-chat-nuevo.md` | el estado actual y qué está pendiente |
+| `protocolo-analisis-videos.md` | los comandos por video y los chequeos de aceptación |
+| `referencia-archivos-y-graficos.md` | qué contiene cada archivo y qué significa cada eje |
+| `base-de-tiempo-y-frames-perdidos.md` | el eje temporal, en detalle |
+| `separacion-estimuladas-espontaneas.md` | el método de enganche de fase y sus límites |
+| `comparacion-musclemotion.md` | los números medidos contra MuscleMotion |
+| `metricas-cinetica-TTP-RT50.md` | viabilidad de las métricas de cinética |
+| `revision-script-matlab.md` | revisión del script del equipo |
+
+## Pendiente
+
+- Implementar TTP y RT50 (decidido cómo, falta programarlo).
+- Procesar los videos de la carpeta `RARITOS`.
+- Grabar un video de control de iluminación: mismo gel, quieto, con un cambio
+  de luz. Es lo único que falta para demostrar con un número que medir
+  geometría de borde es inmune a la iluminación.
+- Adquisición a 200–300 fps si se quieren medir TTP y RT50 de verdad: a 30 fps
+  la contracción de las muestras rápidas dura 2 fotogramas.

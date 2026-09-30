@@ -58,6 +58,7 @@ from scipy.signal import find_peaks
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src import rhythm_split as rs
+from src import cinetica as cin
 
 
 # --------------------------------------------------------------------------
@@ -236,7 +237,8 @@ def _poblaciones(tiempos: np.ndarray, amplitudes: np.ndarray):
 # --------------------------------------------------------------------------
 def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
              sep_s: float, half_s: float, separar: bool = True,
-             min_captura: float = 0.75) -> dict:
+             min_captura: float = 0.75,
+             min_frames_cinetica: int = cin.MIN_FRAMES) -> dict:
     t = df["time_s"].to_numpy(float)
     fps = 1.0 / float(np.median(np.diff(t)))
 
@@ -342,6 +344,25 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
         if len(ven) and ven.max() > 3 * ruido_prom:
             res["blur_px"] = float(ven.max())
             res["blur_sigma"] = float(ven.max() / ruido_prom)
+
+    # --- cinetica por evento: TTP, RT50, amplitud relativa -----------------
+    # Va AL FINAL a proposito: agrega claves nuevas sin tocar ni reordenar las
+    # que ya existian, asi la regresion sobre los videos validados compara
+    # columna por columna. El grosor en reposo es la misma mediana movil que
+    # quita la deriva, evaluada sobre el grosor crudo.
+    grosor_crudo = df["thickness_px"].to_numpy(float)
+    grosor_reposo = grosor_crudo - rg
+    ev = cin.cinetica_eventos(t, r, picos, m, grosor_reposo=grosor_reposo,
+                              ventana_s=half_s, min_frames=min_frames_cinetica)
+    if len(ev) and res.get("ritmo") is not None:
+        grupo = np.array(["espontaneos"] * len(ev), dtype=object)
+        for g in ("estimulados", "estimulados_dudosos", "espontaneos"):
+            idx = np.asarray(res["ritmo"].get(g, []), int)
+            grupo[idx] = g
+        ev.insert(1, "grupo", grupo)
+    res["_cinetica"] = ev
+    res.update(cin.resumir(ev, conteo_reportable=res["conteo_reportable"],
+                           min_frames=min_frames_cinetica))
     return res
 
 
@@ -408,6 +429,7 @@ def imprimir(nombre: str, a: dict) -> None:
             # justo el caso de un video sin eventos, donde mas importa que el
             # reporte salga igual en vez de abortar.
             print("    (sin resumen de grupos: no se separo en estimulados/espontaneos)")
+            imprimir_cinetica(a)
             return
         for ln in rit["resumen_grupos"].to_string(index=False).split("\n"):
             print("       " + ln)
@@ -430,6 +452,38 @@ def imprimir(nombre: str, a: dict) -> None:
                   f"({a['blur_sigma']:.1f} sigma) en el frame mas rapido. Eso no es "
                   f"engrosamiento: es motion blur (el borde se emborrona y los dos bordes "
                   f"se abren). Usa la medida robusta, no el minimo.")
+    imprimir_cinetica(a)
+
+
+def imprimir_cinetica(a: dict) -> None:
+    ev = a.get("_cinetica")
+    if ev is None or not len(ev):
+        return
+    print()
+    print(f"    CINETICA (nivel onset/offset {cin.NIVEL_ONSET:.0%} de A, RT50 al "
+          f"{cin.NIVEL_RT:.0%}; medible si >= {a['cinetica_min_frames']} fotogramas)")
+    for m, nom in (("ttp", "TTP "), ("rt50", "RT50")):
+        if not a.get(f"{m}_n_eventos"):
+            print(f"       {nom}: no se pudo medir en ningun evento")
+            continue
+        fr = a[f"{m}_frames_mediana"]
+        lo, hi = 1000 * a[f"{m}_cota_inf_s"], 1000 * a[f"{m}_cota_sup_s"]
+        if a[f"{m}_reportable"]:
+            print(f"       {nom}: {1000 * a[f'{m}_s']:.0f} ms (mediana, IQR {a[f'{m}_iqr_s']} s)"
+                  f"  | {fr:g} fotogramas | intervalo mediano [{lo:.0f}, {hi:.0f}] ms")
+        elif not a.get("conteo_reportable"):
+            print(f"       {nom}: NO REPORTABLE -> el conteo de eventos no es reportable "
+                  f"(sin meseta); {fr:g} fotogramas, intervalo mediano [{lo:.0f}, {hi:.0f}] ms "
+                  f"solo para auditar")
+        else:
+            print(f"       {nom}: NO MEDIBLE -> {nom.strip()} < {hi:.0f} ms"
+                  f"  ({fr:g} fotogramas: es el intervalo de muestreo, no la biologia)")
+    if np.isfinite(a.get("amplitud_relativa_pct", np.nan)):
+        print(f"       amplitud relativa: {a['amplitud_relativa_pct']:.2f} % del grosor en reposo"
+              + (f"  (IQR {a['amplitud_relativa_iqr_pct']} %)"
+                 if a.get("amplitud_relativa_iqr_pct") else ""))
+    if a["cinetica_motivo"] != "TTP y RT50 medibles":
+        print(f"       motivo: {a['cinetica_motivo']}")
 
 
 def graficar(resultados, out_png: Path) -> None:
@@ -511,6 +565,70 @@ def graficar_ritmo(resultados, out_png: Path):
     return out_png
 
 
+def graficar_cinetica(resultados, out_png: Path):
+    """Diagnostico visual de TTP/RT50 (regla "cero cajas negras").
+
+    Izquierda: cada evento normalizado por su amplitud, en FOTOGRAMAS respecto
+    del pico y con un punto por fotograma, para que se vea cuantas muestras
+    tiene la subida. Lineas en el 10 % y el 50 %.
+    Derecha: TTP y RT50 de cada evento con su intervalo [min, max]; la franja
+    gris es la zona "no medible" (menos de min_frames fotogramas).
+    """
+    filas = [(n, a) for n, a in resultados
+             if a.get("_cinetica") is not None and len(a["_cinetica"])]
+    if not filas:
+        return None
+    fig, axes = plt.subplots(len(filas), 2, figsize=(13, 3.2 * len(filas)), squeeze=False,
+                             gridspec_kw={"width_ratios": [1.6, 1]})
+    for i, (nombre, a) in enumerate(filas):
+        ax, ax2 = axes[i, 0], axes[i, 1]
+        r, pk, ev = a["_r"], a["_picos"], a["_cinetica"]
+        h = 15
+        lags = np.arange(-h, h + 1)
+        trazas = []
+        for p in pk:
+            if p - h < 0 or p + h >= len(r) or r[p] <= 0:
+                continue
+            y = r[p - h:p + h + 1] / r[p]
+            trazas.append(y)
+            ax.plot(lags, y, "-", color="#95a5a6", lw=0.6, alpha=0.7)
+        if trazas:
+            ax.plot(lags, np.median(trazas, axis=0), "o-", color="#1f77b4", lw=1.6, ms=3.5,
+                    label="mediana de eventos")
+        ax.axhline(cin.NIVEL_ONSET, color="#27ae60", ls="--", lw=0.9, label="10 % (onset/offset)")
+        ax.axhline(cin.NIVEL_RT, color="#c0392b", ls="--", lw=0.9, label="50 % (RT50)")
+        ax.axvline(0, color="gray", lw=0.6)
+        ax.set_xlabel("fotogramas respecto del pico")
+        ax.set_ylabel("senal / amplitud")
+        ax.set_ylim(-0.4, 1.3)
+        txt = []
+        for m, nom in (("ttp", "TTP"), ("rt50", "RT50")):
+            if not a.get(f"{m}_n_eventos"):
+                continue
+            if a[f"{m}_reportable"]:
+                txt.append(f"{nom} = {1000 * a[f'{m}_s']:.0f} ms")
+            else:
+                txt.append(f"{nom} < {1000 * a[f'{m}_cota_sup_s']:.0f} ms (no medible)")
+        ax.set_title(f"{nombre}   " + "   ".join(txt), fontsize=9)
+        ax.legend(fontsize=7, loc="upper right"); ax.grid(alpha=0.25)
+
+        mf = a["cinetica_min_frames"] / a["fps"]
+        ax2.axhspan(0, 1000 * mf, color="gray", alpha=0.15, label=f"< {a['cinetica_min_frames']} fotogramas")
+        for m, col, dx in (("ttp", "#1f77b4", -0.12), ("rt50", "#c0392b", 0.12)):
+            x = ev["evento"].to_numpy(float) + dx
+            y = 1000 * ev[f"{m}_s"].to_numpy(float)
+            lo = 1000 * ev[f"{m}_min_s"].to_numpy(float)
+            hi = 1000 * ev[f"{m}_max_s"].to_numpy(float)
+            ok = np.isfinite(y)
+            ax2.errorbar(x[ok], y[ok], yerr=[y[ok] - lo[ok], hi[ok] - y[ok]], fmt="o",
+                         color=col, ms=4, capsize=2, lw=0.9, label=m.upper())
+        ax2.set_xlabel("evento"); ax2.set_ylabel("ms")
+        ax2.set_title("cada evento con su intervalo [min, max]", fontsize=9)
+        ax2.legend(fontsize=7, loc="upper left", bbox_to_anchor=(1.01, 1.0)); ax2.grid(alpha=0.25)
+    fig.tight_layout(); fig.savefig(out_png, dpi=140); plt.close(fig)
+    return out_png
+
+
 def _leer(path: str) -> pd.DataFrame:
     p = Path(path)
     return pd.read_csv(p) if p.suffix == ".csv" else pd.read_excel(p, sheet_name="diagnostics")
@@ -548,6 +666,10 @@ def parse_args():
     p.add_argument("--min-captura", type=float, default=0.75,
                    help="Fraccion minima de ranuras de la grilla que tienen que estar ocupadas. "
                         "Bajarlo solo si se sospecha bloqueo (captura 2:1 o peor).")
+    p.add_argument("--min-frames-cinetica", type=int, default=cin.MIN_FRAMES,
+                   help="Fotogramas minimos de subida (TTP) o de bajada al 50%% (RT50) "
+                        "para que la metrica se reporte como valor. Por debajo se "
+                        "reporta solo la cota superior.")
     p.add_argument("--sin-separar", action="store_true",
                    help="No intentar separar estimuladas de espontaneas.")
     p.add_argument("--output-dir", default=None)
@@ -564,7 +686,8 @@ def main():
     for nombre, df in entradas:
         k_arg = None if str(a.k).strip().lower() == "auto" else float(a.k)
         r = analizar(df, a.canal, k_arg, a.win_s, a.sep_s, a.half_s,
-                     separar=not a.sin_separar, min_captura=a.min_captura)
+                     separar=not a.sin_separar, min_captura=a.min_captura,
+                     min_frames_cinetica=a.min_frames_cinetica)
         imprimir(nombre, r)
         resultados.append((nombre, r))
 
@@ -590,6 +713,7 @@ def main():
     png_contracciones = out / f"09_contracciones_{nombre_video}.png"
     graficar(resultados, png_contracciones)
     png_ritmo = graficar_ritmo(resultados, out / f"10_ritmo_{nombre_video}.png")
+    png_cinetica = graficar_cinetica(resultados, out / f"11_cinetica_{nombre_video}.png")
 
     with pd.ExcelWriter(out / "contracciones.xlsx", engine="openpyxl") as w:
         for nombre, r in resultados:
@@ -612,10 +736,14 @@ def main():
                               "tiempo_s": r["tiempos_s"],
                               "amplitud_px": r["_r"][r["_picos"]]}
                              ).to_excel(w, sheet_name=f"eventos_{nombre[:18]}", index=False)
+            if r.get("_cinetica") is not None and len(r["_cinetica"]):
+                r["_cinetica"].to_excel(w, sheet_name=f"cinetica_{nombre[:18]}", index=False)
 
     print(f"\nGrafico: {png_contracciones}")
     if png_ritmo:
         print(f"Grafico: {png_ritmo}")
+    if png_cinetica:
+        print(f"Grafico: {png_cinetica}")
     print(f"Tabla:   {out / 'contracciones.xlsx'}")
 
 

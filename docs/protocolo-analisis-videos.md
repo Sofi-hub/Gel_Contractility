@@ -68,6 +68,15 @@ Para que el pipeline **aborte** en vez de emitir números con una ROI mala:
 `ruido_grosor_px`, más `k_usado`, `meseta_k_rango` y `conteo_reportable`.
 Todas salen en `contracciones.xlsx`.
 
+**Cinética (desde 2026-09-29):** `ttp_s`, `rt50_s`, `amplitud_relativa_pct`,
+con `ttp_reportable` y `rt50_reportable`. Si `*_reportable` es `False`, el
+valor es NaN a propósito: se tabula la cota `ttp_cota_sup_s` como
+"TTP < X ms", **nunca** como un valor. Es reportable sólo si el conteo es
+reportable y la mediana de fotogramas de la subida (o de la bajada al 50 %) es
+≥ 5. La amplitud relativa es respecto del **grosor en reposo**, no se calibra
+y sí se puede comparar entre videos grabados a distinto aumento. Detalle por
+evento en la hoja `cinetica_<serie>`; figura `11_cinetica_*.png`.
+
 **`cociente_robusto_pct` va con signo.** Positivo = el gel adelgaza;
 negativo = engruesa. Hasta el 2026-09-29 el código tomaba la magnitud y un
 engrosamiento se leía como adelgazamiento.

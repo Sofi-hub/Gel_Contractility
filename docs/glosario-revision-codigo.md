@@ -112,7 +112,7 @@ Para leer `hallazgos-revision-codigo.md` sin conocer la jerga. Cada término dic
 
 ## Etapa 9 — términos nuevos
 
-- **Motor `ed` / motor del reporte:** dos programas distintos que detectan contracciones: `event_detection.py` (el original, que usa el cuaderno) y `contraction_report.py` (el que produce `contracciones.xlsx`).
+- **Motor `ed` / motor del reporte** *(el motor `ed` se borró el 2026-10-01; queda solo el del reporte)*: dos programas distintos que detectan contracciones: `event_detection.py` (el original, que usa el cuaderno) y `contraction_report.py` (el que produce `contracciones.xlsx`).
 - **Línea base por percentil 90 móvil:** el "estado relajado" se estima como el valor por debajo del cual está el 90 % de la señal en una ventana móvil; supone que el gel pasa casi todo el tiempo relajado.
 - **Profundidad:** línea base menos señal; las contracciones aparecen como picos hacia arriba.
 - **Prominencia:** cuánto sobresale un pico respecto de su entorno; se usa como umbral.

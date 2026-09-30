@@ -76,7 +76,7 @@ relativos (porcentaje del grosor, cocientes) o dentro de un mismo aumento.
     src/edge_detection.py    borde subpíxel por columna
     src/robust_fitting.py    RANSAC grado 2 con umbral adaptativo
     src/pipeline.py          orquestador -> 4 series por fotograma
-    src/event_detection.py   detección de eventos escala-invariante
+    src/estadistica.py       MAD, mediana móvil y búsqueda de picos (una sola copia, tolera NaN)
     src/rhythm_split.py      estimuladas vs espontáneas por enganche de fase
     src/qc_visualization.py  overlays de diagnóstico
     src/plotting.py          figuras numeradas

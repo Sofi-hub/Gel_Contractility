@@ -62,6 +62,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from src.estadistica import mad
+
 
 # ---------------------------------------------------------------------------
 # nucleo: encontrar la grilla periodica
@@ -262,8 +264,7 @@ def _refinar(t_asignados: np.ndarray, ranuras: np.ndarray):
     # numero para decidir a quien suelta, y si un solo evento espontaneo colado
     # lo infla, la tolerancia se agranda y ese evento nunca se va. Con MAD, un
     # intruso no mueve la escala y queda expuesto como residuo grande.
-    jitter = (float(np.median(np.abs(resid - np.median(resid))) * 1.4826)
-              if len(resid) > 1 else float("nan"))
+    jitter = mad(resid) if len(resid) > 1 else float("nan")
     return T, err_T, fase, jitter
 
 
@@ -376,7 +377,7 @@ def separar(tiempos, amplitudes=None, duracion_s=None, periodo_min=0.3,
     # del tren no incline la recta y se esconda (ver _theil_sen).
     T, fase = _theil_sen(g["ranuras"], t[g["idx"]])
     resid = t[g["idx"]] - (fase + T * g["ranuras"])
-    jitter = float(np.median(np.abs(resid - np.median(resid))) * 1.4826)
+    jitter = mad(resid)
     err_T = float("nan")
 
     # Segunda pasada: reasignar con una tolerancia atada al jitter medido, no
@@ -396,7 +397,7 @@ def separar(tiempos, amplitudes=None, duracion_s=None, periodo_min=0.3,
         if not (np.isfinite(T2) and T2 > 0):
             break
         r2 = t[idx2] - (fase2 + T2 * ran2)
-        jit2 = float(np.median(np.abs(r2 - np.median(r2))) * 1.4826)
+        jit2 = mad(r2)
         sin_cambio = (len(idx2) == len(g["idx"]) and np.array_equal(idx2, g["idx"]))
         T, fase, jitter = T2, fase2, jit2
         g = dict(g)

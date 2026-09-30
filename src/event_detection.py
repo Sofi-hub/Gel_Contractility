@@ -26,6 +26,8 @@ import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks, peak_widths, savgol_filter
 
+from src.estadistica import mad as _mad
+
 
 # ------------------------------------------------------------------
 # utilidades
@@ -38,10 +40,8 @@ def rolling_percentile(v, window, q):
 
 
 def robust_mad(v):
-    v = np.asarray(v, dtype=float)
-    if v.size == 0:
-        return float("nan")
-    return float(np.median(np.abs(v - np.median(v))) * 1.4826)
+    # Una sola definicion para todo el proyecto (src/estadistica.py).
+    return _mad(v)
 
 
 def _odd(n, minimum=5):

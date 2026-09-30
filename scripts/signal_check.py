@@ -55,10 +55,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import skew
 
 
-def _detrend_median(v: np.ndarray, fps: float, win_s: float) -> np.ndarray:
-    s = pd.Series(v)
-    w = int(win_s * fps) | 1
-    return (s - s.rolling(w, center=True, min_periods=1).median()).to_numpy()
+from src.estadistica import mad, detrend_median as _detrend_median
 
 
 def analizar(df: pd.DataFrame, col: str = "thickness_px", win_s: float = 2.0) -> dict:
@@ -68,7 +65,7 @@ def analizar(df: pd.DataFrame, col: str = "thickness_px", win_s: float = 2.0) ->
     t, v = t[ok], v[ok]
     fps = 1.0 / np.median(np.diff(t))
     r = _detrend_median(v, fps, win_s)
-    ru = float(np.median(np.abs(r - np.median(r))) * 1.4826)
+    ru = mad(r)
     return {
         "columna": col,
         "n": len(v),

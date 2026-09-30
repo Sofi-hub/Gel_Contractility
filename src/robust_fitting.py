@@ -50,6 +50,8 @@ from sklearn.linear_model import RANSACRegressor
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 
+from src.estadistica import mad as _mad
+
 
 @dataclass
 class RobustEdgeFit:
@@ -63,10 +65,9 @@ class RobustEdgeFit:
 
 
 def _robust_mad(v: np.ndarray) -> float:
-    v = np.asarray(v, dtype=float)
-    if v.size == 0:
-        return float("nan")
-    return float(np.median(np.abs(v - np.median(v))) * 1.4826)
+    # Una sola definicion para todo el proyecto (src/estadistica.py). Aca las
+    # entradas ya vienen sin NaN (se filtran con ~np.isnan antes).
+    return _mad(v)
 
 
 def _trimmed_polyfit(x: np.ndarray, y: np.ndarray, degree: int,

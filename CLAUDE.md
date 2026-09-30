@@ -75,7 +75,9 @@ frecuencia **indistinguible de los 0.1 Hz configurados**.
 **4. El umbral `k` se elige dentro de la meseta, y ya es automático.**
 `--k auto` es el default. Dos reglas que no son obvias:
 - Cuando hay varias mesetas, gana la de **`k` más bajo**: al subir el umbral se
-  pierden eventos reales. "La meseta más larga" da la respuesta equivocada (en
+  pierden eventos reales. El reporte lista **todas** las mesetas y usa el `k` del
+  **centro** de la elegida (grilla fina ×1.1; una meseta tiene que abarcar ≥ ×1.25
+  en `k`). "La meseta más larga" da la respuesta equivocada (en
   Video_063 daría 5 eventos donde la validada es 6).
 - Los falsos se filtran **antes** de buscar el tramo de conteo constante, no
   después (en Video_466 la meseta real es k=8..15 pero el tramo de 5 eventos
@@ -144,9 +146,21 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
 * **No suavizar con pasabanda.** Para quitar la deriva se usa mediana móvil. Un
   pasabanda convierte cada evento real en un valle flanqueado por dos picos
   falsos y destruye la asimetría, que es justamente lo que se mide.
-* **`--sep-s` y parámetros de proximidad.** `find_peaks(distance=...)` no filtra
-  ruido: se queda con el pico **más alto** de cada ventana y borra el resto. Un
-  valor grande borra eventos reales de un tren rápido.
+* **Una sola MAD, una sola mediana móvil** (`src/estadistica.py`). No
+  volver a copiarlas: las nueve copias que había no toleraban NaN, y un solo
+  fotograma rechazado dejaba el video en 0 eventos. Un fotograma sin medida
+  **no se interpola**: no cuenta para el ruido ni puede ser un pico.
+* **Qué es un evento (Fase 2.2): altura Y prominencia ≥ k·ruido, sin separación
+  mínima en tiempo.** La vieja `--sep-s 0.3` fundía contracciones reales de una
+  ráfaga (Video_prueba: 28 en vez de 29) y contaba la cola de un evento lento
+  como otro evento. `find_peaks(distance=...)` no filtra ruido: se queda con el
+  pico **más alto** de cada ventana y borra el resto. `--sep-s` queda como
+  opción manual, apagada.
+* **La ventana del detrend no es fija (Fase 2.2):** al menos 3 veces el evento
+  más largo, mínimo 2 s, y el conteo tiene que ser el mismo con 0.75×, 1× y
+  1.5× esa ventana. Una mediana corta "baja con el evento" y se come la
+  contracción (Video_491, eventos de ~1 s). Detalle en
+  `claude/propuesta-fase-2-2.md`.
 
 ## Estructura y comandos
 
@@ -155,9 +169,9 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     src/robust_fitting.py    RANSAC grado 2, umbral adaptativo
     src/io_utils.py          lectura de video + timestamps (read_pts_seconds)
     src/pipeline.py          orquestador -> 4 series por fotograma
-    src/event_detection.py   detección escala-invariante + ritmo por segmentos
     src/rhythm_split.py      estimuladas vs espontáneas (enganche de fase)
     src/cinetica.py          TTP, RT50, onset/offset y amplitud relativa, con cotas
+    src/estadistica.py       MAD, mediana móvil y búsqueda de picos: UNA sola copia, tolerante a NaN
     src/qc_visualization.py  overlay de inliers/outliers, perfil de ROI
     src/plotting.py          figuras numeradas
     scripts/contraction_report.py   EL script principal de análisis
@@ -165,6 +179,8 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     scripts/signal_check.py         diagnóstico: ¿hay población de eventos?
     tests/test_seleccion_k.py       regresión de la elección automática de k
     tests/test_cinetica.py          TTP/RT50 sobre eventos sintéticos de cinética conocida
+    tests/test_nan.py               fotogramas sin medida (NaN): el análisis no se anula
+    tests/test_deteccion.py         la detección ENTERA sobre sintéticos de conteo conocido
 
 Flujo normal:
 
@@ -196,8 +212,14 @@ y `ordenar_carpeta.py` les quitó el sufijo al archivar el resto.
 - El rescate de ROI por barrido maximiza ancho sujeto a planitud, y puede elegir
   una ventana plana pero con bordes difíciles de seguir (Video_466: 5.77 % de
   variación pero 16 % de outliers). Mirar siempre el `outlier_frac`.
-- Video_491 (36 Hz) no tiene eventos certificables. **Descartada la hipótesis de
-  tétanos:** el alias de 36 Hz a ~30 fps caería en ~6 Hz y el espectro no tiene
-  nada ahí.
+- **Video_491 (36 Hz) es distinto de los otros cinco** y hay que consultarlo con el
+  equipo antes de citarlo. Desde la Fase 2.2 da **2 eventos reportables** (13.0 y
+  34.0 s): excursiones de ~1 s con el fondo plano, el doble de largas que las de
+  los demás, y **en sentido contrario** (`signo` −1: la franja sube en la pantalla;
+  en los otros cinco baja). Con la ventana fija de 2 s la mediana se comía esos
+  eventos y el video salía "sin meseta". Una contracción sostenida ~1 s con
+  estimulación a 36 Hz es compatible con un **tétanos fusionado** (meseta lisa,
+  sin ondulación a la frecuencia del estímulo); el descarte anterior buscaba una
+  ondulación a ~6 Hz, que un tétanos fusionado no tiene. No está confirmado.
 - A 30 fps, TTP y RT50 no son medibles cuando la contracción dura menos de ~5
   fotogramas.

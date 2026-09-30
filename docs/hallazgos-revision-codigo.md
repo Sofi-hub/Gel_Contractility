@@ -9,27 +9,27 @@ Revisión sobre el commit: `2be99ca392bdb33eb9facb318d196076513ae6b5`
 `1c1aaaa` (02:10 UTC), `96df20d` (merge del 2026-09-11, último previo a los cambios
 del 29/30 de septiembre: `git diff 96df20d` los muestra).
 
-Avance: **Preparación y Etapas 0 a 10 hechas: revisión completa** · falta sincronizar esta copia con `docs/` y cerrar el checklist de la guía.
+Avance: **Preparación y Etapas 0 a 10 hechas: revisión completa**. 2026-09-30: el cuaderno `Analisis_Contractilidad_v4.ipynb` se actualizó (H44, H45, H46 resueltos *en el cuaderno*; H54 nuevo). `src/` y `scripts/` **no se tocaron** · falta sincronizar esta copia con `docs/` y cerrar el checklist de la guía.
 
 ---
 
-## Índice de hallazgos (H1–H53)
+## Índice de hallazgos (H1–H54)
 
 Cada hallazgo tiene un número `H` para poder citarlo. H1–H7 venían de la guía; H8 en adelante son de esta revisión. Las líneas "Actualización" dentro de un hallazgo son evidencia nueva sobre uno ya anotado.
 
 | H | severidad | en una línea |
 |---|---|---|
-| H1 | BUG | un solo fotograma `REJECTED` (NaN) anula el reporte en silencio |
+| H1 | BUG | un solo fotograma `REJECTED` (NaN) anula el reporte en silencio — **resuelto 2026-10-01** |
 | H2 | RIESGO | dos detectores de eventos (reporte vs `event_detection`/cuaderno): 28 vs 29 en Video_prueba |
 | H3 | DEUDA | el cuaderno arma ventanas con el fps declarado, el reporte con el de los PTS |
 | H4 | DEUDA | MAD y mediana móvil repetidos en varios módulos |
-| H5 | DEUDA | `escaneo_estabilidad` tiene `sep_s=2.0` por defecto; el script usa 0.3 |
+| H5 | DEUDA | `escaneo_estabilidad` tiene `sep_s=2.0` por defecto; el script usa 0.3 — **resuelto 2026-10-01** (Fase 2.2: sin separación mínima) |
 | H6 | DEUDA | `detect_contractions` tiene `raw_col="thickness_px"` por defecto |
 | H7 | — | default `pts`, `ordenar_carpeta.py`, escaneos vigentes en el test, `_v6` en docs |
-| H8 | — | El 28 vs 29 de Video_prueba depende de la separación mínima entre picos (`sep_s`): hay una ráfaga real con espaciado ≈ 0.3 s |
-| H9 | PREGUNTA | La regresión de CLAUDE.md no tiene una línea base clara, y el test no puede detectar H8 |
+| H8 | — | El 28 vs 29 de Video_prueba depende de la separación mínima entre picos (`sep_s`): hay una ráfaga real con espaciado ≈ 0.3 s — **resuelto 2026-10-01** (Fase 2.2: prominencia; Video_prueba = 29) |
+| H9 | PREGUNTA | La regresión de CLAUDE.md no tiene una línea base clara, y el test no puede detectar H8 — **resuelto 2026-10-01** (`tests/test_deteccion.py` corre la detección) |
 | H10 | DEUDA | El cuaderno se contradice sobre qué funciones usa |
-| H11 | PREGUNTA | El "6" validado de Video_063 no es evidencia independiente de la regla "gana la meseta de k más bajo" |
+| H11 | PREGUNTA | El "6" validado de Video_063 no es evidencia independiente de la regla "gana la meseta de k más bajo" — **a la vista, no resuelto**: el reporte lista las dos mesetas de Video_063 |
 | H12 | DEUDA | La documentación no clasifica todos los métodos de ROI |
 | H13 | PREGUNTA | El control por señal invertida supone ruido simétrico |
 | H14 | DEUDA | `frames faltantes (%)` está inflado por el jitter de los timestamps |
@@ -49,10 +49,10 @@ Cada hallazgo tiene un número `H` para poder citarlo. H1–H7 venían de la gu�
 | H28 | DEUDA | `min_gradient` nunca actúa en estos videos; código muerto en `edge_detection.py` |
 | H29 | RIESGO | En Video_466 el RANSAC agrega ruido y un corrimiento variable: los "outliers" son sistemáticos, no burbujas |
 | H30 | DEUDA | El umbral adaptativo casi nunca toca el piso y es muy grande; el MAD de residuos por columna es alto |
-| H31 | RIESGO | Un solo fotograma rechazado (NaN) deja sin resultado a todo el video, y `frame_quality` no se consulta nunca |
+| H31 | RIESGO | Un solo fotograma rechazado (NaN) deja sin resultado a todo el video, y `frame_quality` no se consulta nunca — **NaN resuelto 2026-10-01**; `frame_quality` solo se cuenta |
 | H32 | DEUDA | La hoja `resumen` no alcanza para reproducir una corrida, y algunas cifras se leen mal |
-| H33 | RIESGO | El veredicto "reportable" cambia con `win_s`, y el control de falsos se contamina con el propio evento |
-| H34 | RIESGO | La grilla de k es gruesa y despareja, y se elige el borde inferior de la meseta |
+| H33 | RIESGO | El veredicto "reportable" cambia con `win_s`, y el control de falsos se contamina con el propio evento — **resuelto 2026-10-01** (ventana automática + control de estabilidad; Video_491 = 2 reportables) |
+| H34 | RIESGO | La grilla de k es gruesa y despareja, y se elige el borde inferior de la meseta — **resuelto 2026-10-01** (grilla ×1.1, ancho ≥ ×1.25, k en el centro) |
 | H35 | DEUDA | Detalles menores de `contraction_report.py` |
 | H36 | RIESGO | En Video_prueba el primer "estimulado" (t = 4.87 s) tiene la amplitud de una espontánea y sesga el período |
 | H37 | RIESGO | El rescate de "dudosos" usa ±1 s y extrapola la grilla fuera del tren |
@@ -60,18 +60,20 @@ Cada hallazgo tiene un número `H` para poder citarlo. H1–H7 venían de la gu�
 | H39 | DEUDA | Código muerto y documentación vieja en `rhythm_split.py` |
 | H40 | RIESGO | El resumen por video mezcla estimuladas y espontáneas: la amplitud relativa describe a las espontáneas |
 | H41 | RIESGO | "Reportable" (≥ 5 fotogramas) ignora el ancho del intervalo y la meseta del pico; RT50 de 466 está en el umbral |
-| H42 | PREGUNTA | `win_s` = 1 s sesga eventos lentos (−22 % TTP); la amplitud relativa no es una deformación |
+| H42 | PREGUNTA | `win_s` = 1 s sesga eventos lentos (−22 % TTP); la amplitud relativa no es una deformación — **en parte** (la ventana ya no puede quedar corta sin aviso; lo de amplitud relativa sigue) |
 | H43 | DEUDA | Las pruebas de `cinetica` solo cubren eventos triangulares ideales |
 | H44 | RIESGO | Los dos detectores difieren en el tiempo del evento y en el ruido que fija el umbral (confirma H2) |
 | H45 | RIESGO | El cuaderno usa el fps declarado en secciones 7, 8, 10, 11: 466 da 6 en vez de 5 eventos (confirma H3) |
 | H46 | RIESGO | La sección 12 del cuaderno no ejecuta el enganche de fase que describe; la 13 no genera `contracciones.xlsx` |
-| H47 | RIESGO | El control de falsos de `ed` se contradice con el del reporte; un NaN anula el motor |
+| H47 | RIESGO | El control de falsos de `ed` se contradice con el del reporte; un NaN anula el motor — **sigue abierto en `ed`** (depende de la Fase 2.3) |
 | H48 | DEUDA | Promesas del docstring sin respaldo de pruebas y escalas absolutas ocultas |
 | H49 | RIESGO | `signal_check.py` sólo mira la cola negativa: sobre `center_px` no reconoce ninguna contracción real |
 | H50 | RIESGO | El veredicto de `motion_check.py` contradice el hallazgo 1 de CLAUDE.md |
 | H51 | PREGUNTA | La magnitud de `center_px` no coincide con la traslación medida por intensidad (0.18× en los eventos) |
 | H52 | — | Las diferencias entre fotogramas llevan un peine de 10 fotogramas que no está en las series de bordes |
-| H53 | DEUDA | La MAD y la mediana móvil están copiadas 9 y 3 veces, y ninguna tolera NaN (cierra H4) |
+| H53 | DEUDA | La MAD y la mediana móvil están copiadas 9 y 3 veces, y ninguna tolera NaN (cierra H4) — **resuelto 2026-10-01** (`src/estadistica.py`) |
+| H54 | RIESGO | `CANAL="auto"` del cuaderno elegía `y_top_px`/`y_bottom_px` y cambiaba el conteo (Video_063: 8 en vez de 6); ya fijado a `center_px` |
+| H55 | RIESGO | Con eventos lentos y `sep_s` = 0.3 s, la cola de bajada cuenta como un segundo evento, y la regla "meseta de k más bajo" lo convalida (sintético: 9 en vez de 6) — **resuelto 2026-10-01** (Fase 2.2: prominencia) |
 
 ---
 
@@ -658,7 +660,7 @@ Detalle y evidencia en la sección 3 de la guía.
 | H2 | RIESGO | dos detectores de eventos (reporte vs `event_detection`/cuaderno): 28 vs 29 en Video_prueba. **Hipótesis nueva:** esa diferencia puede ser el efecto de H8 y no de que los algoritmos difieran | abierto |
 | H3 | DEUDA | el cuaderno arma ventanas con el fps declarado, el reporte con el de los PTS | abierto |
 | H4 | DEUDA | MAD y mediana móvil repetidos en varios módulos | abierto |
-| H5 | DEUDA | `escaneo_estabilidad` tiene `sep_s=2.0` por defecto; el script usa 0.3 | abierto (ver H8, mismo parámetro) |
+| H5 | DEUDA | `escaneo_estabilidad` tiene `sep_s=2.0` por defecto; el script usa 0.3 | **resuelto 2026-10-01** (Fase 2.2: sin separación mínima) |
 | H6 | DEUDA | `detect_contractions` tiene `raw_col="thickness_px"` por defecto | abierto |
 | H7 | — | default `pts`, `ordenar_carpeta.py`, escaneos vigentes en el test, `_v6` en docs | verificado 2026-09-30. El aviso de caída a `frames` existe (`pipeline.py` l. 252) pero solo salta si no hay timestamps legibles: ver H15 |
 
@@ -1188,7 +1190,7 @@ Detalle y evidencia en la sección 3 de la guía.
 - Estado: abierto.
 
 ### H44. Los dos detectores difieren en algo más que un evento: el tiempo del evento y el ruido que fija el umbral (confirma y amplía H2)
-- Severidad: RIESGO. Estado: abierto.
+- Severidad: RIESGO. Estado: **resuelto en el cuaderno (2026-09-30)**; `event_detection.py` sigue en `src/` sin decidir.
 - Motor `ed` contra reporte con el mismo k: Video_prueba 29 vs 28, Video_466 6 vs 5, Video_491 0 vs 2; los otros tres coinciden (tabla de la Etapa 9).
 - **Dos definiciones de "tiempo del evento".** `ed` toma el mínimo de la señal **cruda** en ±1 ancho; el reporte, el pico de la señal sin deriva. En eventos lentos con cima plana
   (Video_466) el primero cae 69 ms (2 fotogramas) antes: 14.243 s contra 14.312 s. Como `ed` alimenta los segmentos del cuaderno, su período sale 9.967 s contra 9.994 s
@@ -1199,7 +1201,7 @@ Detalle y evidencia en la sección 3 de la guía.
 - Propuesta: decidir cuál es el motor oficial, y hacer que el cuaderno use **sólo** ése; si `ed` se conserva, que use el mismo criterio de ruido y de tiempo.
 
 ### H45. El cuaderno usa el fps declarado en las secciones 7, 8, 10 y 11, y eso cambia conteos (confirma H3)
-- Severidad: RIESGO. Estado: abierto.
+- Severidad: RIESGO. Estado: **resuelto en el cuaderno (2026-09-30)**; `event_detection.py` sigue en `src/` sin decidir.
 - El cuaderno toma `fps = meta["fps"]` (el declarado por el archivo, 28.97–29.87) para `detrend_median` y `escaneo_estabilidad`; la sección 11c usa `cr.analizar`, que usa el fps de los PTS (30.000).
 - Efecto medido: la separación `sep_s = 0.3 s` son `int(0.3 × fps)` muestras = 9 con 30 fps y 8 con 29.x; la ventana de deriva de 2 s son 61 muestras contra 57–59.
   Con el fps declarado: Video_466 da **6** eventos (en vez de 5) en la meseta del escaneo, y Video_prueba **29** (en vez de 28; el fps declarado de Video_prueba no consta en los documentos: probé 29.70 a modo de ejemplo). Video_063, 268, 583 y 491 no cambian.
@@ -1207,7 +1209,7 @@ Detalle y evidencia en la sección 3 de la guía.
 - Propuesta: que el cuaderno calcule `fps` de los PTS (`fps_pts`, que ya calcula en la sección 2) y lo use en todas partes.
 
 ### H46. La sección 12 del cuaderno no ejecuta lo que su texto describe, y la 13 no genera `contracciones.xlsx` (amplía H10)
-- Severidad: RIESGO. Estado: abierto.
+- Severidad: RIESGO. Estado: **resuelto en el cuaderno (2026-09-30)**; `event_detection.py` sigue en `src/` sin decidir.
 - El texto de la sección 12 explica el enganche de fase, el Monte Carlo, los latidos dudosos y el contraste contra 0.1 Hz. La celda de código llama a `ed.segment_by_rhythm`, `ed.analyze_segments` y `ed.frequency_profile`. No imprime ni usa
   `a_rep["ritmo"]` (p, z, período de la grilla, estimulados, dudosos, jitter).
 - Resultado de esos segmentos sobre Video_prueba: tres "tramos" (19 eventos a 0.57 s, 4 a 0.288 s y 6 a 10.0 s); los **6** de 10 s son 6 de los 7 estimulados del reporte. No es "estimuladas vs espontáneas": `segment_by_rhythm` agrupa por frecuencia local y se fragmenta con la ráfaga.
@@ -1264,28 +1266,139 @@ Detalle y evidencia en la sección 3 de la guía.
   Todas son iguales hoy y **ninguna ignora NaN**: por eso arreglar H1 exige tocar al menos las tres que consume el reporte, y cualquier copia que se olvide reintroduce el problema. Además `motion_check.py` arma su eje de tiempo con `fotograma / fps declarado` en vez de los PTS (H50).
 - Propuesta: un único módulo `src/estadistica.py` con `mad()` y `detrend_median()` tolerantes a NaN, que lo importen todos; el reporte y el cuaderno incluidos.
 
+### H54. `CANAL = "auto"` del cuaderno elegía un canal distinto de `center_px` y eso cambiaba el conteo
+- Severidad: RIESGO. Estado: **resuelto en el cuaderno (2026-09-30)**.
+- La sección 7 elegía el canal de mayor SNR. En Video_063 gana `y_top_px` (con ese canal, k=8 da **8** eventos; el reporte vigente, sobre `center_px`, da **6**) y en Video_268 gana `y_bottom_px`. Contradice el hallazgo 1 de `CLAUDE.md` y al reporte.
+- Un texto del cuaderno decía "sobre Video_063, 44 contra 3"; lo medido es 45.6 contra 9.2 (`center_px` contra `thickness_px`). Se reemplazó por una tabla con los seis videos (SNR `center_px` / `thickness_px`: prueba 82/17, 063 46/9, 268 33/10, 466 21/5, 583 44/10, 491 12/6).
+- Arreglo aplicado: `CANAL = "center_px"` por defecto; si el de mayor SNR es otro, la celda lo avisa. `"auto"` sigue disponible pero documentado como no apto para cifras a citar.
+- Sigue abierto: el reporte (`contraction_report.py`) no compara canales; que `y_top`/`y_bottom` tengan algo más de SNR que `center_px` en algunos videos no se investigó (¿por qué? ¿menos ruido en un borde?). Ver item 8 de la lista.
+
+---
+
+### H55. Con eventos lentos y `sep_s` = 0.3 s, la cola de bajada cuenta como un segundo evento, y la regla del k más bajo lo convalida
+- Archivo: `scripts/contraction_report.py` (`escaneo_estabilidad`, `analizar`: `distance = int(sep_s·fps)`; `elegir_k_meseta`).
+- Severidad: RIESGO. Encontrado por el chat de implementación el 2026-10-01, al armar `tests/test_nan.py`.
+- Qué pasa: serie sintética con 6 eventos lentos, como los de Video_583 (subida lineal de 0.3 s, bajada exponencial con
+  RT50 = 0.2 s, amplitud 1.5 px, ruido blanco de 0.04 px: A/σ ≈ 37, parecido al de 583). Sin ningún NaN, el reporte da
+  **9 eventos**: tres "eventos" extra de 0.36–0.48 px (~10 σ) a 0.30–0.37 s de su pico, en la cola de bajada. El escaneo
+  da `[12, 11, 9, 9, 7, 6, 6, 6]` con 0 falsos desde k = 4: dos mesetas, 9 eventos en k = 6–8 (2 puntos) y 6 en k = 12–20
+  (3 puntos). La regla "gana la de k más bajo" elige **9**. Con `sep_s` = 0.5 s o 0.8 s da 6.
+- Por qué importa: es el mismo patrón de H8/H11/H33: `sep_s` es un tiempo absoluto que no se relaciona con la duración
+  del evento, y la regla de la meseta de k más bajo, justificada con Video_063 (H11), acá elige la respuesta equivocada.
+- Qué afecta hoy: nada comprobado. Video_583 y Video_466 reales dan 6 y 5 (el ruido real parece menos "blanco" en la
+  cola; no se midió). Riesgo concreto en videos lentos nuevos (`RARITOS`).
+- Evidencia: `serie()` de `tests/test_nan.py` con `pulso(t, t0, 0.3, 0.2)` en lugar de los pulsos rápidos, y
+  `analizar(df, "center_px", None, 2.0, sep_s, 1.5)` con `sep_s` = 0.3 / 0.5 / 0.8 → 9 / 6 / 6.
+- Propuesta: entra en la Fase 2.2 (regla escrita para `sep_s`, probablemente relativa a la duración medida del evento, y
+  revisar la regla de la meseta con este caso como contraejemplo).
+- Estado: abierto.
+
+---
+
+## Implementación
+
+### Fase 2.1 — NaN (2026-10-01, chat de implementación)
+
+**Qué se hizo**
+- `src/estadistica.py` (nuevo): `mad()`, `detrend_median()` y `buscar_picos()`. La MAD ignora los NaN; la mediana
+  móvil ya los ignoraba; `buscar_picos` trata los NaN como −inf (un fotograma sin medida nunca es pico y no le impide
+  a su vecino serlo). No se interpola nada.
+- Las 9 copias de la MAD y las 3 de la mediana móvil ahora llaman a ese módulo: `contraction_report.py` (re-exporta
+  `mad` y `detrend_median`, que usa el cuaderno), `rhythm_split.py` (×3), `robust_fitting.py`, `event_detection.py`,
+  `signal_check.py`, `motion_check.py`. Los parámetros no se tocaron (`int(win_s·fps) | 1`, etc.: eso es la Fase 2.2).
+- `contraction_report.py`: los cuatro `find_peaks` pasan por `buscar_picos`; el promedio alineado usa `nanmean`.
+- `cinetica.py`: si entre el pico y el cruce del 10 % (o del 50 %) hay un fotograma sin medida, la métrica de ese
+  evento queda NaN. Antes la búsqueda saltaba el hueco y encontraba un cruce del otro lado.
+- Salidas nuevas (al final, no reordenan nada): en `resumen_*`, `fotogramas_sin_medida`, `fotogramas_sin_medida_pct`,
+  `fotogramas_low_quality` y `eventos_junto_a_hueco`; en `eventos_*`, la columna `junto_a_hueco` (evento con un NaN en
+  el pico o al lado: instante y amplitud inciertos). Avisos impresos.
+- `tests/test_nan.py` (nuevo).
+
+**Verificación**
+- Equivalencia: `np.nanmedian` = `np.median` bit a bit en 137 vectores sin NaN (incluidas las 24 series de los seis
+  vigentes). Las copias de `robust_fitting` y `rhythm_split` reciben vectores ya filtrados, así que `main.py` no cambia.
+- Regresión: los seis `contracciones.xlsx` vigentes, **idénticos** hoja por hoja y columna por columna; solo se agregan
+  las columnas nuevas.
+- NaN inyectados en los seis videos reales (1, 3 y 30 dispersos, 15 seguidos, en un pico, al lado de un pico): **ningún
+  caso da 0 eventos**; conteo y k iguales en los 36 casos.
+- `tests/test_nan.py`: TODO OK. Con el código viejo falla en 9 de 14 chequeos (reproduce 28 → 0 en Video_prueba).
+  `test_seleccion_k.py` 16/16, `test_cinetica.py` OK.
+
+**Lo que dejó a la vista (no se arregló)**
+- **H38, evidencia nueva:** en Video_466, un solo NaN en el pico del 3.er evento (pico en meseta: 4.294 y 4.289 px en
+  fotogramas vecinos) corre ese pico un fotograma; el jitter de la grilla baja de 35 a 10 ms, la tolerancia de 107 a
+  67 ms, y el latido de 44.24 s pasa a "dudoso" (estimulados 5 → 4). La clasificación de estimulados en videos con
+  pocos eventos depende de un fotograma.
+- Un hueco encima de un evento corre su pico al borde del hueco (Video_466: 24.32 → 24.08 s con 15 NaN). Ahora queda
+  marcado `junto_a_hueco`; no se corrige.
+- **H47 sigue abierto en `event_detection.py`**: `savgol_filter` propaga el NaN. No se arregló porque su destino es la
+  Fase 2.3; hoy nadie lo usa para reportar.
+- `frame_quality` sigue sin usarse para excluir fotogramas `LOW_QUALITY`; solo se cuentan (decisión pendiente).
+- H55 (arriba).
+
+### Fase 2.3 — un solo detector (2026-10-01, chat de implementación)
+
+**Decisión (de Franco):** borrar el detector viejo si no aporta nada que no esté en otro lado.
+
+- Se evaluó qué se perdía: las figuras 02 (señal con eventos: ya está en `09_contracciones`), 03 (amplitudes: hoja
+  `eventos_*` y `10_ritmo` por grupo), 04 (perfil de frecuencia: lo reemplaza el enganche de fase, y con su ventana
+  por defecto no veía el ritmo de 10 s) y 06 (tramos: `10_ritmo`). La única útil era la **05 (escaneo de `k`)**, pero
+  graficaba el escaneo del detector viejo y sin los falsos de control.
+- **Borrados:** `src/event_detection.py`, `scripts/analyze_contractions.py`, y de `src/plotting.py` las seis funciones
+  que solo ellos usaban (queda `plot_timeseries`). Nada más los importaba (el cuaderno ya no los usa desde la revisión).
+- **Nuevo:** `contraction_report.py` genera `05_estabilidad_umbral_<video>.png` con **su propio** escaneo: eventos y
+  falsos contra `k`, la meseta sombreada y el `k` usado (o "solo para auditar" si no hay meseta).
+- Documentos actualizados: `CLAUDE.md`, `README.md`, `DOCUMENTACION.md`, `referencia-archivos-y-graficos.md`, glosario y
+  dos textos del cuaderno.
+- Verificación: los seis `contracciones.xlsx`, idénticos; las tres pruebas pasan.
+- **Se cierran por la borrada:** H2, H6, H44 (la parte de `src/`), H47 (el NaN en `ed` y su control de falsos), H48.
+
+---
+
+### Fase 2.2 — qué es un evento (2026-10-01, chat de implementación)
+
+Detalle completo, con la medición previa y los resultados, en `claude/propuesta-fase-2-2.md`.
+
+- **Evento = altura y prominencia ≥ k·ruido, sin separación mínima** (resuelve H8, H55 y H5).
+- **Ventana del detrend automática**: `max(2 s, 3 × el evento claro más largo)`, con el conteo repetido
+  con 0.75×, 1× y 1.5× la ventana; si cambia, no es reportable (resuelve H33; en parte H42). La versión
+  automática salió de una observación de Franco sobre Video_491: sus eventos duran ~1 s y la ventana
+  fija de 2 s se los comía.
+- **Grilla de k fina (×1.1), meseta de ancho ≥ ×1.25, k en el centro, todas las mesetas listadas**
+  (resuelve H34; deja H11 a la vista).
+- **Nueva línea base:** Video_prueba 29 (antes 28), Video_491 2 reportables (antes no reportable); los
+  otros cuatro, mismos conteos.
+- **Pruebas:** `tests/test_deteccion.py` (nuevo, resuelve H9).
+- **Hallazgo nuevo, a consultar con el equipo:** Video_491 es distinto de los otros cinco: eventos de
+  ~1 s y en sentido contrario (`signo` −1). Compatible con un tétanos fusionado (no confirmado).
+
 ---
 
 ## Qué arreglar primero
 
-Orden propuesto, del que más puede torcer un número sin aviso al que sólo ordena. Cada ítem cita los hallazgos con la evidencia. Nada de esto se cambió en esta revisión.
+Orden de prioridad, del que más puede torcer un número sin aviso al que sólo ordena. Cada ítem cita los hallazgos con la evidencia. **Nada de `src/` ni `scripts/` se cambió todavía**; el cuaderno sí (2026-09-30).
 
-### 1. Antes de procesar `RARITOS`: que un resultado no desaparezca ni cambie en silencio
-1. **NaN anula todo** (H1, H31, H47, H53). Un fotograma rechazado da 0 eventos y "no hay meseta". Hacer una `mad()` y una `detrend_median()` tolerantes a NaN en un solo módulo y que las use todo el código (9 + 3 copias hoy). Ningún video vigente está afectado; los de `RARITOS` podrían.
-2. **Un solo detector y un solo fps** (H2/H44, H3/H45, H10/H46). El cuaderno usa el motor original y el fps declarado: Video_466 da 6 eventos en vez de 5 y Video_prueba 29 en vez de 28. Que el cuaderno llame a las mismas funciones que el reporte (`cr.analizar`), con el fps de los PTS, y decidir qué hacer con `event_detection.py` (borrar o archivar lo que sobre).
-3. **Parámetros que deciden el conteo** (H8, H34, H33/H42). El conteo de Video_prueba depende de `sep_s` (29, 28, 27, 26 con 0.25, 0.3, 0.35, 0.4–0.5 s) porque hay una ráfaga real con espaciado ≈ 0.3 s; el veredicto "reportable" de Video_491 cambia con `win_s` (no reportable a 2 s, 6 eventos a 3 y 5 s); la grilla de k es gruesa y se elige el borde inferior de la meseta. Decidir cada valor por una regla escrita, no por el video que lo motivó, y dejar una prueba que fije el resultado.
+### Hecho (2026-09-30, sólo el cuaderno)
+- H44, H45, H46, H54: el cuaderno usa `cr.analizar` (mismo detector que el reporte), el fps de los PTS, muestra el enganche de fase real, genera `contracciones.xlsx` llamando al script, y detecta sobre `center_px`. Verificado sobre Video_063: 6 eventos, k=6 (meseta 6–8, 0 falsos), período 9.99917 ± 0.00304 s, p = 0.005, captura 5/5, `contracciones.xlsx` coincide.
+- Falta verificarlo en los otros cinco videos (sólo se corrió Video_063).
 
-### 2. Decisiones metodológicas que hay que validar con datos o con el equipo
-4. **Cinética** (H40, H41, H42). Resumir por grupo (estimuladas y espontáneas por separado; hoy la amplitud relativa de Video_prueba es la de las espontáneas: 0.71 % contra 2.29 % de las estimuladas), y cambiar "reportable" (≥ 5 fotogramas de mediana) por algo que mire el ancho del intervalo y la meseta del pico. Fijar `win_s` por encima de la duración del evento más lento.
-5. **Borde y ajuste** (H26, H27, H29, H19, H20). CLAHE desplaza el borde por cantidades que cambian de fotograma a fotograma, del orden de la señal en Video_466; RANSAC agrega ruido en ese video porque rechaza columnas del extremo de la ROI de manera sistemática; el ancho mínimo de 180 px rechazó la cintura real. Probar `--no-clahe` en los seis videos y un video de control de iluminación (ya pendiente).
-6. **Ritmo** (H36, H37, H38). El primer "estimulado" de Video_prueba (t = 4.87 s) tiene la amplitud de una espontánea y mueve el período de 10.00043 a 10.00744 s; el rescate de dudosos usa ±1 s y extrapola la grilla; la significancia no está calibrada para espontáneas agrupadas (28 % de falsos con intervalos barajados).
+### Fase 2. Que un resultado no desaparezca ni cambie en silencio (antes de `RARITOS`)
+1. **✅ HECHO 2026-10-01 (ver "Implementación").** **NaN anula todo** (H1, H31, H47, H53). Un fotograma rechazado da 0 eventos y "no hay meseta". Un módulo `src/estadistica.py` con `mad()` y `detrend_median()` tolerantes a NaN que usen las 9 + 3 copias. Ningún video vigente está afectado; los de `RARITOS` podrían. **Prueba de aceptación:** los seis videos vigentes dan exactamente los mismos números; un video con un NaN inyectado ya no da 0 eventos.
+2. **✅ HECHO 2026-10-01 (Fase 2.2).** **Parámetros que deciden el conteo** (H8, H34, H33/H42). Conteo de Video_prueba según `sep_s`: 29, 28, 27, 26 con 0.25, 0.3, 0.35, 0.4–0.5 s (hay una ráfaga real con espaciado ≈ 0.3 s); Video_491 es "no reportable" a `win_s` = 2 s y da 6 eventos a 3 y 5 s; la grilla de k es gruesa y se elige el borde inferior de la meseta. Decidir cada valor por una regla escrita, no por el video que lo motivó, y dejar una prueba que fije el resultado.
+3. **✅ HECHO 2026-10-01 (borrado; ver "Implementación").** **Destino de `event_detection.py`** (H2, H44, H47, H48). Ya no lo usa el cuaderno; sólo `analyze_contractions.py` (obsoleto). Borrar, o archivar con una nota, y quitar sus promesas de docstring.
+
+### Fase 3. Decisiones metodológicas que hay que validar con datos o con el equipo
+4. **Cinética** (H40, H41, H42). Resumir por grupo (la amplitud relativa de Video_prueba es la de las espontáneas: 0.71 % contra 2.29 % de las estimuladas); cambiar "reportable" (≥ 5 fotogramas de mediana) por algo que mire el ancho del intervalo y la meseta del pico; fijar `win_s` por encima de la duración del evento más lento.
+5. **Ritmo** (H36, H37, H38). El primer "estimulado" de Video_prueba (t = 4.87 s) tiene la amplitud de una espontánea y mueve el período de 10.00043 a 10.00744 s; el rescate de dudosos usa ±1 s y extrapola la grilla; la significancia no está calibrada para espontáneas agrupadas (28 % de falsos con intervalos barajados).
+6. **Borde y ajuste** (H26, H27, H29, H19, H20). CLAHE desplaza el borde por cantidades que cambian de fotograma a fotograma; RANSAC agrega ruido en Video_466 por rechazar columnas del extremo de la ROI; el ancho mínimo de 180 px rechazó la cintura real. Probar `--no-clahe` en los seis videos.
 7. **Magnitud en píxeles** (H51). `center_px` y la traslación por correlación coinciden en forma (0.915) pero no en valor (0.18× en los eventos). Probar con un desplazamiento subpíxel conocido antes de citar amplitudes absolutas.
+8. **Por qué `y_top`/`y_bottom` superan en SNR a `center_px` en 063 y 268** (H54). Decidir si eso cambia el observable o es ruido correlacionado entre bordes.
 
-### 3. Herramientas que hoy inducen a error si se las lee al pie de la letra
-8. `signal_check.py` (H49) y `motion_check.py` (H50): sus veredictos contradicen el hallazgo 1. Corregir el signo y el razonamiento, o retirarlos.
-9. Documentos y pruebas que no respaldan lo que dicen (H9, H10, H48, H43): la línea base de regresión, los números "29" y "6/6/6/6" del cuaderno, la validación sintética de `event_detection`, las pruebas de cinética con eventos ideales.
+### Fase 4. Herramientas que inducen a error si se las lee al pie de la letra
+9. `signal_check.py` (H49) y `motion_check.py` (H50): sus veredictos contradicen el hallazgo 1. Corregir el signo y el razonamiento, o retirarlos.
+10. Documentos y pruebas que no respaldan lo que dicen (H9, H10, H48, H43): línea base de regresión, validación sintética, pruebas de cinética con eventos ideales.
 
-### 4. Deuda menor (sin apuro)
+### Deuda menor (sin apuro)
 H12, H14, H15, H16, H17, H18, H21–H25, H28, H30, H32, H35, H39, H52 (observación).
 
 ### Lo que se sostuvo

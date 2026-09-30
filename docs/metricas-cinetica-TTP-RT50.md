@@ -200,7 +200,11 @@ dispersión, mientras que los picos se dispersan ±35 ms.
 | Video_268 | **< 101 ms** (no medible) | **< 100 ms** | 2 / 2 | 0.57 % |
 | Video_466 | 284 ms [137, 365] | 160 ms [70, 260] | 9 / 5 | 2.13 % |
 | Video_583 | 258 ms [129, 335] | 181 ms [99, 301] | 8 / 6 | 1.31 % |
-| Video_491 | no reportable (sin meseta de umbral) | — | — | no reportable |
+| Video_491 | ~~no reportable~~ desde la Fase 2.2: **570 ms** | **467 ms** | 17.5 / 14.5 | 0.40 % |
+
+Video_491 se agregó el 2026-10-01: con la ventana automática del detrend (3.1 s) sus dos
+eventos de ~1 s se detectan enteros. Son distintos de los demás (más largos y en sentido
+contrario); ver `CLAUDE.md`, límites conocidos.
 
 Los valores de 466 y 583 son medianas por evento; entre corchetes, la mediana
 del intervalo [min, max]. Concuerdan con la medición sobre el promedio de

@@ -60,7 +60,13 @@ def main() -> int:
     for nombre, (eventos, falsos, esperado) in CASOS.items():
         df = pd.DataFrame({"k": K, "umbral_px": [0.0] * len(K),
                            "eventos": eventos, "falsos_control": falsos})
-        r = elegir_k_meseta(df)
+        # Escaneos HISTORICOS en la grilla gruesa (3, 4, 6, ..., 20): se evaluan
+        # con la regla vieja de "2 puntos seguidos" (factor_min=1.0). La regla de
+        # ancho (>= x1.25 en k) de la Fase 2.2 esta pensada para la grilla fina,
+        # y en la gruesa rechazaria mesetas de un solo paso de x1.2 (10 -> 12),
+        # como la de 7 eventos de "V583 vieja". Lo que estos casos prueban es lo
+        # otro: filtrar falsos antes y elegir la meseta de k mas bajo.
+        r = elegir_k_meseta(df, factor_min=1.0)
         obtenido = r["n_eventos"] if r["hay_meseta"] else None
         bien = obtenido == esperado
         fallas += not bien

@@ -149,24 +149,39 @@ fotograma de 44 en `center_px` contra 3 en el grosor. Por eso se detecta sobre
 
 ### 3.2 Quitar la deriva y encontrar los picos
 
-La deriva lenta (foco, temperatura) se quita restando una **mediana móvil** de
-2 s. No se usa un filtro pasabanda: convertiría cada contracción en un valle
-flanqueado por dos picos falsos. El sentido de los eventos (hacia arriba o
-hacia abajo en la imagen) no se supone: se deduce de qué lado de la
-distribución tiene la cola larga. Luego se buscan los picos que superan
-`k × ruido`.
+La deriva lenta (foco, temperatura) se quita restando una **mediana móvil**.
+La ventana no es fija: mide al menos **3 veces la contracción más larga** del
+video, y nunca menos de 2 s. Si fuera más corta, la mediana "bajaría con la
+contracción" y al restarla se la comería (pasaba en Video_491, cuyas
+contracciones duran ~1 s). No se usa un filtro pasabanda: convertiría cada
+contracción en un valle flanqueado por dos picos falsos. El sentido de los
+eventos no se supone: se deduce de qué lado de la distribución tiene la cola
+larga.
+
+Un **evento** es un pico que cumple dos condiciones: sube al menos `k × ruido`
+sobre el reposo (**altura**) y sobresale al menos `k × ruido` sobre el valle que
+lo separa de su vecino más alto (**prominencia**). La segunda condición es la
+que decide si dos picos cercanos son dos contracciones (la señal baja entre
+ellos) o una sola con ruido encima. No se usa una separación mínima en tiempo:
+fundía contracciones reales de una ráfaga y contaba la cola de una contracción
+lenta como otra.
 
 ### 3.3 Cómo se elige el umbral `k`, y por qué el conteo es confiable
 
-Se barre `k` de 3 a 20 y se cuenta cuántos eventos se detectan con cada uno.
+Se barre `k` de 3 a ~24 (23 valores, pasos de ×1.1) y se cuenta cuántos
+eventos se detectan con cada uno.
 Como control, se corre **el mismo detector sobre la señal invertida**: una
 contracción solo va en un sentido, así que todo lo que aparezca del otro lado
 es ruido.
 
 - Si el conteo forma una **meseta** (no cambia al subir `k`) con **0 falsos**
   del lado invertido, los eventos son reales y el número no depende del umbral.
-- El `k` se elige **automáticamente** dentro de esa meseta. Si hay varias,
-  gana la de `k` más bajo (al subir el umbral se pierden eventos reales).
+- El `k` se elige **automáticamente**, en el centro de esa meseta. Si hay
+  varias, gana la de `k` más bajo (al subir el umbral se pierden eventos
+  reales), y el reporte las lista todas.
+- **El conteo tiene que ser el mismo con tres ventanas de deriva distintas**
+  (0.75×, 1× y 1.5× la elegida). Si cambia, no se reporta: un número que
+  depende de una elección arbitraria no es un resultado.
 - **Si no hay meseta, el conteo no se reporta**: la salida lo marca
   `[NO REPORTABLE]`. No se baja `k` para "encontrar" eventos.
 
@@ -216,11 +231,10 @@ hacen falta 200–300 fps. Detalle en `metricas-cinetica-TTP-RT50.md`.
 | script | qué hace |
 |---|---|
 | `main.py` | video → `serie_temporal.xlsx` (las cuatro series + hoja `resumen` con todos los parámetros), `00_roi_profile_<video>.png`, y con `--plot` `01_serie_temporal.png`. El mapa de máxima intensidad lo calcula internamente; `00_max_projection.png` como archivo lo guarda el cuaderno |
-| `scripts/contraction_report.py` | **el análisis principal**: serie temporal → `contracciones.xlsx` y las figuras `09_contracciones`, `10_ritmo` y `11_cinetica` |
+| `scripts/contraction_report.py` | **el análisis principal**: serie temporal → `contracciones.xlsx` y las figuras `05_estabilidad_umbral`, `09_contracciones`, `10_ritmo` y `11_cinetica`. Es el **único** detector de eventos del proyecto: el viejo (`event_detection.py` y `analyze_contractions.py`) se borró el 2026-10-01 |
 | `scripts/inspect_frame.py` | revisa un solo fotograma: overlay de inliers/outliers y perfil de una columna. Para calibrar parámetros o entender por qué se descartó una columna |
 | `scripts/motion_check.py` | diagnóstico independiente de los bordes: **qué** se mueve (bordes, textura interior o nada) |
 | `scripts/signal_check.py` | diagnóstico: ¿hay una población de eventos por encima del ruido en una serie? |
-| `scripts/analyze_contractions.py` | **obsoleto**: detecta sobre el grosor con `k` fijo. Solo se conserva porque genera las figuras 02–06 y el cuaderno usa una función suya |
 | `Analisis_Contractilidad_v4.ipynb` | recorre el flujo entero paso a paso, mostrando la salida de cada etapa |
 
 ---

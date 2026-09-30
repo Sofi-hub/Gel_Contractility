@@ -54,29 +54,17 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from scipy.signal import find_peaks
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src import rhythm_split as rs
 from src import cinetica as cin
+# MAD, mediana movil y busqueda de picos viven en src/estadistica.py y toleran
+# fotogramas sin medida (NaN). Se re-exportan con el mismo nombre porque el
+# cuaderno y otros scripts llaman a `cr.mad` y `cr.detrend_median`.
+from src.estadistica import mad, detrend_median, buscar_picos
 
 
 # --------------------------------------------------------------------------
-def detrend_median(v: np.ndarray, fps: float, win_s: float = 2.0) -> np.ndarray:
-    """Quita la deriva lenta con una MEDIANA movil.
-
-    No usar pasabanda: convierte cada evento en un dip flanqueado por dos
-    picos falsos, y eso arruina tanto la asimetria como el conteo.
-    """
-    s = pd.Series(v)
-    w = int(win_s * fps) | 1
-    return (s - s.rolling(w, center=True, min_periods=1).median()).to_numpy()
-
-
-def mad(v: np.ndarray) -> float:
-    return float(np.median(np.abs(v - np.median(v))) * 1.4826)
-
-
 def _signo_evento(r: np.ndarray) -> int:
     """+1 si los eventos son excursiones hacia arriba, -1 si hacia abajo.
 
@@ -92,8 +80,37 @@ def _signo_evento(r: np.ndarray) -> int:
     return 1 if arriba >= abajo else -1
 
 
-def escaneo_estabilidad(r: np.ndarray, fps: float, ks=(3, 4, 6, 8, 10, 12, 15, 20),
-                        sep_s: float = 2.0) -> pd.DataFrame:
+# Grilla de k: geometrica, pasos de x1.1, de 3 a ~24 (Fase 2.2, H34). La vieja
+# (3, 4, 6, 8, 10, 12, 15, 20) tenia pasos de x1.2 a x1.5 y "2 puntos seguidos"
+# significaba mesetas de anchos muy distintos.
+K_GRILLA = tuple(round(3.0 * 1.1 ** n, 3) for n in range(23))
+# Una meseta tiene que abarcar al menos este factor en k (no "N puntos de la grilla").
+FACTOR_MESETA = 1.25
+
+
+def detectar(r: np.ndarray, umbral: float, fps: float, sep_s: float | None = None):
+    """QUE ES UN EVENTO (Fase 2.2): un pico que sube al menos `umbral` sobre el
+    reposo (altura) Y sobresale al menos `umbral` sobre el valle que lo separa
+    de su vecino mas alto (prominencia).
+
+    La prominencia reemplaza a la separacion minima `sep_s`, que era un tiempo
+    absoluto y fallaba de las dos maneras (medido, ver
+    claude/propuesta-fase-2-2.md):
+      - fundia eventos reales cercanos: en Video_prueba borraba la contraccion
+        de 15.278 s (19.5 MAD) por estar a 0.27 s de otra, aunque la senal
+        vuelve al reposo entre las dos (H8);
+      - contaba como evento un repunte de ruido en la cola de un evento lento
+        (H55): tiene altura, pero prominencia de ruido.
+    `sep_s` queda solo como opcion manual (None = no se usa).
+    """
+    kw = {"height": umbral, "prominence": umbral}
+    if sep_s:
+        kw["distance"] = max(1, int(round(sep_s * fps)))
+    return buscar_picos(r, **kw)[0]
+
+
+def escaneo_estabilidad(r: np.ndarray, fps: float, ks=K_GRILLA,
+                        sep_s: float | None = None) -> pd.DataFrame:
     """Conteo de eventos vs umbral, con control simetrico de falsos positivos.
 
     El control: correr el mismo detector sobre la senal INVERTIDA. Una
@@ -102,17 +119,17 @@ def escaneo_estabilidad(r: np.ndarray, fps: float, ks=(3, 4, 6, 8, 10, 12, 15, 2
     invertido, no hay eventos.
     """
     m = mad(r)
-    d = max(1, int(sep_s * fps))
     filas = []
     for k in ks:
-        pk, _ = find_peaks(r, height=k * m, distance=d)
-        pn, _ = find_peaks(-r, height=k * m, distance=d)
+        pk = detectar(r, k * m, fps, sep_s)
+        pn = detectar(-r, k * m, fps, sep_s)
         filas.append({"k": k, "umbral_px": round(k * m, 4),
                       "eventos": len(pk), "falsos_control": len(pn)})
     return pd.DataFrame(filas)
 
 
-def elegir_k_meseta(estab: pd.DataFrame, min_puntos: int = 2) -> dict:
+def elegir_k_meseta(estab: pd.DataFrame, min_puntos: int = 2,
+                    factor_min: float = FACTOR_MESETA) -> dict:
     """Elige k dentro de la MESETA del escaneo de estabilidad.
 
     La regla es la del protocolo, no una heuristica nueva: sirve un k tal que
@@ -128,7 +145,17 @@ def elegir_k_meseta(estab: pd.DataFrame, min_puntos: int = 2) -> dict:
     k=10..20 (4 puntos); la validada es la de 6.
 
     Se exigen al menos `min_puntos` valores de k consecutivos con el mismo
-    conteo: un solo k no demuestra que el resultado sea estable.
+    conteo, y que la meseta abarque al menos un factor `factor_min` en k
+    (Fase 2.2: el ancho se mide en k, no en puntos de una grilla dada).
+
+    Que k se usa DENTRO de la meseta: el del centro geometrico (Fase 2.2, H34).
+    El conteo es el mismo en toda la meseta; el centro queda lejos del borde
+    donde empiezan los falsos. Se devuelven TODAS las mesetas, para que un
+    video con dos (Video_063: 6 y 5 eventos) lo diga en vez de esconderlo.
+
+    Con la deteccion por prominencia, la regla "la de k mas bajo" no eligio
+    mal en ninguna de 300 series sinteticas de conteo conocido (con la
+    deteccion vieja fallaba: H55).
 
     POR QUE AUTOMATIZARLO: con el k=8 por defecto, Video_583 daba 9 eventos
     (1 falso) y rhythm_split NO encontraba el tren, porque los eventos
@@ -161,9 +188,10 @@ def elegir_k_meseta(estab: pd.DataFrame, min_puntos: int = 2) -> dict:
                and int(limpio.loc[idx[j + 1], "eventos"]) == int(limpio.loc[idx[i], "eventos"])):
             j += 1
         n_ev = int(limpio.loc[idx[i], "eventos"])
+        k_i, k_j = float(limpio.loc[idx[i], "k"]), float(limpio.loc[idx[j], "k"])
         # Un conteo de 0 eventos tambien es "estable", pero no es un
         # resultado: significa que el umbral se comio todo.
-        if n_ev > 0 and (j - i + 1) >= min_puntos:
+        if n_ev > 0 and (j - i + 1) >= min_puntos and k_j / k_i >= factor_min - 1e-9:
             mesetas.append((float(limpio.loc[idx[i], "k"]),
                             float(limpio.loc[idx[j], "k"]), n_ev, j - i + 1))
         i = j + 1
@@ -177,14 +205,18 @@ def elegir_k_meseta(estab: pd.DataFrame, min_puntos: int = 2) -> dict:
         return {"k": None, "hay_meseta": False, "motivo": motivo}
 
     k_lo, k_hi, n_ev, n_pts = mesetas[0]      # la de k mas bajo
+    # k en el centro geometrico de la meseta, tomado de la grilla.
+    ks_meseta = e["k"][(e["k"] >= k_lo) & (e["k"] <= k_hi)].to_numpy(float)
+    k_centro = float(ks_meseta[np.argmin(np.abs(np.log(ks_meseta) - 0.5 * np.log(k_lo * k_hi)))])
     otras = ""
     if len(mesetas) > 1:
-        otras = ("; mesetas posteriores: "
+        otras = ("; OTRAS MESETAS: "
                  + ", ".join(f"{m[2]} ev en k={m[0]:g}..{m[1]:g}" for m in mesetas[1:]))
-    return {"k": k_lo, "n_eventos": n_ev, "k_rango": (k_lo, k_hi),
+    return {"k": k_centro, "n_eventos": n_ev, "k_rango": (k_lo, k_hi),
             "hay_meseta": True, "n_puntos_meseta": n_pts,
+            "mesetas": [(m[0], m[1], m[2]) for m in mesetas],
             "motivo": f"meseta de {n_ev} eventos en k={k_lo:g}..{k_hi:g} "
-                      f"({n_pts} puntos) con 0 falsos de control" + otras}
+                      f"(x{k_hi / k_lo:.2f}) con 0 falsos de control" + otras}
 
 
 def promedio_alineado(r: np.ndarray, picos: np.ndarray, fps: float,
@@ -196,7 +228,9 @@ def promedio_alineado(r: np.ndarray, picos: np.ndarray, fps: float,
         return None, None, 0
     segs = np.asarray(segs)
     lag = np.arange(-h, h + 1) / fps
-    return lag, segs.mean(axis=0), len(segs)
+    # nanmean: un fotograma sin medida dentro de la ventana de UN evento no
+    # anula ese punto del promedio; se promedia con los eventos que si lo tienen.
+    return lag, np.nanmean(segs, axis=0), len(segs)
 
 
 def _poblaciones(tiempos: np.ndarray, amplitudes: np.ndarray):
@@ -235,6 +269,68 @@ def _poblaciones(tiempos: np.ndarray, amplitudes: np.ndarray):
 
 
 # --------------------------------------------------------------------------
+WIN_MIN_S = 2.0           # ventana minima del detrend (s)
+WIN_FACTOR = 3.0          # la ventana mide al menos 3 veces el evento mas largo
+WIN_ESTABILIDAD = (0.75, 1.0, 1.5)   # el conteo tiene que ser el mismo con estas ventanas
+
+
+def duracion_eventos(v: np.ndarray, fps: float, win_largo_s: float = 10.0,
+                     k_claro: float = 10.0) -> dict:
+    """Cuanto duran los eventos CLAROS, medido sin depender de la ventana que
+    se va a elegir.
+
+    Se quita la deriva con una ventana LARGA (10 s: no se come eventos de hasta
+    ~3 s), se toman los picos con altura y prominencia >= 10 MAD, y para cada
+    uno se mide el tramo contiguo en que la senal esta por encima del 10 % del
+    pico y de 3 MAD (la misma idea que el onset/offset de la cinetica; el piso
+    de 3 MAD evita que el ruido estire el tramo). Un fotograma sin medida corta
+    el tramo.
+    """
+    r = detrend_median(v, fps, win_largo_s)
+    r = _signo_evento(r) * r
+    m = mad(r)
+    if not np.isfinite(m) or m <= 0:
+        return {"duracion_max_s": float("nan"), "n_eventos_claros": 0}
+    pk = detectar(r, k_claro * m, fps)
+    dur = []
+    for p in pk:
+        nivel = max(0.1 * r[p], 3 * m)
+        a = p
+        while a - 1 >= 0 and np.isfinite(r[a - 1]) and r[a - 1] > nivel:
+            a -= 1
+        b = p
+        while b + 1 < len(r) and np.isfinite(r[b + 1]) and r[b + 1] > nivel:
+            b += 1
+        dur.append((b - a + 1) / fps)
+    return {"duracion_max_s": float(max(dur)) if dur else float("nan"),
+            "n_eventos_claros": len(dur)}
+
+
+def ventana_deriva(v: np.ndarray, fps: float) -> dict:
+    """Ventana de la mediana movil que quita la deriva (Fase 2.2).
+
+    REGLA: al menos 3 veces la duracion del evento mas largo, y nunca menos de
+    2 s. La mediana ignora un evento solo si ocupa menos de la mitad de la
+    ventana; con 3x queda margen. Si la ventana es corta, la mediana "baja con
+    el evento" y al restarla se come la contraccion: medido en Video_491, cuyos
+    eventos duran ~1 s, la mediana de 2 s se comia la mitad (H33). En los
+    otros cinco videos (eventos de <= 0.6 s) da 2 s, como antes.
+    """
+    d = duracion_eventos(v, fps)
+    dmax = d["duracion_max_s"]
+    win = WIN_MIN_S if not np.isfinite(dmax) else max(WIN_MIN_S, WIN_FACTOR * dmax)
+    win = float(np.ceil(win * 10) / 10)          # a la decima de segundo, hacia arriba
+    return {"win_s": win, **d}
+
+
+def _contar(v, fps, win_s, sep_s):
+    """Conteo con meseta para una ventana dada (control de estabilidad)."""
+    r = detrend_median(v, fps, win_s)
+    r = _signo_evento(r) * r
+    sel = elegir_k_meseta(escaneo_estabilidad(r, fps, sep_s=sep_s))
+    return sel["n_eventos"] if sel["hay_meseta"] else None
+
+
 def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
              sep_s: float, half_s: float, separar: bool = True,
              min_captura: float = 0.75,
@@ -249,6 +345,11 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
             f"despues.")
 
     v = df[canal].to_numpy(float)
+    # win_s = None -> regla automatica (ventana >= 3 x evento mas largo, min 2 s).
+    vent = ventana_deriva(v, fps)
+    win_auto = win_s is None
+    if win_auto:
+        win_s = vent["win_s"]
     r = detrend_median(v, fps, win_s)
     signo = _signo_evento(r)
     r = signo * r                       # ahora los eventos van hacia ARRIBA
@@ -269,7 +370,14 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
     else:
         k_auto = False
 
-    picos, _ = find_peaks(r, height=k * m, distance=max(1, int(sep_s * fps)))
+    picos = detectar(r, k * m, fps, sep_s)
+
+    # --- control de estabilidad frente a la ventana (Fase 2.2) --------------
+    # Mismo criterio que la meseta de k: un conteo que cambia con una eleccion
+    # arbitraria (la ventana del detrend) no es un resultado.
+    conteos_win = {round(f * win_s, 2): _contar(v, fps, f * win_s, sep_s) for f in WIN_ESTABILIDAD}
+    estable_win = (len(set(conteos_win.values())) == 1
+                   and None not in conteos_win.values())
 
     # --- grosor: se mide, no se usa para detectar -------------------------
     rg = detrend_median(df["thickness_px"].to_numpy(float), fps, win_s)
@@ -286,17 +394,16 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
         "meseta_motivo": sel["motivo"],
         "meseta_k_rango": (f"{sel['k_rango'][0]:g}-{sel['k_rango'][1]:g}"
                            if sel.get("k_rango") else None),
-        "conteo_reportable": bool(sel["hay_meseta"]),
+        "conteo_reportable": bool(sel["hay_meseta"]) and estable_win,
+        "_k_rango": sel.get("k_rango"),
+        "_mesetas": sel.get("mesetas", []),
         "_t": t, "_r": r, "_picos": picos, "_lag": lag,
         "_prom_g": prom_g, "_prom_c": prom_c, "_n_prom": n_ev,
     }
 
     _SEPARAR, _MINCAP = separar, min_captura
-    # Aviso de fusion: si bajando sep_s aparecen bastantes mas picos, es que
-    # sep_s esta borrando eventos reales seguidos, no ruido.
-    finos, _ = find_peaks(r, height=k * m, distance=max(1, int(0.1 * fps)))
-    if len(finos) > len(picos) * 1.15 + 1:
-        res["picos_con_sep_menor"] = int(len(finos))
+    # (El aviso de fusion "picos_con_sep_menor" se quito en la Fase 2.2: con la
+    # deteccion por prominencia ya no hay separacion minima que funda eventos.)
 
     if len(picos):
         res["tiempos_s"] = t[picos]
@@ -363,6 +470,41 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
     res["_cinetica"] = ev
     res.update(cin.resumir(ev, conteo_reportable=res["conteo_reportable"],
                            min_frames=min_frames_cinetica))
+
+    # --- fotogramas sin medida ----------------------------------------------
+    # Van al final para no reordenar las columnas existentes. Un fotograma NaN
+    # (REJECTED) no se inventa ni anula el analisis (src/estadistica.py), pero
+    # tiene que quedar a la vista: si faltan muchos, o justo en un evento, el
+    # conteo y la cinetica de ese tramo no son confiables.
+    sin_medida = ~np.isfinite(v)
+    res["fotogramas_sin_medida"] = int(sin_medida.sum())
+    res["fotogramas_sin_medida_pct"] = float(100.0 * sin_medida.mean()) if len(v) else 0.0
+    if "frame_quality" in df.columns:
+        res["fotogramas_low_quality"] = int((df["frame_quality"] == "LOW_QUALITY").sum())
+    # Un evento con un fotograma sin medida en su pico o al lado tiene el
+    # instante (y la amplitud) inciertos: el maximo verdadero pudo estar en el
+    # hueco. Se detecta igual, pero queda marcado. Medido: un hueco de 15
+    # fotogramas sobre el evento de 24.32 s de Video_466 lo corre a 24.08 s.
+    junto = np.array([bool(sin_medida[max(0, p - 1):p + 2].any()) for p in picos], dtype=bool)
+    res["_junto_a_hueco"] = junto
+    res["eventos_junto_a_hueco"] = int(junto.sum())
+
+    # --- Fase 2.2: ventana, estabilidad y todas las mesetas ------------------
+    res["win_s_usado"] = float(win_s)
+    res["win_s_automatico"] = bool(win_auto)
+    res["duracion_evento_max_s"] = vent["duracion_max_s"]
+    res["ventana_corta"] = bool(np.isfinite(vent["duracion_max_s"])
+                                and win_s < WIN_FACTOR * vent["duracion_max_s"])
+    res["conteo_por_ventana"] = " | ".join(
+        f"{w:g} s: {'sin meseta' if n is None else n}" for w, n in conteos_win.items())
+    res["conteo_estable_ventana"] = bool(estable_win)
+    res["mesetas"] = "; ".join(f"{m[2]} ev en k={m[0]:g}-{m[1]:g}" for m in res["_mesetas"]) or None
+    if not res["conteo_reportable"]:
+        if not sel["hay_meseta"]:
+            res["motivo_no_reportable"] = "no hay meseta en el escaneo de k"
+        else:
+            res["motivo_no_reportable"] = ("el conteo depende de la ventana del detrend ("
+                                           + res["conteo_por_ventana"] + ")")
     return res
 
 
@@ -373,6 +515,18 @@ def imprimir(nombre: str, a: dict) -> None:
           f"(eventos hacia {'arriba' if a['signo'] > 0 else 'abajo'} en la imagen)")
     print(f"  ruido del canal: {a['ruido_canal_px']:.4f} px | "
           f"ruido del grosor: {a['ruido_grosor_px']:.4f} px")
+    if a.get("fotogramas_sin_medida"):
+        print(f"  AVISO: {a['fotogramas_sin_medida']} fotograma(s) sin medida "
+              f"({a['fotogramas_sin_medida_pct']:.2f} %, NaN / REJECTED). No se interpolan: no "
+              f"cuentan para el ruido ni pueden ser picos. Si caen dentro de un evento, su "
+              f"TTP/RT50 queda sin medir.")
+    if a.get("eventos_junto_a_hueco"):
+        print(f"  AVISO: {a['eventos_junto_a_hueco']} evento(s) con un fotograma sin medida en el "
+              f"pico o al lado: su instante y su amplitud son inciertos (columna "
+              f"'junto_a_hueco' de la hoja eventos_*).")
+    if a.get("fotogramas_low_quality"):
+        print(f"  nota: {a['fotogramas_low_quality']} fotograma(s) LOW_QUALITY entran al analisis "
+              f"como los demas.")
     print()
     print("  estabilidad del umbral (falsos = mismo detector sobre la senal invertida)")
     print("      %5s %12s %10s %16s" % ("k", "umbral_px", "eventos", "falsos_control"))
@@ -383,13 +537,23 @@ def imprimir(nombre: str, a: dict) -> None:
         print("  NO se detectaron eventos con el umbral elegido.")
         return
     origen = "elegido automaticamente" if a.get("k_automatico") else "fijado a mano"
+    dmax = a.get("duracion_evento_max_s", float("nan"))
+    print(f"  VENTANA del detrend: {a['win_s_usado']:g} s "
+          f"({'automatica' if a.get('win_s_automatico') else 'fijada a mano'}; evento claro "
+          f"mas largo {dmax:.2f} s)" if np.isfinite(dmax) else
+          f"  VENTANA del detrend: {a['win_s_usado']:g} s (no hay eventos claros para medir su duracion)")
+    if a.get("ventana_corta"):
+        print(f"    AVISO: la ventana es menor que 3 x el evento mas largo: la mediana puede "
+              f"comerse parte de la contraccion.")
+    print(f"    conteo con otras ventanas: {a['conteo_por_ventana']}"
+          + ("" if a.get("conteo_estable_ventana") else "   <- CAMBIA CON LA VENTANA"))
     print(f"  UMBRAL: k = {a['k_usado']:g}  ({origen})")
     print(f"    {a['meseta_motivo']}")
-    if not a.get("hay_meseta"):
-        print("    >>> SIN MESETA: por la regla 4 del protocolo este conteo NO se")
-        print("        reporta. Los eventos de abajo son para auditar, no para tabular.")
+    if not a.get("conteo_reportable"):
+        print(f"    >>> NO REPORTABLE: {a.get('motivo_no_reportable', '')}.")
+        print("        Los eventos de abajo son para auditar, no para tabular.")
     print(f"  EVENTOS: {a['n_eventos']}"
-          + ("" if a.get("hay_meseta") else "   [NO REPORTABLE]"))
+          + ("" if a.get("conteo_reportable") else "   [NO REPORTABLE]"))
     print("    tiempos (s): " + ", ".join(f"{x:.2f}" for x in a["tiempos_s"]))
     if a["n_eventos"] > 1:
         iv = a["intervalo_mediano_s"]
@@ -565,6 +729,49 @@ def graficar_ritmo(resultados, out_png: Path):
     return out_png
 
 
+def graficar_estabilidad(resultados, out_png: Path):
+    """Figura 05: el escaneo del umbral que DECIDE el conteo (chequeo de
+    aceptacion 3), una fila por serie.
+
+    Azul: eventos detectados para cada k. Rojo: "falsos", el mismo detector
+    sobre la senal invertida. Franja verde: la meseta elegida (conteo
+    constante con 0 falsos). Vertical: el k usado. Sin meseta, el titulo dice
+    NO REPORTABLE.
+
+    Reemplaza a la 05 que generaba analyze_contractions.py, que graficaba el
+    escaneo de OTRO detector (event_detection.py, borrado el 2026-10-01) y no
+    mostraba los falsos de control.
+    """
+    fig, axes = plt.subplots(len(resultados), 1, figsize=(7.5, 3.2 * len(resultados)),
+                             squeeze=False)
+    for i, (nombre, a) in enumerate(resultados):
+        ax = axes[i, 0]
+        e = a["estabilidad"]
+        ax.plot(e["k"], e["eventos"], "o-", color="#1f77b4", lw=1.5, label="eventos")
+        ax.plot(e["k"], e["falsos_control"], "s--", color="#c0392b", lw=1.2, ms=5,
+                label="falsos (senal invertida)")
+        if a.get("_k_rango"):
+            ax.axvspan(a["_k_rango"][0], a["_k_rango"][1], color="#27ae60", alpha=0.15,
+                       label=f"meseta k={a['_k_rango'][0]:g}-{a['_k_rango'][1]:g}")
+        etiqueta = (f"k usado = {a['k_usado']:g}" if a.get("conteo_reportable")
+                    else f"k solo para auditar = {a['k_usado']:g}")
+        ax.axvline(a["k_usado"], color="black", ls=":", lw=1, label=etiqueta)
+        ax.set_xscale("log")
+        ticks = [3, 4, 5, 6, 8, 10, 12, 15, 20, 24]
+        ax.set_xticks(ticks); ax.set_xticklabels([f"{k:g}" for k in ticks]); ax.minorticks_off()
+        ax.set_xlabel("k (umbral = k x ruido)"); ax.set_ylabel("numero de picos")
+        veredicto = (f"{a['n_eventos']} eventos, reportable" if a.get("conteo_reportable")
+                     else f"NO REPORTABLE: {a.get('motivo_no_reportable', '')}")
+        if len(a.get("_mesetas", [])) > 1:
+            for (k0, k1, n) in a["_mesetas"][1:]:
+                ax.axvspan(k0, k1, color="#f39c12", alpha=0.12)
+            veredicto += f"  (otra meseta: {a['_mesetas'][1][2]} ev, en naranja)"
+        ax.set_title(f"{nombre}   {veredicto}", fontsize=9)
+        ax.grid(alpha=0.3, which="both"); ax.legend(fontsize=7, loc="upper right")
+    fig.tight_layout(); fig.savefig(out_png, dpi=140); plt.close(fig)
+    return out_png
+
+
 def graficar_cinetica(resultados, out_png: Path):
     """Diagnostico visual de TTP/RT50 (regla "cero cajas negras").
 
@@ -650,14 +857,16 @@ def parse_args():
                    help="Umbral en multiplos del ruido. 'auto' (default) lo elige "
                         "dentro de la meseta del escaneo de estabilidad, que es la "
                         "regla del protocolo. Un numero lo fija a mano.")
-    p.add_argument("--win-s", type=float, default=2.0,
-                   help="Ventana (s) de la mediana movil que quita la deriva.")
-    p.add_argument("--sep-s", type=float, default=0.3,
-                   help="Separacion minima entre eventos (s). CUIDADO: find_peaks se queda "
-                        "con el pico MAS ALTO de cada ventana de este ancho, asi que un valor "
-                        "grande no 'limpia ruido': BORRA eventos reales seguidos. Con 2.0 s, "
-                        "un tren espontaneo a 1.75 Hz se reduce de 23 eventos a 5. Solo subilo "
-                        "si un mismo evento se esta contando dos veces.")
+    p.add_argument("--win-s", default="auto",
+                   help="Ventana (s) de la mediana movil que quita la deriva. 'auto' (default): "
+                        "al menos 3 veces la duracion del evento mas largo, minimo 2 s. Un numero "
+                        "la fija a mano.")
+    p.add_argument("--sep-s", type=float, default=None,
+                   help="Separacion minima entre eventos (s). APAGADA por defecto: desde la "
+                        "Fase 2.2 un evento se separa del vecino por su PROMINENCIA (la senal "
+                        "tiene que bajar entre los dos), no por tiempo. Si se da, find_peaks se "
+                        "queda con el pico MAS ALTO de cada ventana y borra eventos reales "
+                        "seguidos.")
     p.add_argument("--half-s", type=float, default=1.5,
                    help="Semiventana (s) del promedio de eventos alineados.")
     p.add_argument("--frecuencia-estimulo", type=float, default=None,
@@ -685,7 +894,8 @@ def main():
     resultados = []
     for nombre, df in entradas:
         k_arg = None if str(a.k).strip().lower() == "auto" else float(a.k)
-        r = analizar(df, a.canal, k_arg, a.win_s, a.sep_s, a.half_s,
+        win_arg = None if str(a.win_s).strip().lower() == "auto" else float(a.win_s)
+        r = analizar(df, a.canal, k_arg, win_arg, a.sep_s, a.half_s,
                      separar=not a.sin_separar, min_captura=a.min_captura,
                      min_frames_cinetica=a.min_frames_cinetica)
         imprimir(nombre, r)
@@ -714,6 +924,7 @@ def main():
     graficar(resultados, png_contracciones)
     png_ritmo = graficar_ritmo(resultados, out / f"10_ritmo_{nombre_video}.png")
     png_cinetica = graficar_cinetica(resultados, out / f"11_cinetica_{nombre_video}.png")
+    png_estab = graficar_estabilidad(resultados, out / f"05_estabilidad_umbral_{nombre_video}.png")
 
     with pd.ExcelWriter(out / "contracciones.xlsx", engine="openpyxl") as w:
         for nombre, r in resultados:
@@ -734,7 +945,8 @@ def main():
             if r["n_eventos"]:
                 pd.DataFrame({"evento": np.arange(1, r["n_eventos"] + 1),
                               "tiempo_s": r["tiempos_s"],
-                              "amplitud_px": r["_r"][r["_picos"]]}
+                              "amplitud_px": r["_r"][r["_picos"]],
+                              "junto_a_hueco": r["_junto_a_hueco"]}
                              ).to_excel(w, sheet_name=f"eventos_{nombre[:18]}", index=False)
             if r.get("_cinetica") is not None and len(r["_cinetica"]):
                 r["_cinetica"].to_excel(w, sheet_name=f"cinetica_{nombre[:18]}", index=False)
@@ -744,6 +956,7 @@ def main():
         print(f"Grafico: {png_ritmo}")
     if png_cinetica:
         print(f"Grafico: {png_cinetica}")
+    print(f"Grafico: {png_estab}")
     print(f"Tabla:   {out / 'contracciones.xlsx'}")
 
 

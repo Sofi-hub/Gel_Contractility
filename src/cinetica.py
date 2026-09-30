@@ -81,9 +81,16 @@ MIN_FRAMES = 5         # fotogramas minimos para que TTP / RT50 sean medibles
 
 def _cruce_atras(r: np.ndarray, p: int, nivel: float, lim: int):
     """Indice `i` < p tal que r[i] <= nivel < r[i+1..p], o None si no cruza
-    antes de `lim` (el pico anterior o el borde de la ventana)."""
+    antes de `lim` (el pico anterior o el borde de la ventana).
+
+    Tambien None si antes del cruce aparece un fotograma sin medida (NaN): el
+    cruce pudo estar en el hueco, asi que la metrica de ese evento no se mide.
+    Sin esto, la busqueda saltaba el NaN y "encontraba" un cruce del otro lado.
+    """
     i = p - 1
     while i >= lim:
+        if np.isnan(r[i]):
+            return None
         if r[i] <= nivel:
             return i
         i -= 1
@@ -91,9 +98,12 @@ def _cruce_atras(r: np.ndarray, p: int, nivel: float, lim: int):
 
 
 def _cruce_adelante(r: np.ndarray, p: int, nivel: float, lim: int):
-    """Indice `j` > p tal que r[j] <= nivel < r[p..j-1], o None."""
+    """Indice `j` > p tal que r[j] <= nivel < r[p..j-1], o None (tambien si
+    antes del cruce hay un fotograma sin medida; ver `_cruce_atras`)."""
     j = p + 1
     while j <= lim:
+        if np.isnan(r[j]):
+            return None
         if r[j] <= nivel:
             return j
         j += 1

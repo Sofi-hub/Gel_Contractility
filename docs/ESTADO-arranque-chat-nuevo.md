@@ -102,7 +102,7 @@ copia vieja del código, anterior a la v4. No es el código vigente.
 
 | video | ROI | var | outliers | k (meseta) | eventos | frecuencia |
 |---|---|---|---|---|---|---|
-| Video_prueba | 454–1516 | 5.32 % | 3.6 % | 6 (6–15) | 28 | 0.09993 ± 0.000041 Hz |
+| Video_prueba | 454–1516 | 5.32 % | 3.6 % | 6 (6–15) | 28 → **29** (Fase 2.2) | 0.09993 ± 0.000041 Hz |
 | Video_063 | 390–1423 | 4.91 % | 7.7 % | 6 (6–8) | 6 | 0.10001 ± 0.000030 Hz |
 | Video_268 | 918–1328 | 5.24 % | 2.0 % | 6 (6–20) | 6 | 0.10000 ± 0.000023 Hz |
 | Video_466 | 700–900 \* | 5.47 % | 7.9 % | 4 (4–15) | 5 | 0.10006 ± 0.000120 Hz |
@@ -118,16 +118,21 @@ Cinética (2026-09-29, detalle en `claude/metricas-cinetica-TTP-RT50.md`):
 | Video_prueba, Video_063, Video_268 | no medible: < ~100 ms | no medible: < ~100 ms | 0.71 / 0.53 / 0.57 % |
 | Video_466 | 284 ms [137, 365] | 160 ms [70, 260] | 2.13 % |
 | Video_583 | 258 ms [129, 335] | 181 ms [99, 301] | 1.31 % |
+| Video_491 (desde la Fase 2.2) | 570 ms | 467 ms | 0.40 % |
 
 \* Video_466 es el único que necesita ROI forzada (`--x-start 700 --x-end 900`).
 El rescate automático elige 944–1169, que es más ancha y cumple planitud
 (5.77 %) pero deja 16 % de outliers.
 
-**Video_491 (36 Hz) queda rechazado:** el escaneo no tiene meseta
-(12 → 7 → 5 → 4 → 2 → 0, con falsos 16, 7, 2, 2, 1, 0). Se ve algo muy leve en
-t ≈ 12.7 y 33.6 s, y MuscleMotion también lo ve, pero ninguno de los dos
-métodos puede separarlo del fondo. Descartada la hipótesis de tétanos a 36 Hz:
-el alias caería en ~6 Hz y el espectro no tiene nada ahí.
+**Video_491 (36 Hz): desde la Fase 2.2 (2026-10-01) da 2 eventos reportables**
+(13.0 y 34.0 s). Antes salía "sin meseta" porque la mediana móvil de 2 s se comía
+sus eventos, que duran ~1 s (el doble que los de los otros videos). Con la
+ventana automática (3.1 s) el conteo es 2 con 2.3, 3.1 y 4.7 s. Pero es distinto
+de los otros cinco en dos cosas: la duración y el **sentido** (la franja sube en
+la pantalla; en los demás baja). Consultar con el equipo cómo se estimuló antes
+de citarlo. Una contracción sostenida de ~1 s a 36 Hz es compatible con un
+tétanos fusionado; el descarte anterior del tétanos buscaba una ondulación a
+~6 Hz que un tétanos fusionado no tiene.
 
 ## Qué está pendiente
 
@@ -140,12 +145,23 @@ reescrita, `--base-tiempo pts` como default de `main.py`,
 **Hay una revisión de código en curso en otro chat.** Sus hallazgos van a
 `claude/hallazgos-revision-codigo.md`. Leerlo antes de tocar un módulo.
 
-0. **BUG, antes de procesar `RARITOS`: un solo fotograma `REJECTED` anula el
-   reporte en silencio.** `contraction_report.mad()` no ignora `NaN`: con un
+0. **✅ RESUELTO 2026-10-01** (`src/estadistica.py`, `tests/test_nan.py`; ver
+   "Implementación" en `claude/hallazgos-revision-codigo.md`). **Era: un solo
+   fotograma `REJECTED` anulaba el reporte en silencio.** `contraction_report.mad()` no ignora `NaN`: con un
    solo fotograma rechazado el ruido da `NaN` y el reporte dice "no hay
    meseta" con 0 eventos. Hoy no afecta a ningún resultado (los seis vigentes
    no tienen fotogramas rechazados). Detalle: H1 en
    `claude/guia-revision-codigo.md`.
+0b. **✅ 2026-10-01: un solo detector.** `src/event_detection.py` y
+   `scripts/analyze_contractions.py` se borraron (no aportaban nada que no
+   estuviera en el reporte); la figura del escaneo de `k` (`05_*`) ahora la
+   genera `contraction_report.py` con su propio escaneo.
+0c. **✅ 2026-10-01: Fase 2.2 aplicada.** Un evento se define por altura y
+   prominencia (sin `sep_s`); ventana del detrend automática con control de
+   estabilidad; grilla fina de `k` con el `k` en el centro de la meseta y todas
+   las mesetas listadas. **Nueva línea base: Video_prueba = 29 eventos;
+   Video_491 = 2, reportable.** Los otros cuatro, iguales. Ver
+   `claude/propuesta-fase-2-2.md` y `tests/test_deteccion.py`.
 1. **Conversar con el equipo la adquisición a alta velocidad.** Es la
    limitación de fondo: a 30 fps la cinética de las muestras rápidas no se
    puede medir. Hacen falta 200–300 fps en un subconjunto.
@@ -180,8 +196,6 @@ Mejoras propuestas (no están en ningún pedido; ordenadas por valor/esfuerzo):
 - `rhythm_split` necesita al menos 4 latidos estimulados.
 - El grosor da un salto **positivo** en el fotograma de máxima velocidad: es
   motion blur, no engrosamiento. Usar siempre la medida robusta.
-- `04_perfil_frecuencia.png` no resuelve períodos mayores a
-  `FREQ_WINDOW_S/2`. Con el default de 8 s no ve el ritmo de 10 s.
 - El rescate de ROI por barrido maximiza ancho sujeto a planitud, y puede
   elegir una ventana plana pero con bordes difíciles de seguir (Video_466).
   Mirar siempre el `outlier_frac`.

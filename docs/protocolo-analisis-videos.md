@@ -68,6 +68,11 @@ Para que el pipeline **aborte** en vez de emitir números con una ROI mala:
 `ruido_grosor_px`, más `k_usado`, `meseta_k_rango` y `conteo_reportable`.
 Todas salen en `contracciones.xlsx`.
 
+**Desde la Fase 2.2 (2026-10-01)** además: `win_s_usado` (ventana del detrend,
+automática), `conteo_por_ventana` (el conteo con 0.75×, 1× y 1.5× esa ventana:
+tiene que coincidir para que sea reportable), `mesetas` (todas las mesetas del
+escaneo; si hay más de una, decirlo al reportar) y `motivo_no_reportable`.
+
 **Cinética (desde 2026-09-29):** `ttp_s`, `rt50_s`, `amplitud_relativa_pct`,
 con `ttp_reportable` y `rt50_reportable`. Si `*_reportable` es `False`, el
 valor es NaN a propósito: se tabula la cota `ttp_cota_sup_s` como

@@ -116,9 +116,22 @@ es ruido. **Desde la v4 el `k` se elige solo dentro de esa meseta.**
 | `cociente_adelg_trasl_pct`, `cociente_robusto_pct` | cuánto del movimiento es adelgazamiento, en %. **Van con signo: positivo adelgaza, negativo engruesa.** Hasta el 2026-09-29 el código tomaba la magnitud y un engrosamiento se leía como adelgazamiento |
 | `retardo_adelgazamiento_s` | dónde cae el mínimo de grosor respecto del pico |
 | `blur_px` / `blur_sigma` | tamaño del artefacto de motion blur, si lo hay |
-| `picos_con_sep_menor` | aparece sólo si `--sep-s` está fusionando eventos |
+| `win_s_usado`, `win_s_automatico` | ventana del detrend y si la eligió la regla (≥ 3 × el evento más largo, mínimo 2 s) |
+| `duracion_evento_max_s` | duración del evento claro (≥ 10 MAD) más largo, medida con una ventana de 10 s |
+| `ventana_corta` | `True` si se forzó una ventana menor que 3 × esa duración |
+| `conteo_por_ventana` | conteo con 0.75×, 1× y 1.5× la ventana, p. ej. `1.5 s: 29 \| 2 s: 29 \| 3 s: 29` |
+| `conteo_estable_ventana` | si los tres coinciden. **Si no, el conteo no es reportable** |
+| `mesetas` | todas las mesetas del escaneo, p. ej. `6 ev en k=5.3-8.6; 5 ev en k=9.4-24.4` |
+| `motivo_no_reportable` | por qué no se reporta: sin meseta, o depende de la ventana |
 
-**`eventos_<serie>`** — `evento`, `tiempo_s`, `amplitud_px` de cada uno.
+(`picos_con_sep_menor` ya no existe: con la detección por prominencia no hay separación mínima que funda eventos.)
+
+**`eventos_<serie>`** — `evento`, `tiempo_s`, `amplitud_px` y `junto_a_hueco` de cada uno.
+
+**Qué es un evento (Fase 2.2):** un pico de la señal sin deriva con **altura** y
+**prominencia** ≥ `k × ruido` (la prominencia es cuánto sobresale sobre el valle
+que lo separa de un pico más alto). No hay separación mínima en tiempo. La hoja
+`estab_*` tiene ahora 23 filas: `k` de 3 a ~24 en pasos de ×1.1.
 
 **`ritmo_<serie>`** — una fila por grupo (`estimulados`, `estimulados_dudosos`,
 `espontaneos`), con `n`, ventana temporal, intervalo mediano e IQR, frecuencia
@@ -195,11 +208,10 @@ cada canal contra la del fondo, **no** su nivel absoluto. Tres desenlaces:
 ## 4. Las figuras, eje por eje
 
 **De dónde sale cada una.** `00_*` y `01_*` salen de `main.py` (el
-`00_max_projection.png` como archivo, del cuaderno). `02_*` a `06_*` salen del
-**cuaderno** o de `scripts/analyze_contractions.py`, que está **obsoleto**
-(detecta sobre el grosor con `k` fijo): no se generan en el flujo normal y no
-sirven para reportar. `07_*` sale de `motion_check.py`, `08_*` de
-`signal_check.py`, y `09_*`, `10_*` y `11_*` de `contraction_report.py`.
+`00_max_projection.png` como archivo, del cuaderno). `05_*`, `09_*`, `10_*` y
+`11_*` salen de `contraction_report.py`. `07_*` sale de `motion_check.py` y
+`08_*` de `signal_check.py`. No hay `02`, `03`, `04` ni `06`: eran del detector
+viejo, borrado el 2026-10-01.
 
 ### `00_max_projection.png`
 Imagen. `x` = columna (px), `y` = fila (px). El gris es la intensidad **máxima
@@ -227,33 +239,22 @@ El título dice qué método de ROI ganó. **Aceptables:** `gauge_plana`,
 Savitzky-Golay. Sin anotaciones: es la vista honesta de la señal antes de que
 ningún detector la toque.
 
-### `02_eventos_detectados.png`
-`x` = tiempo (s). `y` = el canal de detección (px). Gris = señal cruda, rojo =
-suavizado ligero, azul punteado = estado relajado (percentil 90 móvil). Los
-triángulos marcan cada contracción, coloreados por segmento de ritmo.
+### `05_estabilidad_umbral_<video>.png` — una fila por serie
+Sale de `contraction_report.py` (desde 2026-10-01) y grafica **el escaneo que
+decide el conteo** (hoja `estab_*`). `x` = `k` en escala logarítmica; `y` =
+número de picos. Azul = eventos de la señal; rojo = "falsos", el mismo detector
+sobre la señal invertida. Franja verde = la meseta elegida (conteo constante
+con 0 falsos); vertical punteada = el `k` usado ("solo para auditar" si no hay
+meseta). Lo que se busca es una **zona horizontal del azul con el rojo en 0**.
+Si el rojo acompaña al azul y no hay franja verde, el título dice NO REPORTABLE.
 
-### `03_amplitudes.png` — dos paneles lado a lado
-- **Izquierda:** `x` = tiempo (s), `y` = amplitud del evento (px). Cada evento
-  es una línea vertical desde 0. La punteada horizontal es el umbral.
-- **Derecha:** histograma horizontal de las mismas amplitudes. Dos modas
-  separadas significan dos tipos de evento.
-
-### `04_perfil_frecuencia.png`
-`x` = tiempo (s). `y` = **período dominante en segundos, en escala
-logarítmica**. Log porque los períodos de interés abarcan dos órdenes de
-magnitud. Se calcula por autocorrelación en ventana móvil, sin usar la lista de
-eventos, así que es un control independiente. **Limitación:** no resuelve
-períodos mayores a la mitad de la ventana. Con `window_s = 8` no ve el ritmo de
-10 s; hay que subirlo a 20.
-
-### `05_estabilidad_umbral.png`
-`x` = `k`, `y` = número de eventos. Lo que se busca es una **zona horizontal**.
-Un decaimiento monótono sin meseta significa que se está contando ruido. La
-vertical roja marca el `k` que se usó.
-
-### `06_comparacion_tramos.png`
-Un panel por tramo de ritmo, con `x` = tiempo (s) acotado a su tramo e `y` = el
-canal de detección (px).
+> Las figuras `02_eventos_detectados`, `03_amplitudes`, `04_perfil_frecuencia` y
+> `06_comparacion_tramos` eran del detector viejo (`src/event_detection.py`) y
+> se **borraron** con él el 2026-10-01: su contenido está en `09_contracciones`
+> (señal y eventos), la hoja `eventos_*` y `10_ritmo` (amplitudes, por grupo) y
+> el enganche de fase (período con su error, que reemplaza al perfil de
+> frecuencia). La `05` vieja graficaba el escaneo de ese otro detector y no
+> mostraba los falsos.
 
 ### `07_movimiento.png` — cuatro paneles apilados, `x` = tiempo (s)
 1. **Movimiento total:** rojo = gel, gris = fondo de control.

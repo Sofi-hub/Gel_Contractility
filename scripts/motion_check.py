@@ -108,13 +108,8 @@ def _subpixel_shift(ref: np.ndarray, cur: np.ndarray, max_lag: int = 20,
     return float(lags[j] + delta), peak
 
 
-def _detrended(v: np.ndarray, fps: float, win_s: float = 2.0) -> np.ndarray:
-    """Quita la deriva lenta con una mediana móvil (no produce ringing,
-    a diferencia de un filtro pasabanda, que convierte cada evento real
-    en un dip flanqueado por dos falsos picos hacia arriba)."""
-    s = pd.Series(v)
-    w = int(win_s * fps) | 1
-    return (s - s.rolling(w, center=True, min_periods=1).median()).to_numpy()
+# Mediana movil y MAD: una sola definicion (src/estadistica.py).
+from src.estadistica import mad, detrend_median as _detrended
 
 
 def _describe_channel(name, v, fps, unidad="px"):
@@ -122,7 +117,7 @@ def _describe_channel(name, v, fps, unidad="px"):
     if ok.sum() < 30:
         return {"canal": name, "n": int(ok.sum())}
     r = _detrended(v[ok], fps)
-    ru = float(np.median(np.abs(r - np.median(r))) * 1.4826)
+    ru = mad(r)
     fr, P = welch(r, fs=fps, nperseg=min(512, len(r) // 4 * 2))
     band = (fr > 0.25) & (fr < 6)
     f0, ratio = np.nan, np.nan

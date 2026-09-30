@@ -90,6 +90,7 @@ copia vieja del código, anterior a la v4. No es el código vigente.
 | `claude/base-de-tiempo-y-frames-perdidos.md` | el eje temporal. Reemplaza al viejo hallazgo del fps |
 | `claude/separacion-estimuladas-espontaneas.md` | enganche de fase y sus límites |
 | `claude/comparacion-musclemotion.md` | los números contra MuscleMotion |
+| `claude/contexto-tecnun-y-musclemotion.md` | para quién es el trabajo y qué es la carpeta `OK` de MuscleMotion |
 | `claude/metricas-cinetica-TTP-RT50.md` | cinética: viabilidad, implementación y resultados |
 | `claude/guia-revision-codigo.md` | **guía para revisar todo el código en un chat aparte** |
 | `DOCUMENTACION.md` | el método sin código, para quien diseña el experimento |

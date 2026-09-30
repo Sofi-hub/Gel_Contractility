@@ -102,6 +102,17 @@ aumento, así que un factor único no tendría sentido. `px_to_mm` queda en 1.0 
 términos relativos (porcentaje del grosor, cocientes) o dentro de un mismo
 aumento. No proponer calibrarlo salvo que el usuario lo pida.
 
+## Contexto: para quién es y qué es la carpeta `OK`
+
+El trabajo es para que **la Universidad de Tecnun** mida contracciones en sus células. El equipo usa MuscleMotion y a veces
+tiene errores; este proyecto busca un método propio, más robusto y verificable. La carpeta
+`data/raw_videos/OK-20260904T142817Z-1-001/OK/` (la misma donde están los videos crudos) tiene **los videos que cumplen los
+requerimientos de Tecnun** (no hay un criterio técnico escrito), cada uno con una subcarpeta `<video>_-Contr-Results` con la salida
+de MuscleMotion: `contraction.txt` (contracción), `speed-of-contraction.txt` (velocidad de contracción), `Overview-results.txt`,
+`Log_file.txt` y tres `.jpg`. **"OK" no significa que MuscleMotion haya medido bien** (ver `docs/comparacion-musclemotion.md`).
+Hay otra carpeta hermana, `RARITOS-…/RARITOS/`, con los videos que MuscleMotion maneja mal y todavía no se procesaron.
+Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
+
 ## Stack Tecnológico
 
 `opencv-python` (video e imagen), `numpy`, `scipy` (señal y picos),

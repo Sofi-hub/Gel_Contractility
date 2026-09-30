@@ -64,6 +64,22 @@ class PipelineConfig:
     roi_thickness_tolerance: float = 0.05
     roi_min_gradient: float = 10.0
     roi_max_slope: float = 0.02
+    # Ancho minimo de la ROI = n_columns * este espaciado. No depende del
+    # largo del gel (ver el comentario largo en auto_detect_roi).
+    roi_min_column_spacing_px: float = 3.0
+    # Criterio de aceptacion del protocolo: variacion de grosor dentro de
+    # la ROI. Por encima de esto la ROI incluye el hombro de un anclaje.
+    roi_max_variacion_pct: float = 6.0
+
+    # --- base de tiempo ---
+    # El fps que declara el archivo de video es poco confiable: medido
+    # contra el estimulador da 300.0 fotogramas por periodo en 4 videos
+    # independientes, o sea fps real = 30.000. Este override lo fuerza.
+    fps_override: float | None = None
+    # "frames": time = frame / fps (supone que no falta ningun frame).
+    # "pts": usa el timestamp de cada frame que trae el contenedor. Es lo
+    # correcto cuando la grabacion perdio frames (ver read_pts_seconds).
+    base_tiempo: str = "frames"
 
     # --- calibración y preproceso ---
     px_to_mm: float = 1.0        # mm por píxel. Calibrar con retícula.
@@ -176,7 +192,41 @@ def process_video(
         config = PipelineConfig()
 
     meta = io_utils.get_video_metadata(video_path)
-    fps = meta["fps"] if meta["fps"] > 0 else 30.0
+    if config.fps_override is not None and config.fps_override > 0:
+        fps = float(config.fps_override)
+    else:
+        fps = meta["fps"] if meta["fps"] > 0 else 30.0
+
+    # Timestamps reales del contenedor. Se leen SIEMPRE, aunque la base de
+    # tiempo sea "frames", porque comparar la duracion que declaran contra
+    # n_frames/fps es lo que detecta que la grabacion perdio frames.
+    try:
+        pts = io_utils.read_pts_seconds(video_path)
+    except Exception:
+        pts = np.array([])
+    n_pts = len(pts)
+    dur_pts = float(pts[-1] - pts[0]) if n_pts > 1 else float("nan")
+
+    # DETECCION DE FRAMES PERDIDOS, a partir del espaciado de los timestamps.
+    #
+    # No sirve comparar contra el fps que declara el archivo: ese fps es el
+    # PROMEDIO (n-1)/duracion, asi que ya tiene los faltantes adentro y da
+    # cero por construccion. El espaciado tipico entre frames consecutivos,
+    # en cambio, es el periodo real de captura: su mediana da 33.333 ms
+    # (= 30.0003 fps) en los cinco videos medidos, independientemente del
+    # fps declarado, que va de 28.97 a 29.87. Los huecos son los dt que
+    # valen un multiplo entero de esa mediana.
+    if n_pts > 2:
+        dts = np.diff(pts)
+        dt_med = float(np.median(dts))
+        fps_pts = 1.0 / dt_med if dt_med > 0 else float("nan")
+        huecos = dts[dts > 1.5 * dt_med]
+        faltantes = float(np.round((huecos / dt_med - 1).sum()))
+        frac_faltantes = faltantes / max(n_pts + faltantes, 1.0)
+        n_huecos = int(len(huecos))
+    else:
+        dt_med = fps_pts = faltantes = frac_faltantes = float("nan")
+        n_huecos = 0
 
     if max_projection_path is not None:
         max_proj = io_utils.load_max_projection(max_projection_path)
@@ -190,10 +240,18 @@ def process_video(
         max_thickness_slope=config.roi_max_slope,
         x_start=config.roi_x_start,
         x_end=config.roi_x_end,
+        n_columns=config.n_columns,
+        min_column_spacing_px=config.roi_min_column_spacing_px,
+        max_variacion_pct=config.roi_max_variacion_pct,
     )
 
     if verbose:
         describe_roi(roi, max_proj.shape[1])
+
+    usar_pts = (config.base_tiempo == "pts") and n_pts > 1
+    if config.base_tiempo == "pts" and not usar_pts:
+        print("  AVISO: se pidio base de tiempo PTS pero el contenedor no trae "
+              "timestamps usables; se vuelve a frame/fps.")
 
     x_positions = np.linspace(roi["x_start"], roi["x_end"] - 1, config.n_columns).astype(int)
 
@@ -201,10 +259,21 @@ def process_video(
     for idx, frame in io_utils.frame_generator(video_path):
         result = process_frame(frame, x_positions, roi["top_guess"], roi["bottom_guess"], config)
         result["frame"] = idx
-        result["time_s"] = idx / fps
+        if usar_pts and idx < n_pts:
+            result["time_s"] = float(pts[idx] - pts[0])
+        else:
+            result["time_s"] = idx / fps
         rows.append(result)
 
     df = pd.DataFrame(rows)
+    df.attrs["fps"] = fps
+    df.attrs["fps_declarado"] = meta["fps"]
+    df.attrs["base_tiempo"] = "pts" if usar_pts else "frames"
+    df.attrs["duracion_pts_s"] = dur_pts
+    df.attrs["frames_faltantes"] = faltantes
+    df.attrs["frac_frames_faltantes"] = frac_faltantes
+    df.attrs["fps_segun_pts"] = fps_pts
+    df.attrs["n_huecos_pts"] = n_huecos
 
     # Suavizado temporal robusto (Savitzky-Golay): preserva la forma de
     # los picos de contracción, a diferencia de un promedio móvil.

@@ -34,6 +34,15 @@ def parse_args():
     p.add_argument("--video", required=True, help="Ruta al video del gel")
     p.add_argument("--maxproj", default=None, help="Ruta al maxProjectStack (PNG/TIFF)")
     p.add_argument("--px-to-mm", type=float, default=1.0, help="Factor de calibración píxeles->mm")
+    p.add_argument("--base-tiempo", choices=["frames", "pts"], default="frames",
+                   help="Como se construye el eje temporal. 'frames' = frame/fps "
+                        "(supone que no falta ningun frame). 'pts' = timestamps del "
+                        "contenedor, que es lo correcto si la grabacion perdio "
+                        "frames. El pipeline avisa cuando detecta faltantes.")
+    p.add_argument("--fps", type=float, default=None,
+                   help="Fuerza el fps en vez de leerlo del archivo. El fps "
+                        "declarado esta mal: medido contra el estimulador da "
+                        "300.0 fotogramas por periodo -> fps real = 30.000.")
     p.add_argument("--output-dir", default=None,
                    help="Carpeta de salida. Por defecto: data/processed_data/<nombre_video>/")
     p.add_argument("--table-format", choices=["xlsx", "csv", "both"], default="xlsx")
@@ -72,6 +81,15 @@ def parse_args():
                         "para seguir siendo gauge region (0.05 = 5%%).")
     g.add_argument("--roi-min-gradient", type=float, default=10.0,
                    help="Nitidez minima exigida a AMBOS bordes para incluir una columna.")
+    g.add_argument("--roi-min-spacing", type=float, default=3.0,
+                   help="Separacion minima entre columnas muestreadas (px). El "
+                        "ancho minimo de la ROI es n_columns x este valor.")
+    g.add_argument("--roi-max-variacion", type=float, default=6.0,
+                   help="Variacion de grosor maxima admitida dentro de la ROI "
+                        "(%%). Criterio de aceptacion del protocolo.")
+    g.add_argument("--exigir-roi", action="store_true",
+                   help="Aborta si la ROI no cumple el criterio de aceptacion, "
+                        "en vez de avisar y seguir emitiendo numeros.")
     g.add_argument("--roi-max-slope", type=float, default=0.02,
                    help="|d(grosor)/dx| maximo, en px de grosor por px de x. Este es el "
                         "criterio que realmente define 'grosor uniforme'.")
@@ -107,6 +125,10 @@ def main():
         roi_thickness_tolerance=args.roi_tolerance,
         roi_min_gradient=args.roi_min_gradient,
         roi_max_slope=args.roi_max_slope,
+        roi_min_column_spacing_px=args.roi_min_spacing,
+        roi_max_variacion_pct=args.roi_max_variacion,
+        fps_override=args.fps,
+        base_tiempo=args.base_tiempo,
         px_to_mm=args.px_to_mm,
         use_clahe=not args.no_clahe,
         use_denoise=args.denoise,
@@ -127,6 +149,14 @@ def main():
         "frames totales": len(df),
         "frames rechazados": n_rejected,
         "frames baja calidad": n_low_quality,
+        "fps usado": round(float(df.attrs.get("fps", 0.0)), 5),
+        "fps declarado por el archivo": round(float(df.attrs.get("fps_declarado", 0.0)), 5),
+        "base de tiempo": df.attrs.get("base_tiempo"),
+        "fps segun PTS": round(float(df.attrs.get("fps_segun_pts", float("nan"))), 4),
+        "huecos en PTS": df.attrs.get("n_huecos_pts"),
+        "duracion segun PTS (s)": round(float(df.attrs.get("duracion_pts_s", float("nan"))), 4),
+        "frames faltantes estimados": round(float(df.attrs.get("frames_faltantes", float("nan"))), 1),
+        "frames faltantes (%)": round(100 * float(df.attrs.get("frac_frames_faltantes", float("nan"))), 2),
         "px_to_mm": args.px_to_mm,
         "grosor medio (px)": round(float(df["thickness_px"].mean()), 3),
         "grosor min (px)": round(float(df["thickness_px"].min()), 3),
@@ -137,6 +167,8 @@ def main():
         "ROI x_end": roi.get("x_end"),
         "ROI metodo": q.get("method"),
         "ROI variacion grosor (%)": q.get("variacion_en_roi_pct"),
+        "ROI cumple criterio": q.get("cumple_criterio_aceptacion"),
+        "ROI ancho minimo exigido (px)": q.get("ancho_minimo_exigido_px"),
         "n_columns": args.n_columns,
         "half_window": args.half_window,
         "min_gradient": args.min_gradient,
@@ -148,6 +180,23 @@ def main():
         "residuo medio borde sup (px)": round(float(df["residual_top_px"].mean()), 4),
         "residuo medio borde inf (px)": round(float(df["residual_bottom_px"].mean()), 4),
     }
+
+    frac = float(df.attrs.get("frac_frames_faltantes", float("nan")))
+    if frac == frac and frac > 0.01:
+        print(f"  AVISO: la grabacion perdio ~{df.attrs.get('frames_faltantes'):.0f} frames "
+              f"({100*frac:.1f}%), repartidos en {df.attrs.get('n_huecos_pts')} huecos de los "
+              f"timestamps. El fps real de captura segun los timestamps es "
+              f"{df.attrs.get('fps_segun_pts'):.4f}.")
+        if df.attrs.get("base_tiempo") != "pts":
+            print("         Con el eje frame/fps los huecos se comen y los eventos parecen")
+            print("         MAS JUNTOS de lo que fueron. Volve a correr con --base-tiempo pts.")
+
+    if args.exigir_roi and q.get("cumple_criterio_aceptacion") is False:
+        raise SystemExit(
+            f"ABORTADO: la ROI varia {q.get('variacion_en_roi_pct')}% de grosor, "
+            f"por encima del {args.roi_max_variacion}% admitido. Eso no es una "
+            f"gauge region. Mira 00_roi_profile.png y forza la ROI con "
+            f"--x-start/--x-end, o corre sin --exigir-roi si sabes lo que haces.")
 
     out_dir = Path(args.output_dir) if args.output_dir else video_output_dir(args.video)
     out_dir.mkdir(parents=True, exist_ok=True)

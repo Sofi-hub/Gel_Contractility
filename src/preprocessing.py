@@ -258,11 +258,52 @@ def _longest_true_block(flags: np.ndarray) -> tuple[int, int] | None:
 # Detección de la ROI (gauge region)
 # ---------------------------------------------------------------------
 
+def _widest_flat_window(T, ok, max_var_pct, min_width):
+    """Ventana contigua mas ancha dentro de `ok` cuya variacion de grosor
+    no supera `max_var_pct`, con al menos `min_width` columnas.
+
+    POR QUE EXISTE: la cascada de criterios de abajo evalua el BLOQUE
+    CONTIGUO MAS LARGO de cada mascara, y despues pregunta si es
+    suficientemente ancho. Nunca pregunta cual es la ventana mas ancha que
+    de verdad es plana. Si el gel tiene una cintura corta dentro de una
+    franja larga, el bloque mas largo incluye los hombros, falla el
+    criterio de ancho, y la cascada se relaja hasta `solo_nitidez` o
+    `franja_completa` — que es exactamente lo que paso con la bateria de
+    4 videos (Video_466 termino tomando el ancho entero del cuadro, con
+    164% de variacion de grosor adentro).
+
+    La variacion de una ventana es monotona no decreciente al agrandarla
+    (max-min solo puede crecer, min solo puede bajar), asi que un barrido
+    de dos punteros la encuentra en O(n).
+    """
+    n = len(T)
+    best = None
+    lo = 0
+    for hi in range(n):
+        if not ok[hi] or not np.isfinite(T[hi]):
+            lo = hi + 1
+            continue
+        while lo <= hi:
+            seg = T[lo:hi + 1]
+            mn = float(np.nanmin(seg))
+            var = 100.0 * (float(np.nanmax(seg)) - mn) / max(mn, 1e-9)
+            if var <= max_var_pct:
+                break
+            lo += 1
+        ancho = hi - lo + 1
+        if ancho >= min_width and (best is None or ancho > best[1] - best[0]):
+            best = (lo, hi + 1)
+    return best
+
+
 def auto_detect_roi(
     max_projection: np.ndarray,
     thickness_tolerance: float = 0.05,
     min_gradient_for_roi: float = 10.0,
     max_thickness_slope: float = 0.02,
+    n_columns: int = 60,
+    min_column_spacing_px: float = 3.0,
+    max_variacion_pct: float = 6.0,
     min_roi_width_frac: float = 0.35,
     fallback_margin_x_frac: float = 0.05,
     x_start: int | None = None,
@@ -445,7 +486,20 @@ def auto_detect_roi(
     # afecta la INTERPRETACIÓN (dónde se mide) más que la DETECCIÓN (si hay
     # cambio en el tiempo).
     n_gel = int(gel_like.sum()) if np.any(gel_like) else int(valid.sum())
-    min_width = max(40, int(min_roi_width_frac * max(n_gel, 1)))
+
+    # ANCHO MINIMO DE LA ROI.
+    #
+    # Antes esto era `min_roi_width_frac * n_gel` (35% de las columnas con
+    # gel). Ese criterio se fijo mirando Video_063 y NO generaliza: si el gel
+    # ocupa casi todo el cuadro (~1850 columnas), exige una ROI de ~647 px,
+    # y las gauge regions reales de la bateria miden 225-470 px. Ningun nivel
+    # estricto podia cumplirlo y la cascada caia sola hasta los metodos malos.
+    #
+    # El ancho minimo no depende de cuan largo es el gel: depende de cuantas
+    # columnas se muestrean y de cuan juntas pueden estar sin compartir el
+    # mismo ruido de imagen y el mismo tile de CLAHE. Con n_columns columnas
+    # separadas al menos min_column_spacing_px, el minimo es el producto.
+    min_width = max(40, int(np.ceil(n_columns * min_column_spacing_px)))
 
     # Cascada de criterios, del más estricto al más laxo. El primero que
     # produzca un bloque contiguo suficientemente ancho, gana. `method`
@@ -483,6 +537,43 @@ def auto_detect_roi(
             chosen = (name, blk, desc)
             alternativas[-1]["elegida"] = True
 
+    # --- RESCATE ---
+    # La cascada elige el BLOQUE CONTIGUO MAS LARGO de cada criterio. Cuando
+    # el gel tiene una cintura corta dentro de una franja larga, ese bloque
+    # incluye los hombros y ningun nivel produce una ROI plana: la seleccion
+    # termina en `solo_nitidez` o `franja_completa` con una variacion de
+    # grosor absurda (Video_466 de la bateria: el ancho entero del cuadro,
+    # 164% de variacion).
+    #
+    # Solo en ese caso se busca, por barrido, la ventana mas ancha que SI
+    # cumple el criterio de aceptacion. Va despues y no antes a proposito:
+    # maximizar el ancho contra el limite del 6% se pega al borde y agarra
+    # columnas del hombro, asi que da una ROI PEOR que la de la cascada
+    # cuando la cascada ya funcionaba (verificado sobre Video_prueba y
+    # Video_063, donde `gauge_cintura` da 5.32% y 4.91% y el barrido da
+    # 5.98% y 5.96%). Es una red de seguridad, no una mejora.
+    def _var(a, b):
+        seg_i = T[a:b]
+        if not seg_i.size or not np.isfinite(np.nanmin(seg_i)):
+            return float("inf")
+        return 100.0 * (np.nanmax(seg_i) - np.nanmin(seg_i)) / max(float(np.nanmin(seg_i)), 1e-9)
+
+    necesita_rescate = (chosen is None) or (_var(chosen[1][0], chosen[1][1]) > max_variacion_pct)
+    if necesita_rescate:
+        plana = _widest_flat_window(T, valid & sharp_ok, max_variacion_pct, min_width)
+        if plana is not None:
+            a, b = plana
+            alternativas.append({
+                "metodo": "gauge_rescate_plana", "x_start": int(a), "x_end": int(b),
+                "ancho_px": int(b - a), "variacion_pct": round(_var(a, b), 2),
+                "elegida": True,
+            })
+            for alt in alternativas[:-1]:
+                alt["elegida"] = False
+            chosen = ("gauge_rescate_plana", plana,
+                      f"la cascada no dio una ROI con variacion <= {max_variacion_pct}%; "
+                      f"se busco por barrido la ventana mas ancha que si la cumple")
+
     if chosen is None:
         xs, xe, method, desc = fallback["x_start"], fallback["x_end"], "fallback_margin", \
             "ningun criterio dio un bloque suficientemente ancho"
@@ -510,8 +601,16 @@ def auto_detect_roi(
         "n_desc_por_grosor": int((valid & sharp_ok & ~near_waist).sum()),
         "n_desc_por_pendiente": int((valid & sharp_ok & near_waist & ~flat).sum()),
         "ancho_minimo_exigido_px": int(min_width),
+        "max_variacion_admitida_pct": float(max_variacion_pct),
+        "cumple_criterio_aceptacion": None,   # se completa despues del dict
         "alternativas": alternativas,
     }
+
+    # Veredicto explicito contra el criterio de aceptacion del protocolo.
+    # No decide nada aca: lo consume main.py, que es quien avisa o aborta.
+    v = quality.get("variacion_en_roi_pct")
+    quality["cumple_criterio_aceptacion"] = (
+        bool(v is not None and v <= max_variacion_pct))
 
     return {
         "x_start": int(xs),

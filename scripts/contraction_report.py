@@ -111,6 +111,81 @@ def escaneo_estabilidad(r: np.ndarray, fps: float, ks=(3, 4, 6, 8, 10, 12, 15, 2
     return pd.DataFrame(filas)
 
 
+def elegir_k_meseta(estab: pd.DataFrame, min_puntos: int = 2) -> dict:
+    """Elige k dentro de la MESETA del escaneo de estabilidad.
+
+    La regla es la del protocolo, no una heuristica nueva: sirve un k tal que
+    (a) el conteo de eventos no cambia al subir el umbral -- o sea el
+    resultado no depende de donde se puso el umbral -- y (b) el control de
+    falsos sobre la senal invertida da 0 en toda esa meseta.
+
+    CUAL meseta, cuando hay varias: la de k MAS BAJO. Al subir el umbral se
+    van perdiendo eventos reales, asi que la primera meseta con 0 falsos es
+    la que ya elimino el ruido y todavia no empezo a comerse senal. Elegir
+    "la meseta mas larga" da la respuesta EQUIVOCADA: en Video_063 el escaneo
+    tiene una meseta de 6 eventos en k=6..8 (2 puntos) y otra de 5 eventos en
+    k=10..20 (4 puntos); la validada es la de 6.
+
+    Se exigen al menos `min_puntos` valores de k consecutivos con el mismo
+    conteo: un solo k no demuestra que el resultado sea estable.
+
+    POR QUE AUTOMATIZARLO: con el k=8 por defecto, Video_583 daba 9 eventos
+    (1 falso) y rhythm_split NO encontraba el tren, porque los eventos
+    espurios ensuciaban el ajuste de la grilla. Su meseta real estaba en
+    k=12..20 con 6 eventos y 0 falsos. El fallo no era ruidoso: no avisaba
+    nada, simplemente hacia desaparecer el tren.
+
+    Devuelve dict con k, n_eventos, k_rango, hay_meseta y motivo.
+    """
+    if estab is None or len(estab) == 0:
+        return {"k": None, "hay_meseta": False, "motivo": "escaneo vacio"}
+
+    e = estab.sort_values("k").reset_index(drop=True)
+
+    # Primero se descartan los umbrales con falsos positivos, y RECIEN
+    # DESPUES se buscan tramos de conteo constante entre los que quedaron.
+    # El orden importa: agrupar por conteo y despues exigir 0 falsos en todo
+    # el grupo es demasiado estricto, porque un tramo de conteo constante
+    # suele empezar unos k antes de que los falsos lleguen a cero y eso
+    # invalida la meseta entera (paso con Video_466: 5 eventos en k=6..15
+    # pero con 1 falso en k=6, y la meseta real es k=8..15).
+    limpio = e[e["falsos_control"] == 0]
+    mesetas = []
+    idx = list(limpio.index)
+    i = 0
+    while i < len(idx):
+        j = i
+        while (j + 1 < len(idx)
+               and idx[j + 1] == idx[j] + 1
+               and int(limpio.loc[idx[j + 1], "eventos"]) == int(limpio.loc[idx[i], "eventos"])):
+            j += 1
+        n_ev = int(limpio.loc[idx[i], "eventos"])
+        # Un conteo de 0 eventos tambien es "estable", pero no es un
+        # resultado: significa que el umbral se comio todo.
+        if n_ev > 0 and (j - i + 1) >= min_puntos:
+            mesetas.append((float(limpio.loc[idx[i], "k"]),
+                            float(limpio.loc[idx[j], "k"]), n_ev, j - i + 1))
+        i = j + 1
+
+    if not mesetas:
+        if (e["falsos_control"] == 0).sum() == 0:
+            motivo = "ningun umbral da 0 falsos sobre la senal invertida"
+        else:
+            motivo = ("el conteo no se estabiliza en ningun tramo con 0 falsos: "
+                      "no hay meseta")
+        return {"k": None, "hay_meseta": False, "motivo": motivo}
+
+    k_lo, k_hi, n_ev, n_pts = mesetas[0]      # la de k mas bajo
+    otras = ""
+    if len(mesetas) > 1:
+        otras = ("; mesetas posteriores: "
+                 + ", ".join(f"{m[2]} ev en k={m[0]:g}..{m[1]:g}" for m in mesetas[1:]))
+    return {"k": k_lo, "n_eventos": n_ev, "k_rango": (k_lo, k_hi),
+            "hay_meseta": True, "n_puntos_meseta": n_pts,
+            "motivo": f"meseta de {n_ev} eventos en k={k_lo:g}..{k_hi:g} "
+                      f"({n_pts} puntos) con 0 falsos de control" + otras}
+
+
 def promedio_alineado(r: np.ndarray, picos: np.ndarray, fps: float,
                       half_s: float = 1.5):
     """Promedia la senal alineando todos los eventos en su pico."""
@@ -159,7 +234,7 @@ def _poblaciones(tiempos: np.ndarray, amplitudes: np.ndarray):
 
 
 # --------------------------------------------------------------------------
-def analizar(df: pd.DataFrame, canal: str, k: float, win_s: float,
+def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
              sep_s: float, half_s: float, separar: bool = True,
              min_captura: float = 0.75) -> dict:
     t = df["time_s"].to_numpy(float)
@@ -178,6 +253,20 @@ def analizar(df: pd.DataFrame, canal: str, k: float, win_s: float,
     m = mad(r)
 
     estab = escaneo_estabilidad(r, fps, sep_s=sep_s)
+
+    # k = None significa "elegilo vos, con la regla del protocolo".
+    sel = elegir_k_meseta(estab)
+    if k is None:
+        if not sel["hay_meseta"]:
+            # Regla 4 del protocolo: sin meseta no se reporta conteo. Se sigue
+            # adelante para poder graficar y auditar, pero queda marcado.
+            k = float(estab["k"].iloc[len(estab) // 2])
+        else:
+            k = sel["k"]
+        k_auto = True
+    else:
+        k_auto = False
+
     picos, _ = find_peaks(r, height=k * m, distance=max(1, int(sep_s * fps)))
 
     # --- grosor: se mide, no se usa para detectar -------------------------
@@ -190,6 +279,12 @@ def analizar(df: pd.DataFrame, canal: str, k: float, win_s: float,
         "canal": canal, "fps": fps, "n_frames": len(t), "duracion_s": float(t[-1] - t[0]),
         "signo": signo, "ruido_canal_px": m, "ruido_grosor_px": mg,
         "n_eventos": len(picos), "estabilidad": estab,
+        "k_usado": float(k), "k_automatico": bool(k_auto),
+        "hay_meseta": bool(sel["hay_meseta"]),
+        "meseta_motivo": sel["motivo"],
+        "meseta_k_rango": (f"{sel['k_rango'][0]:g}-{sel['k_rango'][1]:g}"
+                           if sel.get("k_rango") else None),
+        "conteo_reportable": bool(sel["hay_meseta"]),
         "_t": t, "_r": r, "_picos": picos, "_lag": lag,
         "_prom_g": prom_g, "_prom_c": prom_c, "_n_prom": n_ev,
     }
@@ -220,7 +315,12 @@ def analizar(df: pd.DataFrame, canal: str, k: float, win_s: float,
         res["adelgazamiento_px"] = float(-prom_g[i])
         res["adelgazamiento_sigma"] = float(abs(prom_g[i]) / ruido_prom) if ruido_prom else float("nan")
         res["retardo_adelgazamiento_s"] = float(lag[i])
-        res["cociente_adelg_trasl_pct"] = (100 * abs(prom_g[i]) / pico_c) if pico_c else float("nan")
+        # CON SIGNO, a proposito. `adelgazamiento_px` vale -prom_g[i]: es
+        # positivo cuando el gel adelgaza y NEGATIVO cuando engruesa. Si el
+        # cociente toma la magnitud, un engrosamiento se lee en la tabla como
+        # un adelgazamiento del mismo tamano. Paso con Video_268 (-0.0815 px
+        # reportado como +6.11%) y Video_466 (-0.4063 px como +11.08%).
+        res["cociente_adelg_trasl_pct"] = (100 * (-prom_g[i]) / pico_c) if pico_c else float("nan")
 
         # Medida ROBUSTA: promedio de los 3 frames posteriores al pico.
         # POR QUE: justo en el frame de maxima velocidad el grosor medido da un
@@ -234,7 +334,8 @@ def analizar(df: pd.DataFrame, canal: str, k: float, win_s: float,
             res["adelgazamiento_robusto_px"] = float(-cola.mean())
             res["adelgazamiento_robusto_sigma"] = (
                 float(abs(cola.mean()) / (ruido_prom / np.sqrt(len(cola)))) if ruido_prom else float("nan"))
-            res["cociente_robusto_pct"] = (100 * abs(cola.mean()) / pico_c) if pico_c else float("nan")
+            # Con signo, por el mismo motivo que arriba.
+            res["cociente_robusto_pct"] = (100 * (-cola.mean()) / pico_c) if pico_c else float("nan")
 
         # Aviso de motion blur: excursion POSITIVA del grosor cerca del pico.
         ven = prom_g[max(0, i0 - 2):min(len(prom_g), i0 + 2)]
@@ -260,7 +361,14 @@ def imprimir(nombre: str, a: dict) -> None:
     if not a["n_eventos"]:
         print("  NO se detectaron eventos con el umbral elegido.")
         return
-    print(f"  EVENTOS: {a['n_eventos']}")
+    origen = "elegido automaticamente" if a.get("k_automatico") else "fijado a mano"
+    print(f"  UMBRAL: k = {a['k_usado']:g}  ({origen})")
+    print(f"    {a['meseta_motivo']}")
+    if not a.get("hay_meseta"):
+        print("    >>> SIN MESETA: por la regla 4 del protocolo este conteo NO se")
+        print("        reporta. Los eventos de abajo son para auditar, no para tabular.")
+    print(f"  EVENTOS: {a['n_eventos']}"
+          + ("" if a.get("hay_meseta") else "   [NO REPORTABLE]"))
     print("    tiempos (s): " + ", ".join(f"{x:.2f}" for x in a["tiempos_s"]))
     if a["n_eventos"] > 1:
         iv = a["intervalo_mediano_s"]
@@ -295,6 +403,12 @@ def imprimir(nombre: str, a: dict) -> None:
                       f"ranura pero fuera de tolerancia. Comparar su amplitud con la de los "
                       f"estimulados: si coincide, es un latido del tren con el instante corrido.")
         print("    Grupos (la amplitud NO se uso para clasificar; que difiera es evidencia aparte):")
+        if "resumen_grupos" not in rit or rit["resumen_grupos"] is None:
+            # Pasa cuando no se detecto tren y no hay grupos que resumir: es
+            # justo el caso de un video sin eventos, donde mas importa que el
+            # reporte salga igual en vez de abortar.
+            print("    (sin resumen de grupos: no se separo en estimulados/espontaneos)")
+            return
         for ln in rit["resumen_grupos"].to_string(index=False).split("\n"):
             print("       " + ln)
     if "picos_con_sep_menor" in a:
@@ -414,8 +528,10 @@ def parse_args():
                    help="Observable de DETECCION. 'center_px' = posicion media de la franja "
                         "(sensible a traslacion). 'thickness_px' solo si ya verificaste que "
                         "en tu montaje la contraccion es adelgazamiento puro.")
-    p.add_argument("--k", type=float, default=8.0,
-                   help="Umbral en unidades de MAD. Elegilo en la meseta del escaneo.")
+    p.add_argument("--k", default="auto",
+                   help="Umbral en multiplos del ruido. 'auto' (default) lo elige "
+                        "dentro de la meseta del escaneo de estabilidad, que es la "
+                        "regla del protocolo. Un numero lo fija a mano.")
     p.add_argument("--win-s", type=float, default=2.0,
                    help="Ventana (s) de la mediana movil que quita la deriva.")
     p.add_argument("--sep-s", type=float, default=0.3,
@@ -446,7 +562,8 @@ def main():
 
     resultados = []
     for nombre, df in entradas:
-        r = analizar(df, a.canal, a.k, a.win_s, a.sep_s, a.half_s,
+        k_arg = None if str(a.k).strip().lower() == "auto" else float(a.k)
+        r = analizar(df, a.canal, k_arg, a.win_s, a.sep_s, a.half_s,
                      separar=not a.sin_separar, min_captura=a.min_captura)
         imprimir(nombre, r)
         resultados.append((nombre, r))

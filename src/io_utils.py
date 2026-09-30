@@ -55,6 +55,38 @@ def frame_generator(
         cap.release()
 
 
+def read_pts_seconds(video_path: str | Path) -> np.ndarray:
+    """Timestamp de presentacion de cada frame, en segundos.
+
+    POR QUE HACE FALTA: `time = frame / fps` supone que no falta ningun
+    frame. Si la grabacion perdio frames, ese eje se come el hueco y los
+    eventos parecen MAS JUNTOS de lo que fueron. Paso en Video_466: su
+    periodo de estimulacion medido por indice de frame daba 9.508 s (un
+    +5.15% de error contra los 0.1 Hz configurados), y medido sobre los
+    timestamps del contenedor da 10.008 s, indistinguible de lo configurado.
+    Le faltaba ~4.8% de los frames.
+
+    OJO con el desfasaje: `CAP_PROP_POS_MSEC` leido ANTES de `read()`
+    devuelve el timestamp del frame ANTERIOR. Hay que leerlo despues.
+    Verificado contra `ffprobe -show_entries packet=pts_time` (ordenado,
+    porque los packets vienen en orden de decodificacion y con B-frames no
+    son monotonos): coincide exacto, 0.000 ms de diferencia.
+    """
+    cap = cv2.VideoCapture(str(video_path))
+    if not cap.isOpened():
+        raise IOError(f"No se pudo abrir el video: {video_path}")
+    out = []
+    try:
+        while True:
+            ret, _ = cap.read()
+            if not ret:
+                break
+            out.append(cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0)
+    finally:
+        cap.release()
+    return np.asarray(out, dtype=float)
+
+
 def get_video_metadata(video_path: str | Path) -> dict:
     """Devuelve fps, cantidad de frames y resolución. Útil para el eje
     temporal de los gráficos finales (segundos en vez de # de frame)."""

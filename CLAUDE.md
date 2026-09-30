@@ -166,7 +166,10 @@ Flujo normal:
 `--exigir-roi` hace que aborte si la ROI no cumple el criterio de aceptación,
 en vez de avisar y seguir emitiendo números.
 
-Los resultados vigentes están en `data/processed_data/<video>_v6/`.
+Los resultados vigentes están en `data/processed_data/<video>/`, **sin sufijo**.
+Las corridas anteriores (las primeras, `_v4` y `_v5`) están archivadas en
+`data/processed_data/_superadas/`. Los vigentes se generaron como `<video>_v6`
+y `ordenar_carpeta.py` les quitó el sufijo al archivar el resto.
 
 ## Límites conocidos
 

@@ -3,11 +3,11 @@ main.py
 -------
 Punto de entrada del pipeline: video -> serie temporal de grosor.
 
-    python main.py --video data/raw_videos/mi_video.mp4 --px-to-mm 0.0021 --plot
+    python main.py --video data/raw_videos/mi_video.mp4 \
+                   --output-dir data/processed_data/mi_video --base-tiempo pts
 
-Calibración px->mm: fotografiá una regla/retícula en tu mismo setup
-óptico, medí cuántos píxeles ocupan N milímetros conocidos, y calculá
-px_to_mm = mm_conocidos / píxeles_medidos.
+No se calibra px -> mm por decision del proyecto (los videos no se graban
+todos al mismo aumento): --px-to-mm queda en 1.0 y todo sale en pixeles.
 
 NUEVO EN ESTA VERSIÓN: todos los parámetros que antes estaban
 hardcodeados en PipelineConfig ahora se pueden pasar por línea de
@@ -34,15 +34,17 @@ def parse_args():
     p.add_argument("--video", required=True, help="Ruta al video del gel")
     p.add_argument("--maxproj", default=None, help="Ruta al maxProjectStack (PNG/TIFF)")
     p.add_argument("--px-to-mm", type=float, default=1.0, help="Factor de calibración píxeles->mm")
-    p.add_argument("--base-tiempo", choices=["frames", "pts"], default="frames",
+    p.add_argument("--base-tiempo", choices=["frames", "pts"], default="pts",
                    help="Como se construye el eje temporal. 'frames' = frame/fps "
                         "(supone que no falta ningun frame). 'pts' = timestamps del "
                         "contenedor, que es lo correcto si la grabacion perdio "
-                        "frames. El pipeline avisa cuando detecta faltantes.")
+                        "frames. Default 'pts' (hallazgo 3 de CLAUDE.md); si el "
+                        "archivo no trae timestamps, cae solo a 'frames' y avisa.")
     p.add_argument("--fps", type=float, default=None,
-                   help="Fuerza el fps en vez de leerlo del archivo. El fps "
-                        "declarado esta mal: medido contra el estimulador da "
-                        "300.0 fotogramas por periodo -> fps real = 30.000.")
+                   help="Solo con --base-tiempo frames: fuerza el fps en vez de "
+                        "leerlo del archivo (el declarado es un promedio y baja si "
+                        "faltan fotogramas; el real de captura es 30.000). Con 'pts' "
+                        "no hace falta.")
     p.add_argument("--output-dir", default=None,
                    help="Carpeta de salida. Por defecto: data/processed_data/<nombre_video>/")
     p.add_argument("--table-format", choices=["xlsx", "csv", "both"], default="xlsx")

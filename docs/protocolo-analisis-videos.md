@@ -21,10 +21,10 @@ justificarlo.
 
 ## Comandos por video
 
-    python main.py --video "<video>" --output-dir data/processed_data/<nombre>_v6 \
+    python main.py --video "<video>" --output-dir data/processed_data/<nombre> \
            --base-tiempo pts
     python scripts/contraction_report.py \
-           --input data/processed_data/<nombre>_v6/serie_temporal.xlsx \
+           --input data/processed_data/<nombre>/serie_temporal.xlsx \
            --frecuencia-estimulo 0.1
 
 Opcional, cuando algo huele raro:

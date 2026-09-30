@@ -13,7 +13,10 @@ en la pantalla".
 `px_to_mm` vale 1.0 por decisión del proyecto, así que **todo lo que dice "mm"
 son píxeles**. Las figuras lo indican con "SIN CALIBRAR" en el título.
 
-Los resultados vigentes están en `data/processed_data/<video>_v6/`.
+Los resultados vigentes están en `data/processed_data/<video>/`, **sin sufijo**.
+Las corridas anteriores (las primeras, `_v4` y `_v5`) están archivadas en
+`data/processed_data/_superadas/`. Los vigentes se generaron como `<video>_v6`
+y `ordenar_carpeta.py` les quitó el sufijo al archivar el resto.
 
 ---
 
@@ -190,6 +193,13 @@ cada canal contra la del fondo, **no** su nivel absoluto. Tres desenlaces:
 ---
 
 ## 4. Las figuras, eje por eje
+
+**De dónde sale cada una.** `00_*` y `01_*` salen de `main.py` (el
+`00_max_projection.png` como archivo, del cuaderno). `02_*` a `06_*` salen del
+**cuaderno** o de `scripts/analyze_contractions.py`, que está **obsoleto**
+(detecta sobre el grosor con `k` fijo): no se generan en el flujo normal y no
+sirven para reportar. `07_*` sale de `motion_check.py`, `08_*` de
+`signal_check.py`, y `09_*`, `10_*` y `11_*` de `contraction_report.py`.
 
 ### `00_max_projection.png`
 Imagen. `x` = columna (px), `y` = fila (px). El gris es la intensidad **máxima

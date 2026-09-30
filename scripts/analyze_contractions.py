@@ -1,6 +1,14 @@
 """
 scripts/analyze_contractions.py
 --------------------------------
+>>> OBSOLETO (2026-09-30). NO usar para reportar numeros. <<<
+Detecta sobre `thickness_px` (default de event_detection) con k fijo = 6, y
+eso contradice los hallazgos 1 y 4 de CLAUDE.md: el grosor es ciego a la
+traslacion, que en este montaje es la mayor parte de la contraccion, y el k se
+elige dentro de la meseta. El analisis vigente es scripts/contraction_report.py.
+Se conserva porque genera las figuras 02-06 y porque el cuaderno v4 usa
+`_append_sheet` de aca.
+
 Detección de contracciones sobre la salida de main.py.
 
 Salidas -> data/processed_data/<nombre_video>/
@@ -74,6 +82,8 @@ def parse_args():
 
 
 def main():
+    print("AVISO: analyze_contractions.py esta OBSOLETO (detecta sobre el grosor con k "
+          "fijo). Para reportar usar scripts/contraction_report.py.")
     a = parse_args()
     src = Path(a.input)
     df = pd.read_csv(src) if src.suffix == ".csv" else pd.read_excel(src, sheet_name="diagnostics")

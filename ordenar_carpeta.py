@@ -49,6 +49,15 @@ def main():
     if not PROC.exists():
         sys.exit(f"No encuentro {PROC}. Corre esto desde la raiz del repo.")
 
+    # YA SE APLICO (2026-09-30). Despues de aplicarlo, los vigentes quedan SIN
+    # sufijo, y la regla de abajo ("todo lo que no termina en _v6 esta
+    # superado") los tomaria a ELLOS como superados. Si no hay ningun _v6, no
+    # hay nada que ordenar: se sale sin tocar nada.
+    if not any(d.is_dir() and d.name.endswith("_v6") for d in PROC.iterdir()):
+        print("No hay carpetas _v6: el ordenamiento ya se aplico. Los vigentes son las\n"
+              "carpetas sin sufijo de data/processed_data/; no se mueve nada.")
+        return
+
     # corridas superadas: todo lo que NO termina en _v6
     for d in sorted(PROC.iterdir()):
         if not d.is_dir() or d.name == "_superadas":

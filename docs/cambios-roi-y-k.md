@@ -3,7 +3,8 @@
 Fecha 2026-09-29. Aplicados en `main.py`, `src/pipeline.py`,
 `src/preprocessing.py`, `scripts/contraction_report.py`, más
 `tests/test_seleccion_k.py` (nuevo). Resultados en
-`data/processed_data/<video>_v5/`.
+`data/processed_data/<video>_v5/` (hoy archivados en
+`data/processed_data/_superadas/`; los vigentes están en `data/processed_data/<video>/`).
 
 ## 1. ROI: el ancho mínimo ya no depende del largo del gel
 

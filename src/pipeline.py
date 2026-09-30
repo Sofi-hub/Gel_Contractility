@@ -79,7 +79,7 @@ class PipelineConfig:
     # "frames": time = frame / fps (supone que no falta ningun frame).
     # "pts": usa el timestamp de cada frame que trae el contenedor. Es lo
     # correcto cuando la grabacion perdio frames (ver read_pts_seconds).
-    base_tiempo: str = "frames"
+    base_tiempo: str = "pts"
 
     # --- calibración y preproceso ---
     px_to_mm: float = 1.0        # mm por píxel. Calibrar con retícula.

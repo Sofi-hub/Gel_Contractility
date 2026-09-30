@@ -1,7 +1,9 @@
 # Reproceso de la batería con ROI forzada y fps = 30
 
-Fecha 2026-09-29. Resultados en `data/processed_data/<video>_v4/`. Las
-carpetas originales quedaron intactas.
+Fecha 2026-09-29. Resultados en `data/processed_data/<video>_v4/`, hoy archivados en
+`data/processed_data/_superadas/` (los vigentes están en
+`data/processed_data/<video>/`). **Documento histórico:** usaba `--fps 30`,
+que después se reemplazó por `--base-tiempo pts`.
 
 ## Comandos exactos
 

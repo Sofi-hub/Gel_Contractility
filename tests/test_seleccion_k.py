@@ -18,6 +18,8 @@ K = [3, 4, 6, 8, 10, 12, 15, 20]
 # nombre: (eventos por k, falsos_control por k, n_eventos esperado o None)
 CASOS = {
     # --- los dos videos validados: la respuesta NO puede cambiar ---
+    # Estos dos son las corridas v5, con el eje fotograma/fps. Con --base-tiempo
+    # pts Video_prueba pasa a 28 eventos: ver el bloque "vigentes" al final.
     "Video_prueba":      ([84, 36, 29, 29, 29, 29, 29, 26], [0]*8,                    29),
     "Video_063":         ([10, 8, 6, 6, 5, 5, 5, 5],        [3, 1, 0, 0, 0, 0, 0, 0],  6),
     # Video_063 tiene DOS mesetas (6 ev en k=6..8 y 5 ev en k=10..20). Gana la
@@ -42,6 +44,14 @@ CASOS = {
     # esta en k=12..20.
     "V491 v4":           ([12, 7, 5, 4, 2, 0, 0, 0],        [16, 7, 2, 2, 1, 0, 0, 0], None),
     # V491: sin meseta. Los 0 eventos de k=12..20 no cuentan como meseta.
+
+    # --- vigentes (v6: --base-tiempo pts), los de data/processed_data/<video>/ ---
+    "prueba v6":         ([83, 35, 28, 28, 28, 28, 28, 26], [0]*8,                    28),
+    "063 v6":            ([10, 8, 6, 6, 5, 5, 5, 5],        [3, 1, 0, 0, 0, 0, 0, 0],  6),
+    "V268 v6":           ([14, 9, 6, 6, 6, 6, 6, 6],        [6, 2, 0, 0, 0, 0, 0, 0],  6),
+    "V466 v6":           ([9, 5, 5, 5, 5, 5, 5, 3],         [1, 0, 0, 0, 0, 0, 0, 0],  5),
+    "V583 v6":           ([21, 14, 10, 9, 8, 6, 6, 6],      [15, 10, 5, 1, 0, 0, 0, 0], 6),
+    "V491 v6":           ([13, 8, 6, 4, 2, 0, 0, 0],        [12, 5, 2, 2, 0, 0, 0, 0], None),
 }
 
 

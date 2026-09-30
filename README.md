@@ -83,7 +83,12 @@ relativos (porcentaje del grosor, cocientes) o dentro de un mismo aumento.
     scripts/contraction_report.py   el script principal de análisis
     scripts/motion_check.py         diagnóstico: qué se mueve
     scripts/signal_check.py         diagnóstico: ¿hay población de eventos?
+    src/cinetica.py          TTP, RT50 y amplitud relativa, con cotas cuando no son medibles
     tests/test_seleccion_k.py       regresión de la elección automática del umbral
+    tests/test_cinetica.py          TTP/RT50 sobre eventos sintéticos de cinética conocida
+
+Resultados vigentes: `data/processed_data/<video>/` (sin sufijo). Las corridas
+anteriores están archivadas en `data/processed_data/_superadas/`.
 
 ## Documentación
 
@@ -100,15 +105,20 @@ En `docs/`:
 | `base-de-tiempo-y-frames-perdidos.md` | el eje temporal, en detalle |
 | `separacion-estimuladas-espontaneas.md` | el método de enganche de fase y sus límites |
 | `comparacion-musclemotion.md` | los números medidos contra MuscleMotion |
-| `metricas-cinetica-TTP-RT50.md` | viabilidad de las métricas de cinética |
+| `metricas-cinetica-TTP-RT50.md` | métricas de cinética: viabilidad, implementación y resultados |
 | `revision-script-matlab.md` | revisión del script del equipo |
+| `guia-revision-codigo.md` | guía para revisar el código de punta a punta |
+| `DOCUMENTACION.md` | el método explicado sin código, para quien diseña el experimento |
 
 ## Pendiente
 
-- Implementar TTP y RT50 (decidido cómo, falta programarlo).
 - Procesar los videos de la carpeta `RARITOS`.
 - Grabar un video de control de iluminación: mismo gel, quieto, con un cambio
   de luz. Es lo único que falta para demostrar con un número que medir
   geometría de borde es inmune a la iluminación.
 - Adquisición a 200–300 fps si se quieren medir TTP y RT50 de verdad: a 30 fps
-  la contracción de las muestras rápidas dura 2 fotogramas.
+  la subida de las muestras rápidas dura 1–2 fotogramas y solo se puede dar
+  una cota (TTP < 100 ms). TTP, RT50 y amplitud relativa ya están
+  implementados y salen en `contracciones.xlsx`.
+
+El detalle de lo pendiente está en `docs/ESTADO-arranque-chat-nuevo.md`.

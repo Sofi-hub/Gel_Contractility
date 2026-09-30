@@ -1,6 +1,6 @@
 # Estado del proyecto y arranque de un chat nuevo
 
-Actualizado 2026-09-30. Este documento sirve para dos cosas: es el resumen del
+Actualizado 2026-09-30 (tarde). Este documento sirve para dos cosas: es el resumen del
 estado actual, y su primera sección se puede pegar tal cual al abrir un chat
 nuevo dentro del proyecto.
 
@@ -49,7 +49,9 @@ nuevo dentro del proyecto.
 >    meseta con 0 falsos de control, el conteo **no se reporta**.
 > 5. **A 30 fps la cinética de contracción (TTP, RT50) no es medible en las
 >    muestras rápidas.** En tres de los cinco videos la contracción entera
->    dura 2 fotogramas. Ahí sólo se puede afirmar una cota, no un valor.
+>    dura 2 fotogramas. Ahí sólo se puede afirmar una cota (TTP < 100 ms),
+>    no un valor. Ya está implementado (`src/cinetica.py`): da el valor solo
+>    si la subida ocupa ≥ 5 fotogramas y, si no, la cota.
 >
 > **Fuera de alcance por decisión del proyecto:** no se calibra píxeles a
 > milímetros. Los videos no se graban todos al mismo aumento, así que un
@@ -71,10 +73,15 @@ nuevo dentro del proyecto.
 
 ## Dónde está todo
 
-**Resultados vigentes:** `data/processed_data/<video>_v6/`. Las carpetas sin
-sufijo y las `_v4` / `_v5` son corridas con la ROI o la base de tiempo mal.
-Hay un script `ordenar_carpeta.py` en la raíz que las archiva en
-`_superadas/` y deja los documentos en `docs/`.
+**Resultados vigentes:** `data/processed_data/<video>/`, **sin sufijo**. Se
+generaron como `<video>_v6`; `ordenar_carpeta.py` archivó todo lo anterior
+(las primeras corridas, `_v4` y `_v5`, con la ROI o la base de tiempo mal) en
+`data/processed_data/_superadas/` y les quitó el sufijo a los vigentes. Ese
+script ya se aplicó y ahora se niega a correr de nuevo (si no, archivaría los
+vigentes).
+
+**Cuidado:** en `.claude/worktrees/video-processing-pipeline-10178f/` hay una
+copia vieja del código, anterior a la v4. No es el código vigente.
 
 | documento | para qué |
 |---|---|
@@ -83,7 +90,9 @@ Hay un script `ordenar_carpeta.py` en la raíz que las archiva en
 | `claude/base-de-tiempo-y-frames-perdidos.md` | el eje temporal. Reemplaza al viejo hallazgo del fps |
 | `claude/separacion-estimuladas-espontaneas.md` | enganche de fase y sus límites |
 | `claude/comparacion-musclemotion.md` | los números contra MuscleMotion |
-| `claude/metricas-cinetica-TTP-RT50.md` | viabilidad de las métricas de cinética |
+| `claude/metricas-cinetica-TTP-RT50.md` | cinética: viabilidad, implementación y resultados |
+| `claude/guia-revision-codigo.md` | **guía para revisar todo el código en un chat aparte** |
+| `DOCUMENTACION.md` | el método sin código, para quien diseña el experimento |
 | `claude/revision-script-matlab.md` | **los errores del script del equipo, para conversarlo con ellos** |
 | `claude/cambios-roi-y-k.md` | ROI automática y elección de k |
 | `claude/diagnostico-bateria-4videos.md` | el diagnóstico que arrancó todo |
@@ -101,6 +110,14 @@ Hay un script `ordenar_carpeta.py` en la raíz que las archiva en
 Los cinco dan una frecuencia **indistinguible de los 0.1 Hz configurados** y
 pasan los tres chequeos de aceptación.
 
+Cinética (2026-09-29, detalle en `claude/metricas-cinetica-TTP-RT50.md`):
+
+| video | TTP | RT50 | amplitud relativa |
+|---|---|---|---|
+| Video_prueba, Video_063, Video_268 | no medible: < ~100 ms | no medible: < ~100 ms | 0.71 / 0.53 / 0.57 % |
+| Video_466 | 284 ms [137, 365] | 160 ms [70, 260] | 2.13 % |
+| Video_583 | 258 ms [129, 335] | 181 ms [99, 301] | 1.31 % |
+
 \* Video_466 es el único que necesita ROI forzada (`--x-start 700 --x-end 900`).
 El rescate automático elige 944–1169, que es más ancha y cumple planitud
 (5.77 %) pero deja 16 % de outliers.
@@ -113,24 +130,46 @@ el alias caería en ~6 Hz y el espectro no tiene nada ahí.
 
 ## Qué está pendiente
 
-1. **Implementar TTP, RT50 y amplitud relativa.** Decidido cómo (ver
-   `claude/metricas-cinetica-TTP-RT50.md`), falta programarlo. Tres de las
-   seis métricas del script del equipo ya las tenemos. El plan acordado es:
-   calcular onset/pico/offset sobre la detección ya validada; definir RT50
-   como la caída al 50 % del pico (no como lo hace el MATLAB); **marcar la
-   métrica como no medible cuando la subida dura menos de ~5 fotogramas**; y
-   en ese caso emitir una cota (`TTP < 67 ms`) en vez de un valor.
-2. **Conversar con el equipo la adquisición a alta velocidad.** Es la
+**Hecho el 2026-09-29/30:** TTP, RT50 y amplitud relativa (`src/cinetica.py`);
+corrección de inconsistencias en la documentación (`_v6`, `DOCUMENTACION.md`
+reescrita, `--base-tiempo pts` como default de `main.py`,
+`analyze_contractions.py` marcado obsoleto, escaneos vigentes agregados a
+`tests/test_seleccion_k.py`); guía de revisión (`claude/guia-revision-codigo.md`).
+
+**Hay una revisión de código en curso en otro chat.** Sus hallazgos van a
+`claude/hallazgos-revision-codigo.md`. Leerlo antes de tocar un módulo.
+
+0. **BUG, antes de procesar `RARITOS`: un solo fotograma `REJECTED` anula el
+   reporte en silencio.** `contraction_report.mad()` no ignora `NaN`: con un
+   solo fotograma rechazado el ruido da `NaN` y el reporte dice "no hay
+   meseta" con 0 eventos. Hoy no afecta a ningún resultado (los seis vigentes
+   no tienen fotogramas rechazados). Detalle: H1 en
+   `claude/guia-revision-codigo.md`.
+1. **Conversar con el equipo la adquisición a alta velocidad.** Es la
    limitación de fondo: a 30 fps la cinética de las muestras rápidas no se
    puede medir. Hacen falta 200–300 fps en un subconjunto.
-3. **Los videos de `RARITOS`** todavía no se procesaron. Son los que
+2. **Los videos de `RARITOS`** todavía no se procesaron. Son los que
    MuscleMotion no maneja bien, así que son el caso interesante.
-4. **Video de control de iluminación**: mismo gel, quieto, con un cambio de
+3. **Video de control de iluminación**: mismo gel, quieto, con un cambio de
    luz gradual o un parpadeo. Es lo único que falta para convertir el
    argumento contra MuscleMotion ("medimos geometría de borde, no intensidad")
    en un número.
-5. **Si algún video cambia de frecuencia de estimulación a mitad**,
+4. **Si algún video cambia de frecuencia de estimulación a mitad**,
    `rhythm_split` encuentra un solo tren; habría que extenderlo a varios.
+
+Mejoras propuestas (no están en ningún pedido; ordenadas por valor/esfuerzo):
+
+5. **Test de regresión automático** contra los `contracciones.xlsx` vigentes
+   (hoy la regla "Video_prueba y Video_063 no cambian" se chequea a mano).
+6. **Script por lotes** con una tabla consolidada, una fila por video. Útil
+   para `RARITOS`.
+7. **Que la ROI automática mire también `outlier_frac`**: Video_466 es el
+   único que necesita ROI forzada.
+8. **Adelgazamiento relativo** (`adelgazamiento_robusto_px / grosor en
+   reposo`): deformación sin calibrar.
+9. **Cinética por grupo** (estimulados vs espontáneos).
+10. **Intervalos de confianza por bootstrap** para las medianas por video.
+11. **Versiones fijas en `requirements.txt`.**
 
 ## Límites conocidos del método
 
@@ -145,6 +184,9 @@ el alias caería en ~6 Hz y el espectro no tiene nada ahí.
 - El rescate de ROI por barrido maximiza ancho sujeto a planitud, y puede
   elegir una ventana plana pero con bordes difíciles de seguir (Video_466).
   Mirar siempre el `outlier_frac`.
-- **A 30 fps, TTP y RT50 no son medibles cuando la contracción dura menos de
-  ~5 fotogramas.** No es un defecto del pipeline: el twitch es más rápido que
-  la cámara.
+- **A 30 fps, TTP y RT50 no son medibles cuando la subida dura menos de ~5
+  fotogramas.** No es un defecto del pipeline: el twitch es más rápido que la
+  cámara. En esos casos se reporta la cota (TTP < 100 ms), no un valor.
+- En las muestras lentas (466, 583) **el pico es una meseta** de 4–5
+  fotogramas: el instante del pico es ambiguo y los intervalos de TTP/RT50
+  son anchos. El inicio de la contracción sí está bien definido.

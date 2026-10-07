@@ -64,9 +64,12 @@ class PipelineConfig:
     roi_thickness_tolerance: float = 0.05
     roi_min_gradient: float = 10.0
     roi_max_slope: float = 0.02
-    # Ancho minimo de la ROI = n_columns * este espaciado. No depende del
-    # largo del gel (ver el comentario largo en auto_detect_roi).
+    # Ancho minimo de la ROI = roi_min_columns * este espaciado (ver el
+    # comentario ANCHO MINIMO en auto_detect_roi).
     roi_min_column_spacing_px: float = 3.0
+    # Piso de columnas (H19, Fase 3). n_columns pasa a ser el MAXIMO: en una
+    # ROI angosta se usan ancho // espaciado columnas, nunca menos que esto.
+    roi_min_columns: int = 40
     # Criterio de aceptacion del protocolo: variacion de grosor dentro de
     # la ROI. Por encima de esto la ROI incluye el hombro de un anclaje.
     roi_max_variacion_pct: float = 6.0
@@ -242,6 +245,7 @@ def process_video(
         x_end=config.roi_x_end,
         n_columns=config.n_columns,
         min_column_spacing_px=config.roi_min_column_spacing_px,
+        min_columns=config.roi_min_columns,
         max_variacion_pct=config.roi_max_variacion_pct,
     )
 
@@ -253,7 +257,8 @@ def process_video(
         print("  AVISO: se pidio base de tiempo PTS pero el contenedor no trae "
               "timestamps usables; se vuelve a frame/fps.")
 
-    x_positions = np.linspace(roi["x_start"], roi["x_end"] - 1, config.n_columns).astype(int)
+    n_cols = int(roi.get("roi_quality", {}).get("n_columnas_usadas") or config.n_columns)
+    x_positions = np.linspace(roi["x_start"], roi["x_end"] - 1, n_cols).astype(int)
 
     rows = []
     for idx, frame in io_utils.frame_generator(video_path):
@@ -299,6 +304,11 @@ def describe_roi(roi: dict, image_width: int) -> None:
     print(f"ROI (gauge region): x = {xs} a {xe}  "
           f"({100 * (xe - xs) / image_width:.0f}% del ancho de la imagen)")
     print(f"  metodo: {q.get('method')}  -> {q.get('criterio', '')}")
+    if q.get("n_columnas_usadas") is not None:
+        print(f"  columnas muestreadas: {q['n_columnas_usadas']}"
+              f" (separacion {(xe - xs) / max(q['n_columnas_usadas'], 1):.1f} px)")
+    if q.get("roi_contiene_cintura") is False:
+        print("  AVISO: la ROI no contiene ninguna columna cerca de la cintura del gel.")
     if q.get("cintura_px") is not None:
         print(f"  cintura del gel: {q['cintura_px']} px | "
               f"grosor en la ROI: {q.get('grosor_min_en_roi_px')} - "

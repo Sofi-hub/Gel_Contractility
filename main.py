@@ -84,8 +84,12 @@ def parse_args():
     g.add_argument("--roi-min-gradient", type=float, default=10.0,
                    help="Nitidez minima exigida a AMBOS bordes para incluir una columna.")
     g.add_argument("--roi-min-spacing", type=float, default=3.0,
-                   help="Separacion minima entre columnas muestreadas (px). El "
-                        "ancho minimo de la ROI es n_columns x este valor.")
+                   help="Separacion minima entre columnas muestreadas (px). Medido: el "
+                        "error de borde deja de ser compartido a los 2-3 px.")
+    g.add_argument("--roi-min-columnas", type=int, default=40,
+                   help="Piso de columnas. El ancho minimo de la ROI es este valor x "
+                        "--roi-min-spacing; en una ROI angosta se usan ancho/espaciado "
+                        "columnas (hasta --n-columns).")
     g.add_argument("--roi-max-variacion", type=float, default=6.0,
                    help="Variacion de grosor maxima admitida dentro de la ROI "
                         "(%%). Criterio de aceptacion del protocolo.")
@@ -128,6 +132,7 @@ def main():
         roi_min_gradient=args.roi_min_gradient,
         roi_max_slope=args.roi_max_slope,
         roi_min_column_spacing_px=args.roi_min_spacing,
+        roi_min_columns=args.roi_min_columnas,
         roi_max_variacion_pct=args.roi_max_variacion,
         fps_override=args.fps,
         base_tiempo=args.base_tiempo,
@@ -171,7 +176,11 @@ def main():
         "ROI variacion grosor (%)": q.get("variacion_en_roi_pct"),
         "ROI cumple criterio": q.get("cumple_criterio_aceptacion"),
         "ROI ancho minimo exigido (px)": q.get("ancho_minimo_exigido_px"),
-        "n_columns": args.n_columns,
+        "ROI contiene cintura": q.get("roi_contiene_cintura"),
+        "n_columns (maximo)": args.n_columns,
+        "n_columnas usadas": q.get("n_columnas_usadas"),
+        "roi_min_columnas": args.roi_min_columnas,
+        "outlier_frac medio": round(float(df["outlier_frac"].mean()), 4),
         "half_window": args.half_window,
         "min_gradient": args.min_gradient,
         "edge_method": args.edge_method,
@@ -234,6 +243,13 @@ def main():
               f"outliers salen CONTIGUOS, no son burbujas sino el modelo que no sigue la geometria "
               f"del borde -> subi --ransac-degree o achica la ROI a la zona plana con "
               f"--x-start/--x-end. Mira tambien 00_roi_profile.png.")
+        if frac <= 0.12 and q.get("cumple_criterio_aceptacion"):
+            # (a) acordado en la Fase 3: avisar, no bloquear. Este criterio no es
+            # comparable entre ROIs (H24): el umbral de descarte se adapta al
+            # propio fotograma, y una zona con menor residuo puede descartar mas.
+            print(f"       Esta en el limite ({100*frac:.1f}%). El criterio del 10% no es "
+                  f"comparable entre ROIs (H24, pendiente de revisar en la Fase 4): "
+                  f"mira tambien el residuo del ajuste ({resid:.3f} px).")
 
     if args.px_to_mm == 1.0:
         print("AVISO: --px-to-mm sigue en 1.0, asi que los valores 'mm' son en realidad PIXELES.")

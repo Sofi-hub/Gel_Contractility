@@ -258,7 +258,7 @@ def _longest_true_block(flags: np.ndarray) -> tuple[int, int] | None:
 # Detección de la ROI (gauge region)
 # ---------------------------------------------------------------------
 
-def _widest_flat_window(T, ok, max_var_pct, min_width):
+def _widest_flat_window(T, ok, max_var_pct, min_width, cerca=None):
     """Ventana contigua mas ancha dentro de `ok` cuya variacion de grosor
     no supera `max_var_pct`, con al menos `min_width` columnas.
 
@@ -275,6 +275,13 @@ def _widest_flat_window(T, ok, max_var_pct, min_width):
     La variacion de una ventana es monotona no decreciente al agrandarla
     (max-min solo puede crecer, min solo puede bajar), asi que un barrido
     de dos punteros la encuentra en O(n).
+
+    `cerca` (H20, Fase 3): mascara de columnas cerca de la cintura. Si se da,
+    la ventana tiene que contener al menos una. Sin esto, una meseta de grosor
+    constante en un anclaje ancho es "plana" y puede ganar (medido con un gel
+    sintetico de zona plana de 150 px: elegia el anclaje, 0-553, en vez de la
+    cintura, 885-1035). Alcanza con mirar la ventana mas ancha que termina en
+    `hi`: si esa no contiene la cintura, ninguna mas angosta la contiene.
     """
     n = len(T)
     best = None
@@ -291,9 +298,17 @@ def _widest_flat_window(T, ok, max_var_pct, min_width):
                 break
             lo += 1
         ancho = hi - lo + 1
+        if cerca is not None and not cerca[lo:hi + 1].any():
+            continue
         if ancho >= min_width and (best is None or ancho > best[1] - best[0]):
             best = (lo, hi + 1)
     return best
+
+
+def _n_columnas(xs, xe, n_columns, min_columns, sep):
+    """Columnas a muestrear en [xs, xe): las que entran a `sep` px, entre
+    `min_columns` y `n_columns` (ver el comentario de ANCHO MINIMO)."""
+    return int(min(n_columns, max(min_columns, (xe - xs) // max(sep, 1e-9))))
 
 
 def auto_detect_roi(
@@ -303,6 +318,7 @@ def auto_detect_roi(
     max_thickness_slope: float = 0.02,
     n_columns: int = 60,
     min_column_spacing_px: float = 3.0,
+    min_columns: int = 40,
     max_variacion_pct: float = 6.0,
     min_roi_width_frac: float = 0.35,
     fallback_margin_x_frac: float = 0.05,
@@ -328,12 +344,13 @@ def auto_detect_roi(
         píxel de x. 0.02 significa que el grosor no puede cambiar más de
         2 px cada 100 px de recorrido horizontal. Éste es el criterio que
         realmente define "zona de grosor uniforme".
-    min_roi_width_frac : ancho mínimo aceptable de la ROI, como fracción de
-        las columnas QUE CONTIENEN GEL (no del ancho de la imagen, que depende
-        del encuadre). Si el criterio estricto devuelve un tramo más corto que
-        esto, se relaja al siguiente nivel — un tramo muy corto es plano pero
-        mide peor, porque las columnas quedan tan juntas que comparten ruido.
-        `roi_quality["alternativas"]` lista lo que habría dado cada nivel.
+    n_columns : maximo de columnas a muestrear (60).
+    min_column_spacing_px, min_columns : separacion minima entre columnas
+        (3 px) y piso de columnas (40). El ancho minimo de la ROI es su
+        producto (120 px) y la cantidad usada sale en
+        `roi_quality["n_columnas_usadas"]`. Ver el comentario ANCHO MINIMO.
+    min_roi_width_frac : SIN USO (queda por compatibilidad). Era el viejo
+        ancho minimo como fraccion del gel; ver el comentario ANCHO MINIMO.
     x_start, x_end : override MANUAL. Si se pasan, se usan tal cual y se
         saltea toda la selección automática (método = "manual"). Útil
         cuando ya mirás el perfil de grosor y sabés dónde querés medir.
@@ -457,6 +474,7 @@ def auto_detect_roi(
             "top_guess": top_guess, "bottom_guess": bottom_guess,
             "roi_quality": {
                 "method": "manual",
+                "n_columnas_usadas": _n_columnas(xs, xe, n_columns, min_columns, min_column_spacing_px),
                 "criterio": "rango forzado por el usuario (--x-start/--x-end)",
                 "cintura_px": round(waist, 2),
                 "roi_width_px": xe - xs,
@@ -473,33 +491,32 @@ def auto_detect_roi(
     near_waist = np.isfinite(T) & (T <= waist * (1 + thickness_tolerance))
     flat = np.isfinite(slope) & (slope <= max_thickness_slope)
 
-    # Ancho mínimo exigido a la ROI, medido sobre las columnas QUE TIENEN GEL,
-    # no sobre el ancho de la imagen (que depende del encuadre).
+    # ANCHO MINIMO DE LA ROI Y CANTIDAD DE COLUMNAS (H19, Fase 3, 2026-10-08).
     #
-    # Por qué importa: el criterio más estricto puede devolver un tramo
-    # cortísimo. En el Video_063 daba x=875..1039, apenas 164 px con 0.35% de
-    # variación de grosor. Perfectamente plano, sí, pero con 60 columnas en
-    # 164 px los puntos quedan a 2.7 px entre sí: comparten el mismo ruido de
-    # imagen y el mismo tile de CLAHE, así que aportan mucha menos información
-    # independiente y el grosor medido sale MÁS ruidoso, no menos. Un tramo
-    # ancho con 5% de variación de grosor promedia mejor, y esa variación
-    # afecta la INTERPRETACIÓN (dónde se mide) más que la DETECCIÓN (si hay
-    # cambio en el tiempo).
-    n_gel = int(gel_like.sum()) if np.any(gel_like) else int(valid.sum())
-
-    # ANCHO MINIMO DE LA ROI.
+    # Historia: primero fue `min_roi_width_frac * n_gel` (35 % de las columnas
+    # con gel): se fijo mirando Video_063 y rompia en los demas. Despues fue
+    # n_columns x 3 px = 180 px fijos, justificado con "columnas mas juntas
+    # comparten el mismo ruido y el mismo tile de CLAHE". Ese argumento no se
+    # habia medido, y rechazaba la cintura real de Video_466 (150 px), que por
+    # eso necesitaba ROI manual.
     #
-    # Antes esto era `min_roi_width_frac * n_gel` (35% de las columnas con
-    # gel). Ese criterio se fijo mirando Video_063 y NO generaliza: si el gel
-    # ocupa casi todo el cuadro (~1850 columnas), exige una ROI de ~647 px,
-    # y las gauge regions reales de la bateria miden 225-470 px. Ningun nivel
-    # estricto podia cumplirlo y la cascada caia sola hasta los metodos malos.
+    # Lo que se midio (claude/propuesta-fase-3-resto.md):
+    #   * Separacion: la correlacion del error de borde entre dos columnas cae
+    #     debajo de 0.2 a los 2-3 px en los seis videos. => columnas separadas
+    #     al menos `min_column_spacing_px` = 3 px.
+    #   * Cantidad: la misma ROI con 60/50/40/30/20 columnas. Video_prueba
+    #     aguanta hasta 20; Video_063 con 30 y 20 da eventos que no son del
+    #     tren. => piso `min_columns` = 40 (el menor sin eventos espurios en
+    #     ninguno de los dos; lo fija el video mas fragil).
+    #   * Zona chica y plana vs ancha: en Video_063, 875-1039 (164 px, 0.35 %)
+    #     contra 390-1423 (1033 px, 4.9 %): mismos 6 eventos, 30 % menos ruido
+    #     en el canal y la mitad de residuo de ajuste. El comentario viejo
+    #     ("la zona corta mide mas ruidoso") era falso.
     #
-    # El ancho minimo no depende de cuan largo es el gel: depende de cuantas
-    # columnas se muestrean y de cuan juntas pueden estar sin compartir el
-    # mismo ruido de imagen y el mismo tile de CLAHE. Con n_columns columnas
-    # separadas al menos min_column_spacing_px, el minimo es el producto.
-    min_width = max(40, int(np.ceil(n_columns * min_column_spacing_px)))
+    # Regla: ancho minimo = min_columns x separacion (120 px). Con la ROI ya
+    # elegida, se usan  n = min(n_columns, ancho // separacion)  columnas
+    # (60 si entran, menos en una zona angosta, nunca menos que min_columns).
+    min_width = max(40, int(np.ceil(min_columns * min_column_spacing_px)))
 
     # Cascada de criterios, del más estricto al más laxo. El primero que
     # produzca un bloque contiguo suficientemente ancho, gana. `method`
@@ -560,7 +577,8 @@ def auto_detect_roi(
 
     necesita_rescate = (chosen is None) or (_var(chosen[1][0], chosen[1][1]) > max_variacion_pct)
     if necesita_rescate:
-        plana = _widest_flat_window(T, valid & sharp_ok, max_variacion_pct, min_width)
+        plana = _widest_flat_window(T, valid & sharp_ok, max_variacion_pct, min_width,
+                                     cerca=near_waist)
         if plana is not None:
             a, b = plana
             alternativas.append({
@@ -601,6 +619,8 @@ def auto_detect_roi(
         "n_desc_por_grosor": int((valid & sharp_ok & ~near_waist).sum()),
         "n_desc_por_pendiente": int((valid & sharp_ok & near_waist & ~flat).sum()),
         "ancho_minimo_exigido_px": int(min_width),
+        "n_columnas_usadas": _n_columnas(xs, xe, n_columns, min_columns, min_column_spacing_px),
+        "roi_contiene_cintura": bool(near_waist[xs:xe].any()),
         "max_variacion_admitida_pct": float(max_variacion_pct),
         "cumple_criterio_aceptacion": None,   # se completa despues del dict
         "alternativas": alternativas,

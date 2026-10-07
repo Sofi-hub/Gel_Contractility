@@ -334,7 +334,8 @@ def _contar(v, fps, win_s, sep_s):
 def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
              sep_s: float, half_s: float, separar: bool = True,
              min_captura: float = 0.75,
-             min_frames_cinetica: int = cin.MIN_FRAMES) -> dict:
+             min_frames_cinetica: int = cin.MIN_FRAMES,
+             frecuencia_estimulo=None) -> dict:
     t = df["time_s"].to_numpy(float)
     fps = 1.0 / float(np.median(np.diff(t)))
 
@@ -405,6 +406,16 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
     # (El aviso de fusion "picos_con_sep_menor" se quito en la Fase 2.2: con la
     # deteccion por prominencia ya no hay separacion minima que funda eventos.)
 
+    # --- cinetica por evento: TTP, RT50, amplitud relativa -----------------
+    # Se calcula ANTES del ritmo porque el ritmo usa el INICIO de cada
+    # contraccion (onset, cruce del 10 %) como su instante (Fase 3, R1). El
+    # grosor en reposo es la misma mediana movil que quita la deriva, evaluada
+    # sobre el grosor crudo.
+    grosor_crudo = df["thickness_px"].to_numpy(float)
+    grosor_reposo = grosor_crudo - rg
+    ev = cin.cinetica_eventos(t, r, picos, m, grosor_reposo=grosor_reposo,
+                              ventana_s=half_s, min_frames=min_frames_cinetica)
+
     if len(picos):
         res["tiempos_s"] = t[picos]
         res["intervalo_mediano_s"] = (float(np.median(np.diff(t[picos])))
@@ -412,8 +423,15 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
         res["amplitud_traslacion_px"] = float(np.median(r[picos]))
         res["poblaciones"] = _poblaciones(t[picos], r[picos])
         if _SEPARAR and len(picos) >= 4:
-            res["ritmo"] = rs.separar(t[picos], r[picos], duracion_s=float(t[-1] - t[0]),
-                                      resolucion_s=1.0 / fps, min_captura=_MINCAP)
+            # R1: el instante de cada latido es su INICIO; si no tiene inicio
+            # medible (hueco, o no cruza el 10 % antes del pico vecino), su pico.
+            onset = ev["onset_s"].to_numpy(float)
+            t_ritmo = np.where(np.isfinite(onset), onset, t[picos])
+            res["ritmo"] = rs.separar(t_ritmo, r[picos], duracion_s=float(t[-1] - t[0]),
+                                      resolucion_s=1.0 / fps, min_captura=_MINCAP,
+                                      frecuencia_configurada_Hz=frecuencia_estimulo)
+            res["ritmo"]["fuente_tiempo"] = (f"inicio (onset 10 %) en {int(np.isfinite(onset).sum())} "
+                                             f"de {len(picos)} eventos; pico en el resto")
             res["fps_medido"] = fps
     if prom_g is not None and n_ev:
         ruido_prom = mg / np.sqrt(n_ev)
@@ -452,24 +470,31 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
             res["blur_px"] = float(ven.max())
             res["blur_sigma"] = float(ven.max() / ruido_prom)
 
-    # --- cinetica por evento: TTP, RT50, amplitud relativa -----------------
-    # Va AL FINAL a proposito: agrega claves nuevas sin tocar ni reordenar las
-    # que ya existian, asi la regresion sobre los videos validados compara
-    # columna por columna. El grosor en reposo es la misma mediana movil que
-    # quita la deriva, evaluada sobre el grosor crudo.
-    grosor_crudo = df["thickness_px"].to_numpy(float)
-    grosor_reposo = grosor_crudo - rg
-    ev = cin.cinetica_eventos(t, r, picos, m, grosor_reposo=grosor_reposo,
-                              ventana_s=half_s, min_frames=min_frames_cinetica)
+    # --- grupo de cada evento (del ritmo) en la tabla de cinetica ------------
     if len(ev) and res.get("ritmo") is not None:
-        grupo = np.array(["espontaneos"] * len(ev), dtype=object)
-        for g in ("estimulados", "estimulados_dudosos", "espontaneos"):
-            idx = np.asarray(res["ritmo"].get(g, []), int)
-            grupo[idx] = g
-        ev.insert(1, "grupo", grupo)
+        ev.insert(1, "grupo", res["ritmo"]["grupo_por_evento"])
+        ev.insert(2, "tren", res["ritmo"]["tren_por_evento"])
     res["_cinetica"] = ev
-    res.update(cin.resumir(ev, conteo_reportable=res["conteo_reportable"],
-                           min_frames=min_frames_cinetica))
+    # Resumen POR GRUPO (C1, H40). La cifra principal (las claves sueltas de
+    # `res`, que van a la hoja resumen) es la de los estimulados si hay tren, y
+    # la de todos los eventos si no lo hay. Los dudosos solo entran en "todos".
+    conjuntos = [("todos", ev)]
+    if len(ev) and "grupo" in ev:
+        for g in ("estimulados", "espontaneos"):
+            sub = ev[ev["grupo"] == g]
+            if len(sub):
+                conjuntos.append((g, sub))
+    filas_cin = []
+    for nombre, sub in conjuntos:
+        rr = cin.resumir(sub, conteo_reportable=res["conteo_reportable"],
+                         min_frames=min_frames_cinetica)
+        filas_cin.append({"grupo": nombre, **rr})
+    res["_cinetica_grupos"] = pd.DataFrame(filas_cin)
+    principal = ("estimulados" if res.get("ritmo") is not None and res["ritmo"]["hay_estimulacion"]
+                 else "todos")
+    res["cinetica_grupo_principal"] = principal
+    res.update({k: v for k, v in next(f for f in filas_cin if f["grupo"] == principal).items()
+                if k != "grupo"})
 
     # --- fotogramas sin medida ----------------------------------------------
     # Van al final para no reordenar las columnas existentes. Un fotograma NaN
@@ -505,6 +530,20 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
         else:
             res["motivo_no_reportable"] = ("el conteo depende de la ventana del detrend ("
                                            + res["conteo_por_ventana"] + ")")
+
+    # --- H54 (Fase 3): ruido de cada borde por separado ----------------------
+    # El centro promedia los dos bordes 50/50. Si uno es mucho mas ruidoso que
+    # el otro (medido: 063 inferior 3x, 268 superior 2x), un borde solo puede
+    # tener mas SNR que el centro. No cambia el observable (los dos bordes se
+    # mueven casi lo mismo y el conteo no cambia), pero un borde mucho mas
+    # ruidoso suele senalar un problema de ROI o de ese borde: queda a la vista.
+    for col, clave in (("y_top_px", "ruido_borde_sup_px"), ("y_bottom_px", "ruido_borde_inf_px")):
+        res[clave] = (float(mad(detrend_median(df[col].to_numpy(float), fps, win_s)))
+                      if col in df.columns else float("nan"))
+    rs_, ri_ = res["ruido_borde_sup_px"], res["ruido_borde_inf_px"]
+    res["cociente_ruido_bordes"] = (float(max(rs_, ri_) / min(rs_, ri_))
+                                    if np.isfinite(rs_) and np.isfinite(ri_) and min(rs_, ri_) > 0
+                                    else float("nan"))
     return res
 
 
@@ -515,6 +554,9 @@ def imprimir(nombre: str, a: dict) -> None:
           f"(eventos hacia {'arriba' if a['signo'] > 0 else 'abajo'} en la imagen)")
     print(f"  ruido del canal: {a['ruido_canal_px']:.4f} px | "
           f"ruido del grosor: {a['ruido_grosor_px']:.4f} px")
+    if np.isfinite(a.get("cociente_ruido_bordes", float("nan"))):
+        print(f"  ruido por borde: sup {a['ruido_borde_sup_px']:.4f} px | "
+              f"inf {a['ruido_borde_inf_px']:.4f} px (cociente {a['cociente_ruido_bordes']:.2f})")
     if a.get("fotogramas_sin_medida"):
         print(f"  AVISO: {a['fotogramas_sin_medida']} fotograma(s) sin medida "
               f"({a['fotogramas_sin_medida_pct']:.2f} %, NaN / REJECTED). No se interpolan: no "
@@ -570,9 +612,13 @@ def imprimir(nombre: str, a: dict) -> None:
     rit = a.get("ritmo")
     if rit is not None:
         print()
+        print(f"    RITMO (busqueda {rit['modo_busqueda']}; instante = {rit.get('fuente_tiempo')})")
+        for _, f in rit["trenes"].iterrows():
+            extra = (f"  [z={f['z']:.1f}, p={f['p_valor']:.4f}, {int(f['n_eventos_tren'])}/"
+                     f"{int(f['n_ranuras'])} ranuras]" if "z" in f and np.isfinite(f.get("z", np.nan)) else "")
+            print(f"       tren {int(f['tren'])} ({f['busqueda']}): {f['veredicto']}{extra}")
         if not rit["hay_estimulacion"]:
-            print(f"    RITMO: no se detecto un tren periodico -> todos los eventos se toman "
-                  f"como espontaneos.  ({rit.get('motivo', '')})")
+            print("       -> todos los eventos se toman como espontaneos.")
         else:
             print(f"    TREN ESTIMULADO (enganche de fase, z={rit['z']:.1f}, p={rit['p_valor']:.4f})")
             print(f"       periodo    : {rit['periodo_s']:.5f} +- {rit['periodo_err_s']:.5f} s")
@@ -583,10 +629,14 @@ def imprimir(nombre: str, a: dict) -> None:
             print(f"       captura    : {rit['tasa_captura_pct']:.0f}%  "
                   f"({rit['n_estimulados']}/{rit['n_ranuras']} ranuras), "
                   f"tren de {rit['tren_inicio_s']:.1f} a {rit['tren_fin_s']:.1f} s")
+            for _, x in rit["sacados_tiempo_amplitud"].iterrows():
+                print(f"       SACADO DEL TREN: evento en {x['tiempo_s']:.3f} s, desvio "
+                      f"{1000 * x['desvio_s']:+.0f} ms y amplitud {x['amplitud']:.2f} px contra "
+                      f"{x['amplitud_mediana_tren']:.2f} px del tren (falla en tiempo Y amplitud)")
             if rit.get("n_estimulados_dudosos"):
                 print(f"       DUDOSOS    : {rit['n_estimulados_dudosos']} evento(s) cerca de una "
-                      f"ranura pero fuera de tolerancia. Comparar su amplitud con la de los "
-                      f"estimulados: si coincide, es un latido del tren con el instante corrido.")
+                      f"ranura pero fuera de tolerancia, con amplitud compatible: probablemente "
+                      f"latidos del tren con el instante corrido.")
         print("    Grupos (la amplitud NO se uso para clasificar; que difiera es evidencia aparte):")
         if "resumen_grupos" not in rit or rit["resumen_grupos"] is None:
             # Pasa cuando no se detecto tren y no hay grupos que resumir: es
@@ -626,6 +676,8 @@ def imprimir_cinetica(a: dict) -> None:
     print()
     print(f"    CINETICA (nivel onset/offset {cin.NIVEL_ONSET:.0%} de A, RT50 al "
           f"{cin.NIVEL_RT:.0%}; medible si >= {a['cinetica_min_frames']} fotogramas)")
+    print(f"       cifra principal: {a.get('cinetica_grupo_principal', 'todos')} "
+          f"({a.get('n_eventos_cinetica', len(ev))} eventos)")
     for m, nom in (("ttp", "TTP "), ("rt50", "RT50")):
         if not a.get(f"{m}_n_eventos"):
             print(f"       {nom}: no se pudo medir en ningun evento")
@@ -633,7 +685,8 @@ def imprimir_cinetica(a: dict) -> None:
         fr = a[f"{m}_frames_mediana"]
         lo, hi = 1000 * a[f"{m}_cota_inf_s"], 1000 * a[f"{m}_cota_sup_s"]
         if a[f"{m}_reportable"]:
-            print(f"       {nom}: {1000 * a[f'{m}_s']:.0f} ms (mediana, IQR {a[f'{m}_iqr_s']} s)"
+            print(f"       {nom}: {1000 * a[f'{m}_s']:.0f} ms (mediana de {a[f'{m}_n_medibles']} "
+                  f"medibles, IQR {a[f'{m}_iqr_s']} s)"
                   f"  | {fr:g} fotogramas | intervalo mediano [{lo:.0f}, {hi:.0f}] ms")
         elif not a.get("conteo_reportable"):
             print(f"       {nom}: NO REPORTABLE -> el conteo de eventos no es reportable "
@@ -648,6 +701,14 @@ def imprimir_cinetica(a: dict) -> None:
                  if a.get("amplitud_relativa_iqr_pct") else ""))
     if a["cinetica_motivo"] != "TTP y RT50 medibles":
         print(f"       motivo: {a['cinetica_motivo']}")
+    cg = a.get("_cinetica_grupos")
+    if cg is not None and len(cg) > 1:
+        def _ms(x):
+            return f"{1000 * x:.0f}" if np.isfinite(x) else "-"
+        print("       por grupo:   grupo         n   TTP ms  RT50 ms  amplitud relativa %")
+        for _, f in cg.iterrows():
+            print(f"                    {f['grupo']:12s} {int(f['n_eventos_cinetica']):3d}  "
+                  f"{_ms(f['ttp_s']):>6s}  {_ms(f['rt50_s']):>7s}  {f['amplitud_relativa_pct']:.2f}")
 
 
 def graficar(resultados, out_png: Path) -> None:
@@ -715,9 +776,11 @@ def graficar_ritmo(resultados, out_png: Path):
         ax.legend(fontsize=7, loc="upper right"); ax.grid(alpha=0.25)
 
         if rit["hay_estimulacion"] and len(rit["grilla"]):
-            g = rit["grilla"]
             ax2.axhline(0, color="gray", lw=0.8)
-            ax2.plot(g.ranura, 1000 * g.error_s, "o-", color="#c0392b", ms=4)
+            for tr_id, g in rit["grilla"].groupby("tren"):
+                ax2.plot(g.ranura, 1000 * g.error_s, "o-", ms=4, label=f"tren {tr_id}")
+            if rit["grilla"]["tren"].nunique() > 1:
+                ax2.legend(fontsize=7)
             ax2.axhspan(-1000 * rit["tolerancia_s"], 1000 * rit["tolerancia_s"],
                         color="#c0392b", alpha=0.10)
             ax2.set_xlabel("ranura del tren"); ax2.set_ylabel("error (ms)", fontsize=8)
@@ -869,9 +932,12 @@ def parse_args():
                         "seguidos.")
     p.add_argument("--half-s", type=float, default=1.5,
                    help="Semiventana (s) del promedio de eventos alineados.")
-    p.add_argument("--frecuencia-estimulo", type=float, default=None,
-                   help="Frecuencia (Hz) configurada en el estimulador. Si se da, se contrasta "
-                        "contra la medida y se reporta la diferencia con su significancia.")
+    p.add_argument("--frecuencia-estimulo", default=None,
+                   nargs="+", type=float,
+                   help="Frecuencia(s) (Hz) configurada(s) en el estimulador. Con ella, el tren "
+                        "se busca SOLO cerca de esa frecuencia (+-10 %%) y el reporte dice "
+                        "'enganchado' o 'no hay enganche'. Si el protocolo cambia de frecuencia, "
+                        "pasar todas (ej. 0.1 0.2). Sin ella, busqueda libre de un tren.")
     p.add_argument("--min-captura", type=float, default=0.75,
                    help="Fraccion minima de ranuras de la grilla que tienen que estar ocupadas. "
                         "Bajarlo solo si se sospecha bloqueo (captura 2:1 o peor).")
@@ -897,7 +963,8 @@ def main():
         win_arg = None if str(a.win_s).strip().lower() == "auto" else float(a.win_s)
         r = analizar(df, a.canal, k_arg, win_arg, a.sep_s, a.half_s,
                      separar=not a.sin_separar, min_captura=a.min_captura,
-                     min_frames_cinetica=a.min_frames_cinetica)
+                     min_frames_cinetica=a.min_frames_cinetica,
+                     frecuencia_estimulo=a.frecuencia_estimulo)
         imprimir(nombre, r)
         resultados.append((nombre, r))
 
@@ -912,7 +979,10 @@ def main():
             rit = r.get("ritmo")
             if rit is None:
                 continue
-            c = rs.comparar_con_equipo(rit, a.frecuencia_estimulo, fps_nominal=r.get("fps_medido"))
+            if not rit.get("hay_estimulacion"):
+                continue
+            fc = min(a.frecuencia_estimulo, key=lambda x: abs(rit["frecuencia_Hz"] - x))
+            c = rs.comparar_con_equipo(rit, fc, fps_nominal=r.get("fps_medido"))
             print(f"  {nombre[:26]:26s} equipo vs medido")
             for kk, vv in c.items():
                 print(f"       {kk:28s} {vv}")
@@ -935,6 +1005,11 @@ def main():
             rit = r.get("ritmo")
             if rit is not None:
                 rit["resumen_grupos"].to_excel(w, sheet_name=f"ritmo_{nombre[:19]}", index=False)
+                rit["trenes"].to_excel(w, sheet_name=f"trenes_{nombre[:18]}", index=False)
+                if len(rit.get("sacados_tiempo_amplitud", [])):
+                    rit["sacados_tiempo_amplitud"].to_excel(w, sheet_name=f"sacados_{nombre[:18]}", index=False)
+                if len(rit.get("dudosos", [])):
+                    rit["dudosos"].to_excel(w, sheet_name=f"dudosos_{nombre[:18]}", index=False)
                 if len(rit.get("grilla", [])):
                     rit["grilla"].to_excel(w, sheet_name=f"grilla_{nombre[:18]}", index=False)
                 if len(rit.get("espontaneas_instantanea", [])):
@@ -950,6 +1025,7 @@ def main():
                              ).to_excel(w, sheet_name=f"eventos_{nombre[:18]}", index=False)
             if r.get("_cinetica") is not None and len(r["_cinetica"]):
                 r["_cinetica"].to_excel(w, sheet_name=f"cinetica_{nombre[:18]}", index=False)
+                r["_cinetica_grupos"].to_excel(w, sheet_name=f"cin_grupos_{nombre[:16]}", index=False)
 
     print(f"\nGrafico: {png_contracciones}")
     if png_ritmo:

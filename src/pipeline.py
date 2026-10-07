@@ -174,6 +174,10 @@ def process_frame(
         "residual_top_px": round(float(top_fit.residual_px), 4),
         "residual_bottom_px": round(float(bot_fit.residual_px), 4),
         "frame_quality": "OK" if frac < config.low_quality_frac else "LOW_QUALITY",
+        # Residuo de cada columna (borde medido - parabola). No va a la tabla:
+        # process_video lo acumula para el "error de modelo" (Fase 4, H24).
+        "_rcol_top": y_top - top_fit.y_fitted,
+        "_rcol_bot": y_bot - bot_fit.y_fitted,
     }
 
 
@@ -261,8 +265,11 @@ def process_video(
     x_positions = np.linspace(roi["x_start"], roi["x_end"] - 1, n_cols).astype(int)
 
     rows = []
+    rcol = {"top": [], "bot": []}
     for idx, frame in io_utils.frame_generator(video_path):
         result = process_frame(frame, x_positions, roi["top_guess"], roi["bottom_guess"], config)
+        for b in ("top", "bot"):
+            rcol[b].append(result.pop(f"_rcol_{b}", np.full(len(x_positions), np.nan)))
         result["frame"] = idx
         if usar_pts and idx < n_pts:
             result["time_s"] = float(pts[idx] - pts[0])
@@ -279,6 +286,17 @@ def process_video(
     df.attrs["frac_frames_faltantes"] = frac_faltantes
     df.attrs["fps_segun_pts"] = fps_pts
     df.attrs["n_huecos_pts"] = n_huecos
+
+    # ERROR DE MODELO (Fase 4, H24): cuanto se aparta la parabola del borde
+    # de forma ESTABLE. Para cada columna, la mediana en el tiempo de su
+    # residuo; despues, el RMS sobre columnas. Es comparable entre ROIs (no
+    # depende del umbral adaptativo, a diferencia de outlier_frac). Se
+    # registra como diagnostico, sin umbral. Ver claude/propuesta-fase-4.md.
+    for b, nom in (("top", "sup"), ("bot", "inf")):
+        m = np.vstack(rcol[b]) if rcol[b] else np.full((1, len(x_positions)), np.nan)
+        with np.errstate(all="ignore"):
+            perfil = np.nanmedian(m, axis=0)
+            df.attrs[f"error_modelo_{nom}_px"] = float(np.sqrt(np.nanmean(perfil ** 2)))
 
     # Suavizado temporal robusto (Savitzky-Golay): preserva la forma de
     # los picos de contracción, a diferencia de un promedio móvil.

@@ -190,6 +190,12 @@ def main():
         "use_clahe": not args.no_clahe,
         "residuo medio borde sup (px)": round(float(df["residual_top_px"].mean()), 4),
         "residuo medio borde inf (px)": round(float(df["residual_bottom_px"].mean()), 4),
+        # --- Fase 4 (H24): diagnosticos del ajuste, SIN umbral ---
+        "error de modelo borde sup (px)": round(float(df.attrs.get("error_modelo_sup_px", float("nan"))), 4),
+        "error de modelo borde inf (px)": round(float(df.attrs.get("error_modelo_inf_px", float("nan"))), 4),
+        "error de modelo peor / grosor (%)": round(100 * max(
+            float(df.attrs.get("error_modelo_sup_px", float("nan"))),
+            float(df.attrs.get("error_modelo_inf_px", float("nan")))) / float(df["thickness_px"].median()), 3),
     }
 
     frac = float(df.attrs.get("frac_frames_faltantes", float("nan")))
@@ -225,31 +231,20 @@ def main():
     print(f"Resultados guardados en {saved}")
     print(f"Frames totales: {len(df)} | Rechazados: {n_rejected} | Baja calidad: {n_low_quality}")
 
-    # --- Aviso de sanidad sobre el ajuste ---
-    # Una fraccion ALTA y SOSTENIDA de outliers casi nunca son burbujas
-    # (las burbujas afectan unas pocas columnas): lo habitual es que el
-    # polinomio no represente la geometria del borde. Cuando eso pasa, el
-    # conjunto de inliers cambia de frame a frame y mete saltos falsos en
-    # la serie de grosor.
+    # --- Diagnostico del ajuste (Fase 4, H24) ---
+    # El viejo chequeo "outlier_frac < 10 %" ya NO es criterio de aceptacion:
+    # el umbral de descarte se adapta a cada fotograma, asi que una ROI con
+    # bordes limpios descarta MAS. Medido en 063 y 466: outlier_frac ordena las
+    # ROIs al reves del ruido del canal. La ROI se acepta por su FORMA
+    # (variacion <= 6 %, contiene la cintura). outlier_frac y el error de modelo
+    # quedan en `resumen` como diagnostico, sin umbral (revisar con RARITOS).
+    # Ver claude/propuesta-fase-4.md.
     frac = float(df["outlier_frac"].mean())
     resid = float(df[["residual_top_px", "residual_bottom_px"]].mean().mean())
-    span = float(df["thickness_px"].max() - df["thickness_px"].min())
-    print(f"Outliers: {100*frac:.1f}% de las columnas en promedio | "
-          f"residuo tipico del ajuste: {resid:.3f} px | recorrido del grosor: {span:.3f} px")
-    if frac > 0.10:
-        print()
-        print(f"AVISO: se descarta el {100*frac:.0f}% de las columnas en promedio. Unos pocos por "
-              f"ciento es normal con burbujas; 10% o mas sostenido, no. Corre scripts/inspect_frame.py sobre un frame: si los "
-              f"outliers salen CONTIGUOS, no son burbujas sino el modelo que no sigue la geometria "
-              f"del borde -> subi --ransac-degree o achica la ROI a la zona plana con "
-              f"--x-start/--x-end. Mira tambien 00_roi_profile.png.")
-        if frac <= 0.12 and q.get("cumple_criterio_aceptacion"):
-            # (a) acordado en la Fase 3: avisar, no bloquear. Este criterio no es
-            # comparable entre ROIs (H24): el umbral de descarte se adapta al
-            # propio fotograma, y una zona con menor residuo puede descartar mas.
-            print(f"       Esta en el limite ({100*frac:.1f}%). El criterio del 10% no es "
-                  f"comparable entre ROIs (H24, pendiente de revisar en la Fase 4): "
-                  f"mira tambien el residuo del ajuste ({resid:.3f} px).")
+    print(f"Ajuste (diagnostico, sin umbral): outliers {100*frac:.1f}% | residuo tipico "
+          f"{resid:.3f} px | error de modelo sup/inf "
+          f"{summary['error de modelo borde sup (px)']}/{summary['error de modelo borde inf (px)']} px "
+          f"({summary['error de modelo peor / grosor (%)']}% del grosor)")
 
     if args.px_to_mm == 1.0:
         print("AVISO: --px-to-mm sigue en 1.0, asi que los valores 'mm' son en realidad PIXELES.")

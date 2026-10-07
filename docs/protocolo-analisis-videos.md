@@ -52,16 +52,16 @@ Para que el pipeline **aborte** en vez de emitir números con una ROI mala:
    `--x-start/--x-end`. Desde la Fase 3 la hoja trae también `n_columnas usadas`
    (60, o menos en una ROI angosta, nunca menos de 40) y `ROI contiene cintura`
    (tiene que ser 1). Ninguno de los seis videos validados necesita ROI manual.
-2. **`outlier_frac` medio < 10 %.** Si sube, correr el diagnóstico de
-   outliers: si salen **contiguos** es el modelo que no sigue la geometría
-   del borde (achicar o mover la ROI, o subir `--ransac-degree`); si salen
-   **dispersos** son burbujas y se toleran.
-   > **Fase 3:** este criterio no es comparable entre ROIs (H24): el umbral de
-   > descarte se adapta al propio fotograma, y una zona con menor residuo de
-   > ajuste puede descartar más. Video_466 (ROI automática 696–846) queda en
-   > 10.5 % con menor residuo y menos ruido que su vieja ROI manual. Entre 10 y
-   > 12 % `main.py` avisa "en el límite" sin bloquear; mirar también el residuo.
-   > Revisar el criterio en la Fase 4.
+2. **Ajuste del borde: diagnóstico, no criterio (Fase 4, H24).** La hoja
+   `resumen` trae `outlier_frac medio` y `error de modelo borde sup/inf (px)` (y
+   `peor / grosor (%)`). **No tienen umbral**: el viejo "outlier_frac < 10 %"
+   ordenaba las ROIs al revés del ruido del canal (063 y 466). Sirven para
+   comparar y para mirar videos raros: si el error de modelo es alto, correr el
+   diagnóstico de outliers; outliers **contiguos** = el modelo no sigue el borde,
+   **dispersos** = burbujas. Valores de los seis validados: error de modelo
+   0.33–1.01 % del grosor, `outlier_frac` 2.0–10.5 %.
+   **Ojo con vibraciones:** si a ojo tiembla toda la imagen (Video_583, 72–74 s),
+   eso entra en `center_px` como si fuera contracción; el reporte no lo distingue.
 3. **Meseta del escaneo de estabilidad.** Ya es automático: el reporte
    imprime el `k` elegido y el rango de la meseta, y la hoja `resumen` graba
    `hay_meseta` y `conteo_reportable`.

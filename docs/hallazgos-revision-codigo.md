@@ -29,7 +29,7 @@ Cada hallazgo tiene un número `H` para poder citarlo. H1–H7 venían de la gu�
 | H8 | — | El 28 vs 29 de Video_prueba depende de la separación mínima entre picos (`sep_s`): hay una ráfaga real con espaciado ≈ 0.3 s — **resuelto 2026-10-01** (Fase 2.2: prominencia; Video_prueba = 29) |
 | H9 | PREGUNTA | La regresión de CLAUDE.md no tiene una línea base clara, y el test no puede detectar H8 — **resuelto 2026-10-01** (`tests/test_deteccion.py` corre la detección) |
 | H10 | DEUDA | El cuaderno se contradice sobre qué funciones usa |
-| H11 | PREGUNTA | El "6" validado de Video_063 no es evidencia independiente de la regla "gana la meseta de k más bajo" — **a la vista, no resuelto**: el reporte lista las dos mesetas de Video_063 |
+| H11 | PREGUNTA | El "6" validado de Video_063 no es evidencia independiente de la regla "gana la meseta de k más bajo" — **resuelto para 063 (2026-10-07, Fase 4)**: el sexto evento se ve en la señal cruda y por intensidad; es espontáneo y real. Marca `junto_al_borde`. La regla sigue apoyada en un solo caso real |
 | H12 | DEUDA | La documentación no clasifica todos los métodos de ROI |
 | H13 | PREGUNTA | El control por señal invertida supone ruido simétrico |
 | H14 | DEUDA | `frames faltantes (%)` está inflado por el jitter de los timestamps |
@@ -42,7 +42,7 @@ Cada hallazgo tiene un número `H` para poder citarlo. H1–H7 venían de la gu�
 | H21 | PREGUNTA | La cintura se estima con la mediana del grosor: depende de cuánto del cuadro ocupa la cintura |
 | H22 | RIESGO | `roi_min_gradient = 10` es un umbral de contraste absoluto sin origen documentado |
 | H23 | PREGUNTA | Ventanas de suavizado proporcionales al ancho del cuadro, no al gel |
-| H24 | PREGUNTA | `outlier_frac` no es comparable entre ROIs: el criterio favorece la ventana de peor ajuste absoluto — **a la vista** (466 queda en 10.5 % con ROI automática; aviso "en el límite"; Fase 4) |
+| H24 | PREGUNTA | `outlier_frac` no es comparable entre ROIs: el criterio favorece la ventana de peor ajuste absoluto — **resuelto 2026-10-07 (Fase 4)**: deja de ser criterio de aceptación; `outlier_frac` y el error de modelo quedan como diagnóstico sin umbral |
 | H25 | DEUDA | `preprocessing.py`: parámetro muerto que reintroduce la trampa, y documentación vieja |
 | H26 | RIESGO | CLAHE desplaza el borde por una cantidad que cambia de fotograma a fotograma, del orden de la señal de grosor — **medido 2026-10-08** (Fase 3: conteo y traslación no dependen de CLAHE; el adelgazamiento sí → no se reporta; CLAHE se queda) |
 | H27 | RIESGO | La ventana de ±15 px deja poco margen real y descarta columnas en Video_466 — **cerrado 2026-10-08** (±25 px rompe 466: ±15 se queda) |
@@ -67,9 +67,9 @@ Cada hallazgo tiene un número `H` para poder citarlo. H1–H7 venían de la gu�
 | H46 | RIESGO | La sección 12 del cuaderno no ejecuta el enganche de fase que describe; la 13 no genera `contracciones.xlsx` |
 | H47 | RIESGO | El control de falsos de `ed` se contradice con el del reporte; un NaN anula el motor — **sigue abierto en `ed`** (depende de la Fase 2.3) |
 | H48 | DEUDA | Promesas del docstring sin respaldo de pruebas y escalas absolutas ocultas |
-| H49 | RIESGO | `signal_check.py` sólo mira la cola negativa: sobre `center_px` no reconoce ninguna contracción real |
-| H50 | RIESGO | El veredicto de `motion_check.py` contradice el hallazgo 1 de CLAUDE.md |
-| H51 | PREGUNTA | La magnitud de `center_px` no coincide con la traslación medida por intensidad (0.18× en los eventos) — **resuelto 2026-10-08** (`center_px` mide bien la magnitud; el 0.18 es un defecto de `motion_check._subpixel_shift`: Fase 4) |
+| H49 | RIESGO | `signal_check.py` sólo mira la cola negativa: sobre `center_px` no reconoce ninguna contracción real — **resuelto 2026-10-07 (Fase 4)**: sentido por la cola más pesada, `center_px` por defecto |
+| H50 | RIESGO | El veredicto de `motion_check.py` contradice el hallazgo 1 de CLAUDE.md — **resuelto 2026-10-07 (Fase 4)**: veredicto por `desp_vert_px` contra `center_px`; eje PTS |
+| H51 | PREGUNTA | La magnitud de `center_px` no coincide con la traslación medida por intensidad (0.18× en los eventos) — **resuelto** (Fase 3: `center_px` mide bien; Fase 4: `_subpixel_shift` arreglado, intensidad/bordes = 0.96 / 0.99 / 0.88 en prueba / 063 / 466) |
 | H52 | — | Las diferencias entre fotogramas llevan un peine de 10 fotogramas que no está en las series de bordes |
 | H53 | DEUDA | La MAD y la mediana móvil están copiadas 9 y 3 veces, y ninguna tolera NaN (cierra H4) — **resuelto 2026-10-01** (`src/estadistica.py`) |
 | H54 | RIESGO | `CANAL="auto"` del cuaderno elegía `y_top_px`/`y_bottom_px` y cambiaba el conteo (Video_063: 8 en vez de 6); ya fijado a `center_px` — **resuelto 2026-10-08** (ruido desigual entre bordes, no otro observable; se registra el ruido por borde) |
@@ -1433,6 +1433,32 @@ decisiones y la lista de lo que puede cambiar con `RARITOS` en
   Video_466: **ROI automática** 696–846 (50 col.), 5 eventos, ruido 0.212 → 0.182 px,
   T = 10.00184 ± 0.00542 s, `outlier_frac` 10.5 %.
 
+### Fase 4 — herramientas y casos puntuales (2026-10-07, chat de implementación)
+
+Mediciones, decisiones y lo que queda abierto en `claude/propuesta-fase-4.md`. Scripts de
+medición: `scripts/medir_chequeo2.py`, `medir_motion_check.py`, `medir_rafaga_583.py`.
+
+- **H24:** medido en 063 (2 ROIs) y 466 (5 ROIs): `outlier_frac` ordena las ROIs contra el
+  ruido del canal peor que el residuo o el error de modelo (Spearman 0.3 contra 0.7). Una ROI de
+  466 con menos ruido es el hombro del anclaje: el ajuste no puede elegir la ROI. **Decisión:**
+  el chequeo 2 deja de ser criterio. `src/pipeline.py` calcula el error de modelo por borde;
+  `main.py` lo graba en `resumen` sin umbral y borra el aviso del 10 % / "en el límite".
+- **H51/H50:** `motion_check._subpixel_shift` pasa a Pearson por lag (verdad conocida: 0.997 px
+  para 1 px; antes 0.10). En videos reales, intensidad / bordes = 0.96, 0.99, 0.88. Eje PTS;
+  veredicto nuevo contra `center_px` (`--serie`). 466 a 0.88: abierto.
+- **H49:** `signal_check` elige el sentido por la cola más pesada y usa `center_px`: los seis
+  dan "HAY", como el reporte; ruido de colas pesadas no. Sin control negativo real.
+- **H11:** el evento de 063 en 0.31 s (+0.42 px en la señal cruda, +0.28 px por intensidad,
+  grosor −0.46 px) es una contracción espontánea real. Se sigue reportando 6. Nueva marca
+  `junto_al_borde` en `eventos_*` (Video_prueba 2, 063 1).
+- **Video_583, 71.9–73.9 s:** vibración de toda la imagen (~10 Hz; x e y por igual; confirmado a
+  ojo). Da un 7.º candidato a 11 σ que la meseta deja afuera. No se detecta: anotado como límite.
+- `tests/test_diagnosticos.py` (nuevo). Las siete pruebas pasan.
+- **Regenerado** con `scripts/regenerar_fase4.py` (anterior en `_superadas/<video>_v7`): las seis
+  `serie_temporal` (hoja `diagnostics`) **idénticas**; mismos conteos, k, ruido y amplitud. El
+  `contracciones.xlsx` de Video_prueba que estaba guardado daba 28 (reescrito con `win_s` fijo,
+  probablemente desde el cuaderno); vuelve a 29.
+
 ## Qué arreglar primero
 
 Orden de prioridad, del que más puede torcer un número sin aviso al que sólo ordena. Cada ítem cita los hallazgos con la evidencia. **Nada de `src/` ni `scripts/` se cambió todavía**; el cuaderno sí (2026-09-30).
@@ -1454,7 +1480,7 @@ Orden de prioridad, del que más puede torcer un número sin aviso al que sólo 
 8. **✅ HECHO 2026-10-08 (Fase 3).** **Por qué `y_top`/`y_bottom` superan en SNR a `center_px` en 063 y 268** (H54). Decidir si eso cambia el observable o es ruido correlacionado entre bordes.
 
 ### Fase 4. Herramientas que inducen a error si se las lee al pie de la letra
-9. `signal_check.py` (H49) y `motion_check.py` (H50): sus veredictos contradicen el hallazgo 1. Corregir el signo y el razonamiento, o retirarlos.
+9. **✅ HECHO 2026-10-07 (Fase 4).** `signal_check.py` (H49) y `motion_check.py` (H50): sus veredictos contradicen el hallazgo 1. Corregir el signo y el razonamiento, o retirarlos.
 10. Documentos y pruebas que no respaldan lo que dicen (H9, H10, H48, H43): línea base de regresión, validación sintética, pruebas de cinética con eventos ideales.
 
 ### Deuda menor (sin apuro)

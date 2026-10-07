@@ -23,30 +23,48 @@ subconjunto de los eventos, y llamar espontaneo a todo lo que quede afuera.
 
 COMO SE BUSCA LA GRILLA
 ------------------------
-1. Se barre un rango de periodos candidatos T.
+1. Se barre un rango de periodos candidatos T. Con la frecuencia configurada
+   (`--frecuencia-estimulo`), solo entre 0.9 y 1.1 veces su periodo (busqueda
+   DIRIGIDA, una por frecuencia). Sin ella, de 0.3 s a ~1/3 del registro
+   (busqueda LIBRE, un tren). El paso entre candidatos se ajusta a la
+   tolerancia, para que ninguna ranura se corra mas de media tolerancia.
 2. Para cada T se prueba, como origen de fase, el instante de cada evento (el
    optimo siempre se puede anclar en un evento) y se cuenta cuantas RANURAS de
-   la grilla quedan ocupadas por algun evento dentro de una tolerancia.
+   la grilla quedan ocupadas por algun evento a menos de 2 fotogramas.
 3. Se puntua con un z-score contra lo que daria el azar:
 
        z = (ranuras_ocupadas - esperado) / sqrt(varianza)
 
    con el esperado calculado a partir de la densidad de eventos en la ventana.
-   Este z penaliza solo los dos modos de fallar: un T muy grande deja pocas
-   ranuras (z baja aunque todas se llenen) y un armonico T/2 deja la mitad de
-   las ranuras vacias (z baja tambien). Por eso el T verdadero gana.
-4. El T ganador se refina por minimos cuadrados sobre los eventos asignados
-   (regresion de t contra el numero de ranura), lo que da T con error estandar.
+   Gana el mejor z, salvo que un candidato casi igual de bueno sea multiplo x2
+   o x3 del ganador (entonces el ganador era un armonico). Ademas se exige que
+   el 75 % de las ranuras esten ocupadas (`min_captura`).
+4. El T ganador se limpia (tolerancia atada al jitter medido; R5: sale quien
+   falla en tiempo Y en amplitud) y se refina por minimos cuadrados, lo que da
+   T con error estandar.
 
-VALIDACION ESTADISTICA
------------------------
-Todas las elecciones anteriores son post-hoc: se eligio el T que mejor puntua,
-y la ventana donde el tren existe. Para que el resultado signifique algo, el
-p-valor se calcula por Monte Carlo corriendo EL MISMO procedimiento completo
-sobre datos barajados (se permutan los intervalos entre eventos, lo que
-conserva la distribucion de intervalos pero destruye el enganche de fase). El
-p-valor sale de comparar el z observado contra la distribucion del z MAXIMO de
-las simulaciones, asi que ya tiene en cuenta que se probaron muchos periodos.
+El instante de cada evento es el INICIO de la contraccion (cruce del 10 %),
+no el pico: en los eventos con meseta el pico lo decide el ruido.
+
+VALIDACION: LAS LISTAS DE INSTANTES AL AZAR (Monte Carlo)
+---------------------------------------------------------
+El buscador SIEMPRE encuentra algun tren: entre 29 instantes cualesquiera hay
+algun ritmo en el que 5 o 6 caen alineados. La pregunta es si el tren
+encontrado es mejor que lo que arma el azar. Para responderla, en CADA
+corrida (en memoria, no se guarda nada):
+
+  1. se sortean tantos instantes al azar como eventos tiene el video, en el
+     mismo tramo, sin ningun reloj detras (con el refractario observado);
+  2. se les corre LA MISMA busqueda y se anota el z del mejor tren;
+  3. se repite 1000 veces (semilla fija: dos corridas dan lo mismo);
+  4. p = fraccion de listas al azar con z >= el del video (estimador (k+1)/(n+1),
+     asi que el minimo es 1/1001). Se exige p <= 0.01.
+
+Como al azar se le aplica la misma busqueda que al video, el p ya tiene en
+cuenta cuantos periodos se probaron. Por eso la busqueda dirigida tiene mas
+poder: al probar pocos periodos el azar tiene pocos intentos. Medido con
+espontaneas a ~0.3 por segundo y 6 latidos estimulados: la busqueda libre no
+confirmaba el tren en 6 de 20 series; la dirigida, en 0 de 20.
 
 LA FRECUENCIA DE LAS ESPONTANEAS NO ES UN NUMERO
 -------------------------------------------------
@@ -63,6 +81,13 @@ import numpy as np
 import pandas as pd
 
 from src.estadistica import mad
+
+# Fase 3 (grupo 1): constantes del ritmo. Ver claude/propuesta-fase-3-ritmo-cinetica.md
+TOL_BUSQUEDA_FRAMES = 2      # tolerancia de la busqueda: 2 fotogramas (antes 3)
+TOL_MULTIPLO = 0.03          # cuanto puede apartarse T2/(2*T1) de 1 para ser "multiplo"
+AMP_COMPATIBLE = (0.5, 2.0)  # amplitud compatible con el tren: 0.5-2x la mediana
+VENTANA_DIRIGIDA = 0.10      # busqueda dirigida: +-10 % del periodo configurado
+N_SIMULACIONES = 1000        # Monte Carlo: con 200 el p minimo es 0.005
 
 
 # ---------------------------------------------------------------------------
@@ -166,7 +191,15 @@ def buscar_grilla(tiempos: np.ndarray, duracion_s: float,
     if periodo_max <= periodo_min:
         return None
 
-    periodos = np.geomspace(periodo_min, periodo_max, n_candidatos)
+    # La grilla de periodos tiene que ser lo bastante fina para la tolerancia:
+    # si dos candidatos vecinos difieren en dT, a `span` segundos del ancla las
+    # ranuras se corren span*dT/T. Con 600 candidatos fijos el paso cerca de
+    # 10 s era de 0.07 s y, a 5 periodos del ancla, las ranuras se corrian
+    # 0.18 s: con la tolerancia de 2 fotogramas (67 ms) el tren real de
+    # Video_prueba no entraba entero en ningun candidato. Se exige que el
+    # corrimiento en el extremo sea <= tol/2 en el peor caso (Fase 3).
+    n_fino = int(np.ceil(np.log(periodo_max / periodo_min) * span / max(tol_s, 1e-6)))
+    periodos = np.geomspace(periodo_min, periodo_max, max(n_candidatos, n_fino))
     # TOLERANCIA ABSOLUTA, no una fraccion del periodo. Esto importa mucho y
     # la primera version lo tenia al reves. El jitter de un estimulador
     # electrico es un numero fijo de milisegundos, no un porcentaje: no es mas
@@ -183,35 +216,66 @@ def buscar_grilla(tiempos: np.ndarray, duracion_s: float,
     if len(cand) == 0:
         return None
 
-    validos = []
-    for k in cand:
-        T, tol = float(periodos[k]), float(tols[k])
-        idx, ranuras = _asignar(t, T, t[anclas[k]], tol)
-        if len(idx) < min_eventos:
-            continue
-        t_ini, t_fin = t[idx[0]], t[idx[-1]]
-        n_ranuras = int(ranuras[-1] - ranuras[0]) + 1
-        if len(idx) < min_captura * n_ranuras:     # primer filtro anti-armonico
-            continue
-        dur = max(t_fin - t_ini, 1e-9)
-        en_ventana = int(np.sum((t >= t_ini) & (t <= t_fin)))
-        z = _z_periodicidad(len(idx), n_ranuras, en_ventana / dur, tol)
-        validos.append({"T": T, "fase": float(t[anclas[k]]), "tol": tol, "z": z,
-                        "idx": idx, "ranuras": ranuras,
-                        "n_ocupadas": len(idx), "n_ranuras": n_ranuras,
-                        "t_inicio": float(t_ini), "t_fin": float(t_fin)})
-    if not validos:
+    # Puntaje de TODOS los candidatos a la vez (antes, un bucle de Python por
+    # candidato; con la grilla fina eran ~2400 por busqueda y el Monte Carlo
+    # tardaba minutos). Mismas cuentas que `_asignar`: un evento por ranura.
+    T = periodos[cand][:, None]
+    tol = tols[cand][:, None]
+    t0 = t[anclas[cand]][:, None]
+    S = np.round((t[None, :] - t0) / T)
+    R = np.abs(t[None, :] - (t0 + S * T))
+    M = R <= tol                                            # (K, N)
+    grande = np.iinfo(np.int64).min // 4
+    Sm = np.where(M, S, grande).astype(np.int64)
+    ultimo = np.maximum.accumulate(Sm, axis=1)
+    previo = np.concatenate([np.full((len(cand), 1), grande, np.int64), ultimo[:, :-1]], axis=1)
+    repetida = M & (previo == Sm)                           # misma ranura que el anterior
+    n_ocup = (M & ~repetida).sum(axis=1)
+    filas = np.arange(len(cand))
+    s_ini = S[filas, M.argmax(axis=1)]
+    s_fin = S[filas, M.shape[1] - 1 - M[:, ::-1].argmax(axis=1)]
+    # Si dos eventos comparten la primera (o la ultima) ranura, `_asignar` se
+    # queda con el mas cercano al centro: el tramo del tren empieza ahi.
+    i_ini = np.where(M & (S == s_ini[:, None]), R, np.inf).argmin(axis=1)
+    i_fin = np.where(M & (S == s_fin[:, None]), R, np.inf).argmin(axis=1)
+    n_ran = (s_fin - s_ini).astype(int) + 1
+    ok = (n_ocup >= min_eventos) & (n_ocup >= min_captura * n_ran)   # primer filtro anti-armonico
+    if not ok.any():
         return None
+    dur = np.maximum(t[i_fin] - t[i_ini], 1e-9)
+    dens = (i_fin - i_ini + 1) / dur
+    pr = np.clip(1.0 - np.exp(-dens * 2.0 * tol[:, 0]), 1e-9, 1 - 1e-9)
+    z = (n_ocup - n_ran * pr) / np.sqrt(np.maximum(n_ran * pr * (1 - pr), 1e-12))
 
-    # SEGUNDO filtro anti-armonico, y el que hace el trabajo pesado: entre los
-    # candidatos que puntuan casi tan bien como el mejor, quedarse con el
-    # periodo MAS LARGO. Un armonico de un periodo verdadero T siempre esta en
-    # T/2, T/3, ... o sea siempre es MENOR. El subarmonico 2T, que si seria
-    # mayor, usa la mitad de los eventos y normalmente no llega a min_eventos.
+    validos = [{"k": int(k), "T": float(periodos[k]), "z": float(zz)}
+               for k, zz in zip(cand[ok], z[ok])]
+
+    def _completar(v):
+        k = v["k"]
+        Tk, tolk = float(periodos[k]), float(tols[k])
+        idx, ranuras = _asignar(t, Tk, t[anclas[k]], tolk)
+        return {"T": Tk, "fase": float(t[anclas[k]]), "tol": tolk, "z": v["z"],
+                "idx": idx, "ranuras": ranuras,
+                "n_ocupadas": len(idx), "n_ranuras": int(ranuras[-1] - ranuras[0]) + 1,
+                "t_inicio": float(t[idx[0]]), "t_fin": float(t[idx[-1]])}
+
+    # SEGUNDO filtro anti-armonico (Fase 3, H38). Gana el MEJOR PUNTAJE, salvo
+    # que haya un candidato casi tan bueno (z >= 90 % del maximo) en un MULTIPLO
+    # x2 o x3 del ganador: entonces el ganador era un armonico (T/2, T/3) armado
+    # con espontaneas que llenaron las ranuras intermedias, y se sube al
+    # multiplo. Antes la regla era "entre los casi-mejores, el periodo mas
+    # largo", y eso empujaba al borde del rango: con espontaneas densas elegia
+    # periodos falsos (T = 10.96 s en lugar de 10.00 s) y perdia latidos reales
+    # (165 de 360 en el sintetico denso, contra 33 con esta regla).
     z_max = max(v["z"] for v in validos)
-    cerca = [v for v in validos if v["z"] >= 0.90 * z_max]
-    return max(cerca, key=lambda v: v["T"])
-    return mejor
+    mejor = max(validos, key=lambda v: v["z"])
+    for _ in range(4):
+        sube = [v for v in validos if v["z"] >= 0.90 * z_max and any(
+            abs(v["T"] / (m * mejor["T"]) - 1.0) <= TOL_MULTIPLO for m in (2, 3))]
+        if not sube:
+            break
+        mejor = max(sube, key=lambda v: v["z"])
+    return _completar(mejor)
 
 
 def _theil_sen(n: np.ndarray, y: np.ndarray):
@@ -327,66 +391,62 @@ def _reasignar(t, T, fase, tol):
     return _asignar(t, T, fase, tol)
 
 
-def separar(tiempos, amplitudes=None, duracion_s=None, periodo_min=0.3,
-            periodo_max=None, tol_frac=0.02, tol_min_s=0.05, min_eventos=4,
-            min_captura=0.75, jitter_k=4.0, rescate_frac=0.10, resolucion_s=None,
-            tol_s=None,
-            n_simulaciones=200, alfa=0.01, semilla=0) -> dict:
+def _veredicto(T, err_T, significativo, fc, modo, tol_pct=5.0):
+    """Que es el tren, en una frase, y como se clasifican sus eventos.
+
+    `fc` es la frecuencia configurada a la que se busco (None si la busqueda
+    fue libre). Devuelve (veredicto, clasificacion).
     """
-    Separa los eventos en estimulados (enganchados en fase) y espontaneos.
+    f = 1.0 / T if np.isfinite(T) and T > 0 else float("nan")
+    if fc is None:
+        if not significativo:
+            return "no se encontro un tren periodico que se distinga del azar", "ninguna"
+        return (f"tren periodico a {f:.4f} Hz, no se configuro ninguna frecuencia",
+                "estimulados")
+    if not significativo:
+        return (f"se busco a {fc:g} Hz: no hay enganche (el estimulador no capturo, "
+                f"o no se distingue del azar)"), "ninguna"
+    ef = err_T / T ** 2 if np.isfinite(err_T) else float("nan")
+    pct = 100.0 * (f - fc) / fc
+    t_stat = (f - fc) / ef if (np.isfinite(ef) and ef > 0) else 0.0
+    if abs(t_stat) < 3 or abs(pct) <= tol_pct:
+        return f"enganchado a la frecuencia configurada ({fc:g} Hz)", "estimulados"
+    return (f"tren periodico a {f:.4f} Hz, {pct:+.1f} % de la configurada ({fc:g} Hz): "
+            f"no coincide, sus eventos quedan como espontaneos"), "ninguna"
 
-    Parameters
-    ----------
-    tiempos : instantes de los eventos, en segundos.
-    amplitudes : opcional. NO se usa para clasificar: se reporta por grupo
-        como verificacion independiente. Si los dos grupos resultan tener
-        amplitudes distintas sin que la amplitud haya intervenido en la
-        clasificacion, eso es evidencia a favor de que la separacion es real.
-    duracion_s : duracion del registro. Por defecto, el span de los eventos.
-    periodo_min / periodo_max : rango de periodos a buscar (s).
-    tol_frac / tol_min_s : tolerancia de coincidencia con la grilla, como
-        fraccion del periodo y como piso absoluto.
-    min_eventos : minimo de coincidencias para considerar que hay un tren.
-    n_simulaciones : repeticiones del Monte Carlo. 0 lo desactiva.
-    alfa : nivel al que se exige el p-valor para declarar que hay estimulacion.
+
+def _un_tren(t, a, duracion_s, kw, min_eventos, min_captura, jitter_k, rescate_frac,
+             resolucion_s, n_simulaciones, alfa, semilla):
+    """Busca, valida y limpia UN tren sobre los instantes `t` (ordenados).
+
+    Devuelve None si no hay ni un candidato (menos de `min_eventos`). Si hay
+    candidato pero no es significativo, lo devuelve igual con su p: es el
+    "intento de tren" que se reporta para que el equipo vea que se busco y que
+    se encontro.
     """
-    t = np.asarray(tiempos, float)
-    orden = np.argsort(t)
-    t = t[orden]
-    a = np.asarray(amplitudes, float)[orden] if amplitudes is not None else None
-    if duracion_s is None:
-        duracion_s = float(t[-1] - t[0]) if len(t) > 1 else 0.0
-
-    # Por defecto la tolerancia es de 3 fotogramas: por debajo de eso no se
-    # puede medir el instante de un evento, asi que exigir mas seria exigir
-    # precision que la camara no da.
-    if tol_s is None:
-        tol_s = max(3.0 * resolucion_s, 0.05) if resolucion_s else 0.10
-    kw = dict(periodo_min=periodo_min, periodo_max=periodo_max,
-              tol_s=tol_s, min_eventos=min_eventos, min_captura=min_captura)
-
-    out = {"n_eventos": int(len(t)), "hay_estimulacion": False,
-           "estimulados": np.array([], int), "espontaneos": np.arange(len(t))}
-
     g = buscar_grilla(t, duracion_s, **kw)
     if g is None:
-        out["motivo"] = f"menos de {min_eventos} eventos, o rango de periodos vacio"
-        return out
+        return None
+    z_busqueda = float(g["z"])
 
-    # Primero un ajuste ROBUSTO, para que un espontaneo colado en un extremo
-    # del tren no incline la recta y se esconda (ver _theil_sen).
+    # p-valor: el MISMO estadistico (el z de la busqueda) sobre datos sin
+    # enganche de fase. Antes se comparaba el z final (con la tolerancia del
+    # jitter, mucho mas estrecha) contra el z de busqueda del nulo: no eran
+    # comparables. Desde 4 eventos (antes 6: con 4-5 el tren se aceptaba sin
+    # prueba, Video_466).
+    p = float("nan")
+    if n_simulaciones > 0 and len(t) >= min_eventos:
+        rng = np.random.default_rng(semilla)
+        z0 = _z_nulo(t, duracion_s, n_simulaciones, rng, **kw)
+        p = float((np.sum(z0 >= z_busqueda) + 1) / (n_simulaciones + 1))
+
     T, fase = _theil_sen(g["ranuras"], t[g["idx"]])
-    resid = t[g["idx"]] - (fase + T * g["ranuras"])
-    jitter = mad(resid)
-    err_T = float("nan")
-
-    # Segunda pasada: reasignar con una tolerancia atada al jitter medido, no
-    # a una fraccion del periodo, y volver a refinar. Esto suelta espontaneas
-    # que habian coincidido con la grilla por casualidad.
+    jitter = mad(t[g["idx"]] - (fase + T * g["ranuras"]))
+    res_min = resolucion_s or 0.02
     for _ in range(3):
         if not (np.isfinite(jitter) and jitter > 0):
             break
-        tol2 = max(jitter_k * jitter, 2.0 * (resolucion_s or 0.02))
+        tol2 = max(jitter_k * jitter, 2.0 * res_min)
         idx2, ran2 = _reasignar(t, T, fase, tol2)
         if len(idx2) < min_eventos:
             break
@@ -396,117 +456,254 @@ def separar(tiempos, amplitudes=None, duracion_s=None, periodo_min=0.3,
         T2, fase2 = _theil_sen(ran2, t[idx2])
         if not (np.isfinite(T2) and T2 > 0):
             break
-        r2 = t[idx2] - (fase2 + T2 * ran2)
-        jit2 = mad(r2)
-        sin_cambio = (len(idx2) == len(g["idx"]) and np.array_equal(idx2, g["idx"]))
-        T, fase, jitter = T2, fase2, jit2
+        sin_cambio = np.array_equal(idx2, g["idx"])
+        T, fase, jitter = T2, fase2, mad(t[idx2] - (fase2 + T2 * ran2))
         g = dict(g)
-        g.update({"idx": idx2, "ranuras": ran2, "tol": tol2,
-                  "n_ocupadas": len(idx2), "n_ranuras": n_ran2,
-                  "t_inicio": float(t[idx2[0]]), "t_fin": float(t[idx2[-1]])})
+        g.update({"idx": idx2, "ranuras": ran2, "tol": tol2})
         if sin_cambio:
             break
-    # z recalculado con la tolerancia final, que es mucho mas exigente que la
-    # del barrido: con una ventana de +-4 jitter en vez de +-2 % del periodo,
-    # la probabilidad de coincidir por azar cae y el z sube donde hay senal.
-    # Ajuste final por minimos cuadrados sobre el conjunto ya limpio: ahi si
-    # es el estimador correcto, y es el que da el error estandar del periodo.
-    T, err_T, fase, jitter = _refinar(t[g["idx"]], g["ranuras"])
 
-    # La incertidumbre no puede ser menor que la resolucion con la que se
-    # midieron los instantes. En estos videos el tren estimulado cae SIEMPRE en
-    # el mismo numero de fotogramas, asi que los residuos dan exactamente cero
-    # y el ajuste reporta error cero, que es falso: lo que pasa es que el
-    # jitter real esta por debajo de un fotograma. Se pone como piso el error
-    # de cuantizacion, resolucion/sqrt(12).
+    # --- R5 (H36): tiempo Y amplitud, las dos -----------------------------
+    # Un estimulado pasa a espontaneo solo si se desvia de su ranura mas de 1
+    # fotograma Y su amplitud esta fuera de 0.5-2x la mediana de los DEMAS
+    # estimulados. Ninguna de las dos alcanza sola: el tiempo solo expulsa
+    # latidos reales de Video_466 (jitter genuino de 17 ms); la amplitud sola
+    # seria clasificar por amplitud. Medido: solo lo cumple el evento de
+    # 4.82 s de Video_prueba (-58 ms, 2.10 px contra 6.6-7.0 px).
+    sacados = []
+    if a is not None and len(g["idx"]) > min_eventos:
+        for _ in range(len(g["idx"])):
+            idx, ran = g["idx"], g["ranuras"]
+            cand = []
+            for k in range(len(idx)):
+                # El desvio se mide contra el tren ajustado SIN ese evento: si
+                # entra en el ajuste, un intruso en un extremo inclina la recta
+                # hacia el y esconde su desvio (-58 ms -> -25 ms en Video_prueba).
+                T_k, fase_k = _theil_sen(np.delete(ran, k), np.delete(t[idx], k))
+                if not np.isfinite(T_k):
+                    continue
+                desv = float(t[idx[k]] - (fase_k + T_k * ran[k]))
+                med = float(np.median(np.delete(a[idx], k)))
+                fuera = not (AMP_COMPATIBLE[0] * med <= a[idx[k]] <= AMP_COMPATIBLE[1] * med)
+                if abs(desv) > res_min and fuera:
+                    cand.append((abs(desv), k, desv, med))
+            if not cand or len(idx) - 1 < min_eventos:
+                break
+            _, k, desv, med = max(cand)
+            sacados.append({"indice": int(idx[k]), "desvio_s": desv,
+                            "amplitud": float(a[idx[k]]), "amplitud_mediana_tren": med})
+            g = dict(g)
+            g["idx"], g["ranuras"] = np.delete(idx, k), np.delete(ran, k)
+
+    idx, ran = g["idx"], g["ranuras"]
+    T, err_T, fase, jitter = _refinar(t[idx], ran)
+    limitado = False
     if resolucion_s:
         piso = resolucion_s / np.sqrt(12.0)
         if not np.isfinite(jitter) or jitter < piso:
             jitter = piso
-            n_ = np.asarray(g["ranuras"], float)
+            n_ = np.asarray(ran, float)
             Sxx = float(np.sum((n_ - n_.mean()) ** 2))
             err_T = float(piso / np.sqrt(Sxx)) if Sxx > 0 else float("nan")
-            out["jitter_limitado_por_resolucion"] = True
+            limitado = True
 
-    _dur = max(g["t_fin"] - g["t_inicio"], 1e-9)
-    _en_v = int(np.sum((t >= g["t_inicio"]) & (t <= g["t_fin"])))
-    g["z"] = _z_periodicidad(g["n_ocupadas"], g["n_ranuras"], _en_v / _dur, g["tol"])
-
-    p = float("nan")
-    if n_simulaciones > 0 and len(t) >= min_eventos + 2:
-        rng = np.random.default_rng(semilla)
-        z0 = _z_nulo(t, duracion_s, n_simulaciones, rng, **kw)
-        # (+1)/(+1): estimador conservador del p-valor con simulaciones finitas
-        p = float((np.sum(z0 >= g["z"]) + 1) / (n_simulaciones + 1))
-
-    out.update({
-        "z": round(g["z"], 3), "p_valor": p,
-        "periodo_grilla_s": round(g["T"], 4),
-        "periodo_s": round(T, 5), "periodo_err_s": round(err_T, 5),
-        "frecuencia_Hz": round(1 / T, 5) if T and np.isfinite(T) and T > 0 else float("nan"),
-        "frecuencia_err_Hz": (round(err_T / T ** 2, 6)
-                              if all(np.isfinite([T, err_T])) and T > 0 else float("nan")),
-        "jitter_s": round(jitter, 5),
-        "tolerancia_s": round(g["tol"], 4),
-        "n_estimulados": int(g["n_ocupadas"]),
-        "n_ranuras": int(g["n_ranuras"]),
-        "tasa_captura_pct": round(100 * g["n_ocupadas"] / g["n_ranuras"], 1),
-        "tren_inicio_s": round(g["t_inicio"], 3),
-        "tren_fin_s": round(g["t_fin"], 3),
-    })
-
-    # --- rescate de latidos con tiempo anomalo ------------------------------
-    # La tolerancia final es muy estrecha (unos pocos fotogramas). Un latido
-    # estimulado cuyo instante detectado se corrio mas que eso caeria en
-    # "espontaneo", que es la clasificacion mas enganosa posible: un evento
-    # claramente parte del tren, escondido entre las espontaneas. Medido en
-    # Video_063: el 5o latido aparece 0.33 s antes de su ranura y se perdia.
-    # Se lo busca en una ventana mas ancha y se lo reporta APARTE, como dudoso:
-    # ni se lo tira ni se lo mezcla con los buenos, y no entra en el ajuste del
-    # periodo para no contaminarlo.
-    rescatados, ranuras_resc = [], []
+    # --- R6 (H37): rescate de dudosos, solo DENTRO del tren ----------------
+    # Un latido estimulado con el instante corrido mas que la tolerancia final
+    # se reporta aparte como "dudoso" (ni se tira ni entra en el ajuste). Ahora
+    # solo entre la primera y la ultima ranura capturada, y con amplitud
+    # compatible: antes se buscaba en cualquier ranura del video y volvia a
+    # traer como dudoso a la espontanea de 4.82 s, 10 s antes del tren.
+    resc, ran_resc = [], []
     if np.isfinite(T) and T > 0:
         vent = rescate_frac * T
-        libres = np.setdiff1d(np.arange(len(t)), g["idx"])
-        r_lo = int(np.floor((t[0] - fase) / T))
-        r_hi = int(np.ceil((t[-1] - fase) / T))
-        ocupadas = set(int(x) for x in g["ranuras"])
-        for r in range(r_lo, r_hi + 1):
+        med_a = float(np.median(a[idx])) if a is not None else None
+        libres = np.setdiff1d(np.arange(len(t)), idx)
+        ocupadas = set(int(x) for x in ran)
+        for r in range(int(ran[0]), int(ran[-1]) + 1):
             if r in ocupadas or len(libres) == 0:
                 continue
-            centro = fase + r * T
-            d = np.abs(t[libres] - centro)
-            j = int(np.argmin(d))
-            if d[j] <= vent:
-                rescatados.append(int(libres[j]))
-                ranuras_resc.append(r)
+            d = np.abs(t[libres] - (fase + r * T))
+            ok = d <= vent
+            if med_a is not None:
+                ok &= ((a[libres] >= AMP_COMPATIBLE[0] * med_a)
+                       & (a[libres] <= AMP_COMPATIBLE[1] * med_a))
+            if ok.any():
+                j = int(np.flatnonzero(ok)[np.argmin(d[ok])])
+                resc.append(int(libres[j]))
+                ran_resc.append(r)
                 libres = np.delete(libres, j)
-    rescatados = np.array(sorted(rescatados), dtype=int)
+    orden = np.argsort(resc)
+    resc = np.asarray(resc, int)[orden]
+    ran_resc = np.asarray(ran_resc, int)[orden]
 
-    significativo = (not np.isfinite(p)) or (p <= alfa)
-    if significativo:
-        out["hay_estimulacion"] = True
-        out["estimulados"] = g["idx"]
-        out["estimulados_dudosos"] = rescatados
-        out["espontaneos"] = np.setdiff1d(np.arange(len(t)),
-                                          np.union1d(g["idx"], rescatados))
-        if len(rescatados):
-            out["n_estimulados_dudosos"] = int(len(rescatados))
-            out["dudosos"] = pd.DataFrame({
-                "indice_evento": rescatados,
-                "tiempo_s": np.round(t[rescatados], 3),
-                "ranura": np.array(ranuras_resc, dtype=int) - int(g["ranuras"][0]) + 1,
-                "desvio_s": np.round(t[rescatados] - (fase + T * np.array(ranuras_resc)), 4),
-            })
+    n_ranuras = int(ran[-1] - ran[0]) + 1
+    return {"T_grilla": float(g["T"]), "T": T, "err_T": err_T, "fase": fase,
+            "jitter": jitter, "jitter_limitado": limitado, "tol": float(g["tol"]),
+            "z": z_busqueda, "p": p, "significativo": bool(np.isfinite(p) and p <= alfa)
+            or (n_simulaciones == 0),
+            "idx": idx, "ranuras": ran, "dudosos": resc, "ranuras_dudosos": ran_resc,
+            "sacados": sacados, "n_ranuras": n_ranuras,
+            "t_inicio": float(t[idx[0]]), "t_fin": float(t[idx[-1]])}
+
+
+def separar(tiempos, amplitudes=None, duracion_s=None, periodo_min=0.3,
+            periodo_max=None, min_eventos=4, min_captura=0.75, jitter_k=4.0,
+            rescate_frac=0.10, resolucion_s=None, tol_s=None,
+            n_simulaciones=N_SIMULACIONES, alfa=0.01, semilla=0,
+            frecuencia_configurada_Hz=None, ventana_frac=VENTANA_DIRIGIDA,
+            tol_frac=None, tol_min_s=None) -> dict:
+    """
+    Separa los eventos en estimulados (enganchados en fase) y espontaneos.
+
+    DOS MODOS (Fase 3, grupo 1)
+    ---------------------------
+    * Con `frecuencia_configurada_Hz` (un numero, o una lista si el protocolo
+      cambia de frecuencia): busqueda DIRIGIDA. Para cada frecuencia se busca
+      UN tren solo entre 0.9 y 1.1 veces su periodo, sobre los eventos que
+      todavia no se asignaron. La pregunta es "el estimulador capturo a las
+      celulas?", y la respuesta es "enganchado a 0.1 Hz" o "no hay enganche".
+    * Sin frecuencia: busqueda LIBRE de UN tren (periodos de 0.3 s a ~span/3),
+      y el veredicto dice "tren periodico a X Hz, no se configuro ninguna
+      frecuencia".
+
+    Por que dirigida: el p-valor compara el tren contra listas de instantes al
+    azar a las que se les corre LA MISMA busqueda (ver `_z_nulo`). Si se
+    prueban todos los periodos, el azar tiene miles de intentos y arma trenes
+    que puntuan casi como uno real: medido, con espontaneas a ~0.3 por segundo
+    y 6 latidos estimulados, la busqueda libre no confirmaba el tren en 6 de
+    20 series; la dirigida, en 0 de 20. Y en 25 series de solo espontaneas, la
+    dirigida no invento ningun tren.
+
+    Las espontaneas no se buscan como tren: se describen por la mediana, el
+    rango y la frecuencia evento a evento de sus intervalos (no siguen un reloj).
+
+    Otros cambios de la Fase 3: los `tiempos` que pasa contraction_report son
+    el INICIO de cada contraccion; tolerancia de busqueda 2 fotogramas;
+    Monte Carlo desde 4 eventos con 1000 simulaciones sobre el z de la
+    busqueda; R5 (un estimulado sale solo si falla en tiempo Y amplitud); R6
+    (dudosos solo dentro del tren y con amplitud compatible).
+    `tol_frac` y `tol_min_s` se aceptan por compatibilidad y no se usan.
+    """
+    t = np.asarray(tiempos, float)
+    orden = np.argsort(t)
+    t = t[orden]
+    a = np.asarray(amplitudes, float)[orden] if amplitudes is not None else None
+    if duracion_s is None:
+        duracion_s = float(t[-1] - t[0]) if len(t) > 1 else 0.0
+    frecs = ([] if frecuencia_configurada_Hz is None
+             else [float(x) for x in np.atleast_1d(frecuencia_configurada_Hz)])
+
+    if tol_s is None:
+        tol_s = (max(TOL_BUSQUEDA_FRAMES * resolucion_s, 0.05) if resolucion_s else 0.10)
+    kw = dict(periodo_min=periodo_min, periodo_max=periodo_max,
+              tol_s=tol_s, min_eventos=min_eventos, min_captura=min_captura)
+
+    n = len(t)
+    grupo = np.array(["espontaneos"] * n, dtype=object)
+    tren_de = np.zeros(n, int)
+    trenes, filas, dudosos_tab, sacados_tab = [], [], [], []
+    libres = np.arange(n)
+    busquedas = ([(fc, f"dirigida a {fc:g} Hz",
+                   dict(kw, periodo_min=(1 - ventana_frac) / fc, periodo_max=(1 + ventana_frac) / fc))
+                  for fc in frecs] if frecs else [(None, "libre", kw)])
+    for k, (fc, modo, kw_k) in enumerate(busquedas, start=1):
+        if len(libres) < min_eventos:
+            filas.append({"tren": k, "busqueda": modo,
+                          "veredicto": f"no se pudo buscar: quedan {len(libres)} eventos (< {min_eventos})",
+                          "clasificacion": "ninguna"})
+            continue
+        tr = _un_tren(t[libres], a[libres] if a is not None else None, duracion_s, kw_k,
+                      min_eventos, min_captura, jitter_k, rescate_frac, resolucion_s,
+                      n_simulaciones, alfa, semilla + k - 1)
+        if tr is None:
+            ver = (f"se busco a {fc:g} Hz: ningun tren de {min_eventos} o mas eventos"
+                   if fc else f"ningun tren de {min_eventos} o mas eventos")
+            filas.append({"tren": k, "busqueda": modo, "veredicto": ver, "clasificacion": "ninguna"})
+            continue
+        tr["idx"] = libres[tr["idx"]]
+        tr["dudosos"] = libres[tr["dudosos"]]
+        for x in tr["sacados"]:
+            x["indice"] = int(libres[x["indice"]])
+        ver, clase = _veredicto(tr["T"], tr["err_T"], tr["significativo"], fc, modo)
+        tr.update(tren=k, busqueda=modo, veredicto=ver, clasificacion=clase,
+                  frecuencia_configurada_Hz=fc)
+        trenes.append(tr)
+        f = 1.0 / tr["T"] if np.isfinite(tr["T"]) and tr["T"] > 0 else float("nan")
+        filas.append({
+            "tren": k, "busqueda": modo, "veredicto": ver, "clasificacion": clase,
+            "periodo_s": round(tr["T"], 5), "periodo_err_s": round(tr["err_T"], 5),
+            "frecuencia_Hz": round(f, 5), "jitter_ms": round(1000 * tr["jitter"], 2),
+            "z": round(tr["z"], 3), "p_valor": tr["p"],
+            "n_eventos_tren": int(len(tr["idx"])), "n_ranuras": tr["n_ranuras"],
+            "captura_pct": round(100 * len(tr["idx"]) / tr["n_ranuras"], 1),
+            "n_dudosos": int(len(tr["dudosos"])), "n_sacados_tiempo_amplitud": len(tr["sacados"]),
+            "inicio_s": round(tr["t_inicio"], 3), "fin_s": round(tr["t_fin"], 3)})
+        if clase != "estimulados":
+            continue
+        grupo[tr["idx"]] = "estimulados"
+        grupo[tr["dudosos"]] = "estimulados_dudosos"
+        tren_de[tr["idx"]] = k
+        tren_de[tr["dudosos"]] = k
+        for i, r in zip(tr["dudosos"], tr["ranuras_dudosos"]):
+            dudosos_tab.append({"tren": k, "indice_evento": int(i),
+                                "tiempo_s": round(float(t[i]), 3),
+                                "ranura": int(r - tr["ranuras"][0] + 1),
+                                "desvio_s": round(float(t[i] - (tr["fase"] + tr["T"] * r)), 4)})
+        for x in tr["sacados"]:
+            sacados_tab.append({"tren": k, "indice_evento": x["indice"],
+                                "tiempo_s": round(float(t[x["indice"]]), 3),
+                                "desvio_s": round(x["desvio_s"], 4),
+                                "amplitud": round(x["amplitud"], 4),
+                                "amplitud_mediana_tren": round(x["amplitud_mediana_tren"], 4)})
+        libres = np.setdiff1d(libres, np.union1d(tr["idx"], tr["dudosos"]))
+
+    out = {"n_eventos": int(n), "fuente_tiempo": None,
+           "modo_busqueda": "dirigida" if frecs else "libre",
+           "trenes": pd.DataFrame(filas),
+           "dudosos": pd.DataFrame(dudosos_tab),
+           "sacados_tiempo_amplitud": pd.DataFrame(sacados_tab),
+           "grupo_por_evento": grupo, "tren_por_evento": tren_de}
+    for nombre in ("estimulados", "estimulados_dudosos", "espontaneos"):
+        out[nombre] = np.flatnonzero(grupo == nombre)
+    out["hay_estimulacion"] = bool(len(out["estimulados"]))
+    out["n_trenes_estimulados"] = int(sum(tr["clasificacion"] == "estimulados" for tr in trenes))
+    if len(out["estimulados_dudosos"]):
+        out["n_estimulados_dudosos"] = int(len(out["estimulados_dudosos"]))
+
+    # Tren PRINCIPAL (el que va al resumen y a la figura): el primero
+    # estimulado; si no hay, el mejor intento, para reportarlo.
+    principal = next((tr for tr in trenes if tr["clasificacion"] == "estimulados"),
+                     trenes[0] if trenes else None)
+    if principal is None:
+        out["veredicto"] = "; ".join(f["veredicto"] for f in filas) or "sin eventos"
+        out["motivo"] = out["veredicto"]
     else:
-        out["motivo"] = (f"el mejor tren periodico (T={g['T']:.3f}s, z={g['z']:.2f}) "
-                         f"no supera lo que da el azar (p={p:.3f})")
+        T, err_T = principal["T"], principal["err_T"]
+        out.update({
+            "tren_principal": principal["tren"], "veredicto": principal["veredicto"],
+            "z": round(principal["z"], 3), "p_valor": principal["p"],
+            "periodo_grilla_s": round(principal["T_grilla"], 4),
+            "periodo_s": round(T, 5), "periodo_err_s": round(err_T, 5),
+            "frecuencia_Hz": round(1 / T, 5) if np.isfinite(T) and T > 0 else float("nan"),
+            "frecuencia_err_Hz": (round(err_T / T ** 2, 6)
+                                  if all(np.isfinite([T, err_T])) and T > 0 else float("nan")),
+            "jitter_s": round(principal["jitter"], 5),
+            "tolerancia_s": round(principal["tol"], 4),
+            "n_estimulados": int(len(principal["idx"])),
+            "n_ranuras": int(principal["n_ranuras"]),
+            "tasa_captura_pct": round(100 * len(principal["idx"]) / principal["n_ranuras"], 1),
+            "tren_inicio_s": round(principal["t_inicio"], 3),
+            "tren_fin_s": round(principal["t_fin"], 3)})
+        if principal["jitter_limitado"]:
+            out["jitter_limitado_por_resolucion"] = True
+        if not out["hay_estimulacion"]:
+            out["motivo"] = (f"{principal['veredicto']} (mejor intento: T={T:.3f} s, "
+                             f"z={principal['z']:.2f}, p={principal['p']:.3f})")
 
     # --- resumen por grupo ---------------------------------------------------
-    grupos = []
-    for nombre, idx in (("estimulados", out["estimulados"]),
-                        ("estimulados_dudosos", out.get("estimulados_dudosos", np.array([], int))),
-                        ("espontaneos", out["espontaneos"])):
+    filas_g = []
+    for nombre in ("estimulados", "estimulados_dudosos", "espontaneos"):
+        idx = out[nombre]
         if len(idx) == 0:
             continue
         tt = t[idx]
@@ -522,43 +719,37 @@ def separar(tiempos, amplitudes=None, duracion_s=None, periodo_min=0.3,
             fila["amplitud_mediana_px"] = round(float(np.median(a[idx])), 4)
             fila["amplitud_IQR_px"] = round(
                 float(np.percentile(a[idx], 75) - np.percentile(a[idx], 25)), 4)
-        grupos.append(fila)
-    out["resumen_grupos"] = pd.DataFrame(grupos)
+        filas_g.append(fila)
+    out["resumen_grupos"] = pd.DataFrame(filas_g)
 
-    # --- frecuencia instantanea de las espontaneas ---------------------------
-    # No se resume en un numero: estas celulas no mantienen una frecuencia
-    # constante, asi que lo informativo es como deriva a lo largo del registro.
     esp = t[out["espontaneos"]]
     if len(esp) > 1:
         iv = np.diff(esp)
         out["espontaneas_instantanea"] = pd.DataFrame({
             "tiempo_s": np.round(0.5 * (esp[1:] + esp[:-1]), 3),
-            "intervalo_s": np.round(iv, 4),
-            "frecuencia_Hz": np.round(1 / iv, 4),
-        })
+            "intervalo_s": np.round(iv, 4), "frecuencia_Hz": np.round(1 / iv, 4)})
     else:
         out["espontaneas_instantanea"] = pd.DataFrame(
             columns=["tiempo_s", "intervalo_s", "frecuencia_Hz"])
 
-    # --- tabla de la grilla: que ranura se capturo y cual se perdio -----------
-    if out["hay_estimulacion"]:
-        r0, r1 = int(g["ranuras"][0]), int(g["ranuras"][-1])
+    # --- grilla de cada tren: que ranura se capturo y cual se perdio ---------
+    grillas = []
+    for tr in trenes:
+        if tr["clasificacion"] != "estimulados" and tr is not principal:
+            continue
+        r0, r1 = int(tr["ranuras"][0]), int(tr["ranuras"][-1])
         todas = np.arange(r0, r1 + 1)
-        esperado = fase + T * todas
-        capturada = np.isin(todas, g["ranuras"])
+        cap = np.isin(todas, tr["ranuras"])
         real = np.full(len(todas), np.nan)
-        real[capturada] = t[g["idx"]]
-        out["grilla"] = pd.DataFrame({
-            "ranura": todas - r0 + 1,
-            "t_esperado_s": np.round(esperado, 4),
-            "t_medido_s": np.round(real, 4),
-            "error_s": np.round(real - esperado, 5),
-            "capturada": capturada,
-        })
-    else:
-        out["grilla"] = pd.DataFrame(
-            columns=["ranura", "t_esperado_s", "t_medido_s", "error_s", "capturada"])
-
+        real[cap] = t[tr["idx"]]
+        esperado = tr["fase"] + tr["T"] * todas
+        grillas.append(pd.DataFrame({
+            "tren": tr["tren"], "ranura": todas - r0 + 1,
+            "t_esperado_s": np.round(esperado, 4), "t_medido_s": np.round(real, 4),
+            "error_s": np.round(real - esperado, 5), "capturada": cap}))
+    cols_g = ["tren", "ranura", "t_esperado_s", "t_medido_s", "error_s", "capturada"]
+    out["grilla"] = (pd.concat(grillas, ignore_index=True) if grillas
+                     else pd.DataFrame(columns=cols_g))
     return out
 
 

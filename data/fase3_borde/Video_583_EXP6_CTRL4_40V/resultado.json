@@ -1,0 +1,295 @@
+{
+ "video": "Video_583_EXP6_CTRL4_40V",
+ "n_frames": 2236,
+ "roi": "718-1187",
+ "segundos_proceso": 338.2,
+ "control_max_dif_center_px": 0.0,
+ "control_max_dif_thickness_px": 1.1368683772161603e-13,
+ "eventos_vs_vigente": {
+  "clahe_mco": {
+   "nuevos_s": [],
+   "perdidos_s": []
+  },
+  "crudo": {
+   "nuevos_s": [
+    71.987,
+    72.187,
+    72.287,
+    72.387,
+    72.487,
+    72.588,
+    72.688,
+    73.287,
+    73.387
+   ],
+   "perdidos_s": []
+  },
+  "crudo_mco": {
+   "nuevos_s": [
+    3.822,
+    71.987,
+    72.187,
+    72.287,
+    72.387,
+    72.487,
+    72.588,
+    72.722,
+    73.287,
+    73.387,
+    73.528,
+    73.687
+   ],
+   "perdidos_s": []
+  },
+  "ventana25": {
+   "nuevos_s": [],
+   "perdidos_s": []
+  }
+ },
+ "B_clahe_menos_crudo": {
+  "center_px": {
+   "ruido_dif_px": 0.055152719999976806,
+   "desvio_dif_total_px": 0.07314572770340523,
+   "excursion_en_eventos_px": [
+    -0.098,
+    -0.092,
+    -0.116,
+    -0.046,
+    -0.072,
+    -0.075
+   ],
+   "excursion_mediana_en_ruidos": 1.5194173560258095,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.271985494106981,
+   "corr_con_senal": 0.009764947093561717
+  },
+  "thickness_px": {
+   "ruido_dif_px": 0.11616389995174678,
+   "desvio_dif_total_px": 0.14291153842815826,
+   "excursion_en_eventos_px": [
+    -0.191,
+    -0.347,
+    0.192,
+    -0.216,
+    0.067,
+    0.181
+   ],
+   "excursion_mediana_en_ruidos": 1.6507784951317135,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.3173164097914778,
+   "corr_con_senal": -0.08569443063921346
+  },
+  "y_top_px": {
+   "ruido_dif_px": 0.09911180999998233,
+   "desvio_dif_total_px": 0.10982316088743377,
+   "excursion_en_eventos_px": [
+    -0.093,
+    0.294,
+    -0.142,
+    0.127,
+    -0.025,
+    -0.165
+   ],
+   "excursion_mediana_en_ruidos": 1.3575576916617118,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.271985494106981,
+   "corr_con_senal": 0.06281348092598768
+  },
+  "y_bottom_px": {
+   "ruido_dif_px": 0.07012698000009465,
+   "desvio_dif_total_px": 0.1028093467223866,
+   "excursion_en_eventos_px": [
+    -0.179,
+    -0.18,
+    -0.199,
+    -0.143,
+    -0.12,
+    -0.023
+   ],
+   "excursion_mediana_en_ruidos": 2.294409369971576,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.40797824116047143,
+   "corr_con_senal": -0.06724393857100766
+  },
+  "media_dif_px": {
+   "y_top_px": 0.9114649821109122,
+   "y_bottom_px": -0.6496928443649389
+  }
+ },
+ "C_ransac_menos_mco": {
+  "center_px": {
+   "ruido_dif_px": 0.07079415000009573,
+   "desvio_dif_total_px": 0.07823695129925118,
+   "excursion_en_eventos_px": [
+    0.197,
+    0.168,
+    0.079,
+    0.071,
+    0.06,
+    0.181
+   ],
+   "excursion_mediana_en_ruidos": 1.7473195172158196,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.0,
+   "corr_con_senal": 0.22554483102516032
+  },
+  "thickness_px": {
+   "ruido_dif_px": 0.14906320702040382,
+   "desvio_dif_total_px": 0.16028019866295296,
+   "excursion_en_eventos_px": [
+    -0.442,
+    -0.384,
+    -0.171,
+    -0.148,
+    -0.097,
+    -0.353
+   ],
+   "excursion_mediana_en_ruidos": 1.7558046854623213,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.0,
+   "corr_con_senal": -0.21710659051753484
+  },
+  "y_top_px": {
+   "ruido_dif_px": 0.1420330799999534,
+   "desvio_dif_total_px": 0.15598343164911352,
+   "excursion_en_eventos_px": [
+    0.393,
+    0.336,
+    0.159,
+    0.141,
+    0.12,
+    0.362
+   ],
+   "excursion_mediana_en_ruidos": 1.7414957135344291,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.0,
+   "corr_con_senal": 0.21719826393087574
+  },
+  "y_bottom_px": {
+   "ruido_dif_px": 0.0
+  },
+  "media_dif_px": {
+   "y_top_px": -0.40328568872987425,
+   "y_bottom_px": 0.00040174418604643807
+  }
+ },
+ "C_columnas": {
+  "superior": {
+   "primeras10": {
+    "descartadas_pct": 0.7,
+    "residuo_mediano_px": 0.537
+   },
+   "centro": {
+    "descartadas_pct": 9.2,
+    "residuo_mediano_px": 0.883
+   },
+   "ultimas10": {
+    "descartadas_pct": 10.3,
+    "residuo_mediano_px": 1.339
+   }
+  },
+  "inferior": {
+   "primeras10": {
+    "descartadas_pct": 0.0,
+    "residuo_mediano_px": 0.747
+   },
+   "centro": {
+    "descartadas_pct": 0.0,
+    "residuo_mediano_px": 1.088
+   },
+   "ultimas10": {
+    "descartadas_pct": 0.1,
+    "residuo_mediano_px": 1.059
+   }
+  }
+ },
+ "C_columnas_descartadas_mas_50pct": {
+  "superior": [
+   27,
+   35,
+   48
+  ],
+  "inferior": []
+ },
+ "D_bordes_nan_pct": {
+  "clahe15": 0.555,
+  "crudo15": 0.082,
+  "clahe25": 0.013
+ },
+ "D_max_dif_ventana25_vs_15": {
+  "center_px": 0.151299999999992,
+  "thickness_px": 0.30940891987916075
+ },
+ "E_separacion_columnas_px": 7.93,
+ "E_ruido_compartido": {
+  "clahe_superior": {
+   "r_a_1px": 0.329,
+   "r_a_3px": 0.057,
+   "r_a_la_separacion_actual": -0.009,
+   "distancia_r_bajo_0.5_px": 1,
+   "distancia_r_bajo_0.2_px": 2
+  },
+  "clahe_inferior": {
+   "r_a_1px": 0.519,
+   "r_a_3px": 0.178,
+   "r_a_la_separacion_actual": 0.005,
+   "distancia_r_bajo_0.5_px": 2,
+   "distancia_r_bajo_0.2_px": 3
+  },
+  "crudo_superior": {
+   "r_a_1px": 0.207,
+   "r_a_3px": 0.081,
+   "r_a_la_separacion_actual": 0.01,
+   "distancia_r_bajo_0.5_px": 1,
+   "distancia_r_bajo_0.2_px": 2
+  },
+  "crudo_inferior": {
+   "r_a_1px": 0.435,
+   "r_a_3px": 0.17,
+   "r_a_la_separacion_actual": 0.005,
+   "distancia_r_bajo_0.5_px": 1,
+   "distancia_r_bajo_0.2_px": 3
+  }
+ },
+ "F_rescate": {
+  "caso": "Video_583_EXP6_CTRL4_40V",
+  "metodo_auto": "gauge_cintura",
+  "roi_auto": "718-1187",
+  "var_auto_pct": 5.83,
+  "cintura_px": 242.0,
+  "minimo_perfil_en_ok_px": 240.0,
+  "alternativas": [
+   [
+    "gauge_plana",
+    923,
+    964,
+    0.83
+   ],
+   [
+    "gauge_cintura",
+    718,
+    1187,
+    5.83
+   ],
+   [
+    "gauge_relajada",
+    634,
+    1296,
+    10.83
+   ],
+   [
+    "solo_nitidez",
+    345,
+    1296,
+    26.67
+   ],
+   [
+    "franja_completa",
+    0,
+    1881,
+    285.42
+   ]
+  ],
+  "roi_auto_contiene_cintura": true,
+  "roi_auto_grosor_min_sobre_cintura_pct": -0.83,
+  "rescate_actual_min180": "718-1187",
+  "rescate_con_cintura_min180": "718-1187",
+  "rescate_actual_min150": "718-1187",
+  "rescate_con_cintura_min150": "718-1187",
+  "rescate_actual_min120": "718-1187",
+  "rescate_con_cintura_min120": "718-1187"
+ }
+}

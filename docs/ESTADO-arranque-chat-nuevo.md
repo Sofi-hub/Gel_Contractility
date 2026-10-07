@@ -1,6 +1,6 @@
 # Estado del proyecto y arranque de un chat nuevo
 
-Actualizado 2026-10-08 (cierre de la Fase 3). Este documento sirve para dos cosas: es el resumen del
+Actualizado 2026-10-07 (cierre de la Fase 4). Este documento sirve para dos cosas: es el resumen del
 estado actual, y su primera sección se puede pegar tal cual al abrir un chat
 nuevo dentro del proyecto.
 
@@ -98,14 +98,14 @@ copia vieja del código, anterior a la v4. No es el código vigente.
 | `claude/cambios-roi-y-k.md` | ROI automática y elección de k |
 | `claude/diagnostico-bateria-4videos.md` | el diagnóstico que arrancó todo |
 
-## Resultado de la batería (regenerada al cerrar la Fase 3, 2026-10-08)
+## Resultado de la batería (regenerada al cerrar la Fase 4, 2026-10-07; mismas mediciones que la Fase 3)
 
 | video | ROI (método, columnas) | var | outliers | k (meseta) | eventos | período del tren |
 |---|---|---|---|---|---|---|
 | Video_prueba | 454–1516 (`gauge_cintura`, 60) | 5.32 % | 3.6 % | 9.4 (5.3–15.2) | 29 (6 estimulados) | 10.00043 ± 0.00230 s |
 | Video_063 | **875–1039** (`gauge_plana`, 54) | 0.35 % | 6.8 % | 11.4 (9.4–13.8) | 6 | 9.99812 ± 0.00304 s |
 | Video_268 | 918–1328 (`gauge_cintura`, 60) | 5.24 % | 2.0 % | 12.5 (5.8–24.4) | 6 | 10.00132 ± 0.00230 s |
-| Video_466 | **696–846** (`gauge_cintura`, 50) | 4.85 % | 10.5 % † | 11.4 (6.4–20.2) | 5 | 10.00184 ± 0.00542 s |
+| Video_466 | **696–846** (`gauge_cintura`, 50) | 4.85 % | 10.5 % | 11.4 (6.4–20.2) | 5 | 10.00184 ± 0.00542 s |
 | Video_583 | 718–1187 (`gauge_cintura`, 60) | 5.83 % | 4.0 % | 16.7 (12.5–24.4) | 6 | 10.00024 ± 0.00230 s |
 | Video_491 | 459–1206 (`gauge_cintura`, 60) | 5.08 % | 4.2 % | 10.4 (7.8–13.8) | 2 | sin tren |
 
@@ -114,8 +114,8 @@ usa ROI manual** desde la Fase 3. Video_prueba, 268, 583 y 491 dieron exactament
 antes; 063 y 466 cambiaron de ROI a propósito (ver `claude/propuesta-fase-3-resto.md`): mismos
 eventos, menos ruido (063: 0.034 → 0.024 px; 466: 0.212 → 0.182 px).
 
-† Apenas arriba del 10 % del chequeo 2; ese criterio no es comparable entre ROIs (H24) y el
-residuo es menor que con la vieja ROI manual. `main.py` avisa "en el límite". Fase 4.
+`outliers` es solo diagnóstico desde la Fase 4 (H24): ya no es criterio de aceptación. El
+**error de modelo** (también en `resumen`) va de 0.33 % (268) a 1.01 % (466) del grosor.
 
 **Métrica de contractilidad (Fase 3): una sola, la traslación de la franja** — amplitud
 relativa (% del grosor en reposo) y amplitud en px. El adelgazamiento es solo diagnóstico.
@@ -180,11 +180,21 @@ reescrita, `--base-tiempo pts` como default de `main.py`,
    `claude/propuesta-fase-3-resto.md`, con la lista de **lo que puede cambiar con
    `RARITOS`**. **Fase 4:** chequeo 2 (H24), `motion_check` (H50, H51),
    `signal_check` (H49), sexto evento de 063 (H11), ráfaga final de 583.
-1. **Conversar con el equipo la adquisición a alta velocidad.** Es la
+0f. **✅ 2026-10-07: Fase 4 cerrada (herramientas y casos puntuales).** Chequeo 2
+   (`outlier_frac` < 10 %) pasa a diagnóstico, con el error de modelo al lado (H24).
+   `motion_check` arreglado: la traslación por intensidad coincide con `center_px`
+   (0.96 / 0.99 / 0.88 en prueba / 063 / 466; H50, H51). `signal_check` acepta eventos
+   en cualquier sentido y usa `center_px` (H49). El sexto evento de 063 (0.31 s) es
+   real y espontáneo; marca nueva `junto_al_borde` (H11). La ráfaga final de 583 es
+   vibración del montaje (no se detecta). **Ningún número cambió.** Todo en
+   `claude/propuesta-fase-4.md`, con la lista de lo que hay que revisar con `RARITOS`
+   y la idea de optimizar el tiempo de procesamiento.
+1. **SIGUIENTE: procesar `RARITOS`.** Mirar en cada uno los riesgos que todavía no
+   avisan: H15 (timestamps inventados, silencioso), H22 (poco contraste), H21
+   (cintura corta), dos mesetas (H11), vibración. Lista en `claude/propuesta-fase-4.md`.
+2. **Conversar con el equipo la adquisición a alta velocidad.** Es la
    limitación de fondo: a 30 fps la cinética de las muestras rápidas no se
    puede medir. Hacen falta 200–300 fps en un subconjunto.
-2. **Los videos de `RARITOS`** todavía no se procesaron. Son los que
-   MuscleMotion no maneja bien, así que son el caso interesante.
 3. **Video de control de iluminación**: mismo gel, quieto, con un cambio de
    luz gradual o un parpadeo. Es lo único que falta para convertir el
    argumento contra MuscleMotion ("medimos geometría de borde, no intensidad")
@@ -214,6 +224,8 @@ Mejoras propuestas (no están en ningún pedido; ordenadas por valor/esfuerzo):
   ranuras ocupadas (si fallan 2 pulsos de 6, no hay tren).
 - El grosor da un salto **positivo** en el fotograma de máxima velocidad: es
   motion blur, no engrosamiento. Usar siempre la medida robusta.
+- Una vibración del microscopio entra en `center_px` igual que una contracción
+  (Video_583, 72–74 s): el reporte no la distingue.
 - Varias reglas de la Fase 3 salieron de pocos videos (piso de 40 columnas,
   "zona plana mejor que ancha", sesgo de CLAHE en 466): revisarlas con `RARITOS`.
 - **A 30 fps, TTP y RT50 no son medibles cuando la subida dura menos de ~5

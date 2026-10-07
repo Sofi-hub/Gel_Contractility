@@ -159,7 +159,14 @@ def load_max_projection(image_path: str | Path) -> np.ndarray:
     y la posición aproximada de los bordes superior/inferior, en vez
     de hardcodearlas a mano para cada video.
     """
-    img = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    # cv2.imread no abre rutas con caracteres no ASCII en Windows ("Análisis"):
+    # devuelve None sin explicar por que. Se leen los bytes con numpy y se
+    # decodifican en memoria, que funciona con cualquier ruta.
+    try:
+        datos = np.fromfile(str(image_path), dtype=np.uint8)
+    except OSError:
+        datos = np.array([], dtype=np.uint8)
+    img = cv2.imdecode(datos, cv2.IMREAD_GRAYSCALE) if datos.size else None
     if img is None:
         raise IOError(f"No se pudo leer la imagen: {image_path}")
     return img

@@ -15,20 +15,27 @@ monótono, sin meseta), y no distingue una de la otra.
 
 La ASIMETRÍA sí las distingue, y no depende de ningún umbral:
 
-  Una contracción es una excursión hacia ABAJO desde una línea base, y
+  Una contracción es una excursión hacia UN lado desde una línea base, y
   el gel pasa más tiempo relajado que contraído. Entonces la
-  distribución de la señal sin deriva queda con una cola larga hacia
-  abajo: asimetría (skew) claramente NEGATIVA.
+  distribución de la señal sin deriva queda con una cola larga hacia ese
+  lado. HACIA CUÁL depende del eje: en `center_px` (coordenadas de imagen)
+  la franja baja en la pantalla y la cola sale hacia ARRIBA en cinco de los
+  seis videos; en Video_491 sale hacia abajo. Por eso el sentido se elige
+  como el reporte (`_signo_evento`): el de la cola más pesada, y se informa.
 
   El ruido de medición — venga del sensor, del ajuste, o de la
   compresión — es simétrico: sube tanto como baja. Skew ~ 0.
 
-Medido sobre dos videos reales del proyecto:
+Medido sobre `center_px` de los seis videos vigentes (Fase 4, 2026-10-07):
+los seis dan "HAY una población de contracciones", igual que el reporte
+(los seis tienen conteo reportable). Con la versión anterior, que exigía la
+cola hacia ABAJO, cinco salían "ambiguo". Control negativo sintético (ruido
+de colas pesadas, t de Student): skew -0.08 a +0.39, no da "HAY".
+SIN PROBAR: un video real sin contracciones (control negativo real).
 
-    Video_prueba (contrae, validado)   skew = -2.21   3.4% del tiempo bajo -4 sigma
-    Video_063                          skew = +0.28   0.2% del tiempo bajo -4 sigma
-
-Ese contraste es inequívoco y no depende de elegir ningún parámetro.
+`center_px` es la columna por defecto (hallazgo 1 de CLAUDE.md). Sobre
+`thickness_px` el grosor casi no se mueve en varios videos y el veredicto
+sale "débil" o "ambiguo" aunque haya contracciones.
 
 IMPORTANTE — no usar un filtro pasabanda para quitar la deriva. Un
 pasabanda convierte cada evento real en un dip flanqueado por dos picos
@@ -58,7 +65,7 @@ from scipy.stats import skew
 from src.estadistica import mad, detrend_median as _detrend_median
 
 
-def analizar(df: pd.DataFrame, col: str = "thickness_px", win_s: float = 2.0) -> dict:
+def analizar(df: pd.DataFrame, col: str = "center_px", win_s: float = 2.0) -> dict:
     t = df["time_s"].to_numpy(float)
     v = df[col].to_numpy(float)
     ok = np.isfinite(v)
@@ -66,8 +73,15 @@ def analizar(df: pd.DataFrame, col: str = "thickness_px", win_s: float = 2.0) ->
     fps = 1.0 / np.median(np.diff(t))
     r = _detrend_median(v, fps, win_s)
     ru = mad(r)
+    # Sentido de los eventos: el de la cola mas pesada (mismo criterio que el
+    # reporte). La serie se da vuelta si hace falta, para que los eventos
+    # queden siempre hacia ABAJO y el veredicto sea el mismo en los dos casos.
+    arriba, abajo = float(np.mean(r > 4 * ru)), float(np.mean(r < -4 * ru))
+    signo = 1.0 if abajo >= arriba else -1.0
+    r = signo * r
     return {
         "columna": col,
+        "sentido_eventos": "hacia valores menores" if signo > 0 else "hacia valores mayores (serie invertida)",
         "n": len(v),
         "fps": round(fps, 2),
         "media_px": round(float(v.mean()), 3),
@@ -84,9 +98,9 @@ def veredicto(a: dict) -> str:
     sk, lo, hi = a["skew"], a["pct_bajo_-4sigma"], a["pct_sobre_+4sigma"]
     asim = lo / hi if hi > 0 else (np.inf if lo > 0 else 1.0)
     if sk <= -1.0 and lo >= 0.5 and asim >= 2:
-        return "HAY una poblacion de contracciones (asimetria clara hacia abajo)"
+        return "HAY una poblacion de contracciones (asimetria clara hacia un lado)"
     if sk <= -0.5 and lo >= 0.2 and asim >= 1.5:
-        return "posible senal debil: asimetria hacia abajo, pero poco marcada"
+        return "posible senal debil: asimetria hacia un lado, pero poco marcada"
     if abs(sk) < 0.5 and asim < 1.5:
         return ("NO hay poblacion de contracciones en esta senal: es simetrica, "
                 "sube tanto como baja (=ruido)")
@@ -101,9 +115,9 @@ def parse_args():
     p.add_argument("--compare", default=None,
                    help="Segunda serie para comparar (ideal: un video que SI contrae, "
                         "como control positivo).")
-    p.add_argument("--column", default="thickness_px",
-                   help="Columna a analizar. Probar tambien 'center_px': el grosor es "
-                        "ciego a una traslacion vertical del gel, center_px no.")
+    p.add_argument("--column", default="center_px",
+                   help="Columna a analizar. Por defecto center_px (hallazgo 1): el grosor "
+                        "es ciego a la traslacion vertical del gel.")
     p.add_argument("--win-s", type=float, default=2.0,
                    help="Ventana (s) de la mediana movil que quita la deriva. Debe ser "
                         "bastante mayor que la duracion de un evento.")
@@ -124,7 +138,7 @@ def main():
 
     resultados = []
     for nombre, df in series:
-        cols = [a.column] + (["center_px"] if ("center_px" in df.columns and a.column != "center_px") else [])
+        cols = [a.column]
         for c in cols:
             if c not in df.columns:
                 print(f"(la serie '{nombre}' no tiene la columna '{c}'; se omite)")
@@ -143,11 +157,13 @@ def main():
             r["skew"], r["pct_bajo_-4sigma"], r["pct_sobre_+4sigma"]))
     print()
     for r in resultados:
-        print(f"  {r['serie'][:26]:26s} {r['columna']:13s} -> {veredicto(r)}")
+        print(f"  {r['serie'][:26]:26s} {r['columna']:13s} -> {veredicto(r)} "
+              f"[eventos {r['sentido_eventos']}]")
     print()
-    print("  Referencia: una contraccion real es una excursion hacia ABAJO y el gel pasa")
+    print("  Referencia: una contraccion real es una excursion hacia UN lado y el gel pasa")
     print("  mas tiempo relajado que contraido, asi que la distribucion queda con cola")
-    print("  hacia abajo (skew negativo). El ruido es simetrico (skew ~ 0).")
+    print("  hacia ese lado. La serie se orienta para que esa cola quede abajo (skew")
+    print("  negativo). El ruido es simetrico (skew ~ 0).")
 
     # --- gráfico: serie sin deriva + histograma ---
     n = len(resultados)

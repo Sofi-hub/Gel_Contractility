@@ -3,17 +3,11 @@ scripts/motion_check.py
 ------------------------
 ¿QUÉ se mueve en el video?
 
-El pipeline principal mide UNA cosa: el grosor vertical del gel. Ese
-observable es CIEGO a dos movimientos perfectamente visibles a ojo:
-
-  * una TRASLACIÓN vertical del puente entero (si los dos bordes bajan
-    1 px, el grosor no cambia ni un poco);
-  * un movimiento AXIAL (a lo largo del eje del gel), que es lo que
-    esperarías de una contracción que acorta el tejido entre anclajes.
-
-Si a ojo se ven contracciones y la serie de grosor sale plana, hay que
-saber si el problema es la MEDICIÓN o es que el grosor no es el
-observable correcto para este video. Este script lo responde midiendo,
+El pipeline principal detecta sobre `center_px` (posición media de los dos
+bordes): mide la TRASLACIÓN vertical de la franja por geometría de borde.
+Este script la verifica con un método que no usa los bordes (correlación
+de intensidad) y mira además el movimiento axial, al que el pipeline es
+ciego. Mide,
 cuadro a cuadro y dentro de la misma ROI que usa el pipeline:
 
   mov_gel_*      : movimiento promedio |I(t) - I(t-1)| dentro del gel,
@@ -29,9 +23,14 @@ cuadro a cuadro y dentro de la misma ROI que usa el pipeline:
   desp_vert_px   : desplazamiento vertical subpíxel de la franja entera
                    (traslación, no cambio de grosor).
 
-Para cada canal se reporta la asimetría (skew) de la señal sin deriva.
-Una población de contracciones reales da asimetría claramente NEGATIVA
-(muchas excursiones en un sentido, pocas en el otro); el ruido da ~0.
+Para cada canal se reporta la asimetría (skew) de la señal sin deriva y
+hacia qué lado está la cola pesada. Una población de contracciones da una
+cola larga hacia UN lado (cuál, depende del eje); el ruido es simétrico.
+
+VEREDICTO (Fase 4): compara desp_vert_px (intensidad, sin bordes) con
+center_px de serie_temporal.xlsx (bordes). Si coinciden en forma y magnitud,
+la medida principal queda confirmada por un método independiente. Las
+diferencias |I(t)-I(t-1)| son informativas: no deciden nada.
 
 Uso:
     python scripts/motion_check.py --video data/raw_videos/mi_video.mp4 \
@@ -68,33 +67,34 @@ from src.pipeline import describe_roi
 def _subpixel_shift(ref: np.ndarray, cur: np.ndarray, max_lag: int = 20,
                     min_corr: float = 0.5) -> tuple[float, float]:
     """
-    Desplazamiento subpíxel de `cur` respecto de `ref`, por correlación
-    cruzada normalizada + interpolación parabólica del pico.
+    Desplazamiento subpíxel de `cur` respecto de `ref`: correlación de
+    Pearson calculada SOLO sobre la parte superpuesta, en cada lag, más
+    interpolación parabólica del pico.
 
-    Devuelve (corrimiento_px, correlacion_del_pico). El corrimiento es NaN
-    si la correlación del pico no llega a `min_corr`: eso significa que el
-    perfil no tiene estructura suficiente para engancharse (por ejemplo, un
-    gel sin textura visible a lo largo del eje), y en ese caso el
-    "desplazamiento" que saldría sería puro ruido de correlación — un
-    resultado sin sentido disfrazado de número.
+    Devuelve (corrimiento_px, correlacion_del_pico). NaN si el pico no llega
+    a `min_corr` (el perfil no tiene estructura para engancharse).
+
+    FASE 4 (H51): la versión anterior normalizaba los perfiles ENTEROS y
+    después sumaba productos solo sobre la superposición. Eso castiga a los
+    lags distintos de cero y achica el corrimiento: con verdad conocida daba
+    0.10 px para 1 px (0.18x en los eventos de Video_prueba). Con Pearson por
+    lag da 0.997 px para 1 px, y en los eventos reales coincide con
+    center_px (cociente 0.96 en Video_prueba, 0.99 en 063, 0.88 en 466).
+    Ver claude/propuesta-fase-4.md.
     """
-    a = np.asarray(ref, float) - np.mean(ref)
-    b = np.asarray(cur, float) - np.mean(cur)
-    na, nb = np.linalg.norm(a), np.linalg.norm(b)
-    if na < 1e-9 or nb < 1e-9:
-        return np.nan, 0.0
-    a, b = a / na, b / nb
-
+    ref = np.asarray(ref, float)
+    cur = np.asarray(cur, float)
+    n = len(ref)
     lags = np.arange(-max_lag, max_lag + 1)
-    n = len(a)
-    corr = np.empty(len(lags))
+    corr = np.full(len(lags), -1.0)
     for i, L in enumerate(lags):
-        if L < 0:
-            corr[i] = np.dot(a[-L:], b[:n + L])
-        elif L > 0:
-            corr[i] = np.dot(a[:n - L], b[L:])
-        else:
-            corr[i] = np.dot(a, b)
+        a = ref[max(0, -L): n - max(0, L)]
+        b = cur[max(0, L): n - max(0, -L)]
+        a = a - a.mean()
+        b = b - b.mean()
+        d = np.linalg.norm(a) * np.linalg.norm(b)
+        if d > 1e-9:
+            corr[i] = float(np.dot(a, b) / d)
 
     j = int(np.argmax(corr))
     peak = float(corr[j])
@@ -102,9 +102,9 @@ def _subpixel_shift(ref: np.ndarray, cur: np.ndarray, max_lag: int = 20,
         return np.nan, peak
     if j == 0 or j == len(corr) - 1:
         return float(lags[j]), peak
-    c0, cm, cp = corr[j], corr[j - 1], corr[j + 1]
+    cm, c0, cp = corr[j - 1], corr[j], corr[j + 1]
     denom = cm - 2 * c0 + cp
-    delta = 0.0 if abs(denom) < 1e-12 else float(np.clip(0.5 * (cm - cp) / denom, -1, 1))
+    delta = 0.0 if abs(denom) < 1e-12 else float(0.5 * (cm - cp) / denom)
     return float(lags[j] + delta), peak
 
 
@@ -133,6 +133,7 @@ def _describe_channel(name, v, fps, unidad="px"):
         "ruido_MAD": round(ru, 5),
         "skew": round(float(skew(r)), 3),
         "frac_bajo_-4sigma_pct": round(100 * float(np.mean(r < -4 * ru)), 3),
+        "frac_sobre_+4sigma_pct": round(100 * float(np.mean(r > 4 * ru)), 3),
         "frec_dominante_Hz": round(f0, 3) if np.isfinite(f0) else None,
         "pico_sobre_fondo": round(ratio, 2) if np.isfinite(ratio) else None,
     }
@@ -158,6 +159,9 @@ def parse_args():
                         "interior del gel (evita que el propio borde domine el movimiento).")
     p.add_argument("--gap", type=int, default=60,
                    help="Separacion (px) entre el gel y la franja de fondo de control.")
+    p.add_argument("--serie", default=None,
+                   help="serie_temporal.xlsx del mismo video (por defecto, la de --output-dir) "
+                        "para comparar desp_vert_px con center_px.")
     p.add_argument("--stride", type=int, default=1, help="Procesar 1 de cada N cuadros.")
     p.add_argument("--max-frames", type=int, default=None)
     return p.parse_args()
@@ -169,6 +173,12 @@ def main():
 
     meta = io_utils.get_video_metadata(a.video)
     fps_video = meta["fps"] if meta["fps"] > 0 else 30.0
+    # Eje de tiempo por PTS (hallazgo 3 de CLAUDE.md), como el pipeline. Con
+    # fotograma / fps declarado el error llegaba a 0.33 s a mitad del video.
+    try:
+        pts = io_utils.read_pts_seconds(a.video)
+    except Exception:
+        pts = np.array([])
 
     max_proj = (io_utils.load_max_projection(a.maxproj) if a.maxproj
                 else io_utils.compute_max_projection(a.video, stride=5))
@@ -236,7 +246,7 @@ def main():
         sv, cv = _subpixel_shift(ref_vert, p_ve, max_lag=25)
         r = {
             "frame": idx,
-            "time_s": idx / fps_video,
+            "time_s": float(pts[idx] - pts[0]) if idx < len(pts) else idx / fps_video,
             "desp_axial_px": sa, "corr_axial": round(ca, 4),
             "desp_vert_px": sv, "corr_vert": round(cv, 4),
         }
@@ -255,7 +265,8 @@ def main():
         if len(rows) % 300 == 0:
             print(f"  {len(rows)} cuadros...")
 
-    df = pd.DataFrame(rows).dropna(subset=["mov_gel"]).reset_index(drop=True)
+    # El primer fotograma no tiene |dI| (no hay anterior): queda NaN, no se borra.
+    df = pd.DataFrame(rows)
     fps = 1.0 / np.median(np.diff(df.time_s.to_numpy()))
     print(f"Listo: {len(df)} cuadros a {fps:.2f} fps\n")
 
@@ -265,34 +276,42 @@ def main():
     resumen = pd.DataFrame([_describe_channel(c, df[c].to_numpy(), fps) for c in canales])
     print(resumen.to_string(index=False))
 
-    # --- veredicto ---
-    # OJO: NO se comparan los niveles absolutos de |dI|. Ese nivel esta
-    # dominado por el ruido de sensor (es casi el mismo dentro y fuera del
-    # gel), asi que la razon de medianas da ~1.00x aunque el gel se este
-    # moviendo muchisimo. Lo que delata movimiento es la MODULACION en el
-    # tiempo: cuanto varia |dI| una vez quitada la deriva.
-    R = resumen.set_index("canal")["rms_sin_deriva"]
-    base = max(float(R.get("mov_fondo", np.nan)), 1e-9)
-    r_gel = float(R.get("mov_gel", np.nan)) / base
-    r_int = float(R.get("mov_interior", np.nan)) / base
-
+    # --- veredicto (Fase 4, H50) ---
+    # El veredicto viejo deducia "cambio de grosor" de que el interior del gel
+    # se moviera menos de 2x el fondo. No vale: un gel sin textura que se
+    # TRASLADA tambien mueve solo sus bordes. Ahora se usa lo que si distingue:
+    # la traslacion vertical medida por INTENSIDAD (desp_vert_px), que no usa
+    # los bordes, contra center_px, que si. Si coinciden, la medida principal
+    # queda confirmada por un metodo independiente.
     print()
     print("=" * 74)
-    print("VEREDICTO  (modulacion de |I(t)-I(t-1)| respecto del fondo de control)")
-    print(f"  zona del gel con bordes : {r_gel:6.1f}x el fondo")
-    print(f"  solo el interior        : {r_int:6.1f}x el fondo")
-    if r_gel < 2:
-        print("  -> NO hay movimiento del gel por encima del fondo. Lo que se ve en la")
-        print("     serie de grosor no puede ser deformacion del tejido: es ruido de")
-        print("     sensor, parpadeo de iluminacion o compresion del video.")
-    elif r_int < 2:
-        print("  -> Se mueven SOLO LOS BORDES, no la textura del material. Eso es")
-        print("     compatible con un cambio de GROSOR: el observable del pipeline")
-        print("     principal es el correcto para este video.")
+    print("VEREDICTO  (traslacion por intensidad vs center_px por bordes)")
+    serie = Path(a.serie) if a.serie else Path(a.output_dir) / "serie_temporal.xlsx"
+    if serie.exists():
+        st = pd.read_excel(serie, sheet_name="diagnostics")
+        d2 = df[["frame", "desp_vert_px"]].merge(st[["frame", "center_px"]], on="frame", how="inner")
+        c = _detrended(d2["center_px"].to_numpy(float), fps)
+        dv = _detrended(d2["desp_vert_px"].to_numpy(float), fps)
+        ok = np.isfinite(c) & np.isfinite(dv)
+        if ok.sum() > 30:
+            pend = float(np.dot(c[ok], dv[ok]) / np.dot(c[ok], c[ok]))
+            rho = float(np.corrcoef(c[ok], dv[ok])[0, 1])
+            print(f"  pendiente desp_vert / center_px = {pend:+.3f} | correlacion = {rho:+.3f}")
+            if abs(rho) >= 0.9 and 0.8 <= abs(pend) <= 1.2:
+                print("  -> La traslacion por intensidad CONFIRMA a center_px (forma y magnitud).")
+            elif abs(rho) >= 0.9:
+                print("  -> Coinciden en forma pero no en magnitud: revisar (en 466 la intensidad")
+                print("     da 0.88x; no se sabe cual de los dos esta mas cerca de la verdad).")
+            else:
+                print("  -> NO confirma: la traslacion por intensidad no sigue a center_px.")
+                print("     Mirar el video: puede haber vibracion, desenfoque o un borde mal medido.")
     else:
-        print("  -> Se mueve la TEXTURA del gel, no solo sus bordes. Hay traslacion o")
-        print("     movimiento axial. El grosor es CIEGO a eso: mira desp_vert_px y")
-        print("     desp_axial_px, y considera usarlos como observable de contraccion.")
+        print(f"  (no hay {serie}: correr main.py antes, o pasar --serie, para comparar)")
+    R = resumen.set_index("canal")
+    base = max(float(R["rms_sin_deriva"].get("mov_fondo", np.nan)), 1e-9)
+    print(f"  |dI| (informativo, NO decide nada): gel con bordes "
+          f"{float(R['rms_sin_deriva'].get('mov_gel', np.nan)) / base:.1f}x el fondo, "
+          f"interior {float(R['rms_sin_deriva'].get('mov_interior', np.nan)) / base:.1f}x.")
 
     for nom, col in (("axial", "corr_axial"), ("vertical", "corr_vert")):
         if col in df.columns:
@@ -301,15 +320,16 @@ def main():
                 print(f"  OJO: la correlacion {nom} engancha solo en el {100*buena:.0f}% de los "
                       f"cuadros (mediana {df[col].median():.2f}); ese canal no es fiable aca.")
 
-    ax = resumen.set_index("canal")
-    for c, etiqueta in [("desp_vert_px", "traslacion vertical de la franja"),
-                        ("desp_axial_px", "movimiento axial (a lo largo del gel)")]:
-        if c in ax.index and "rms_sin_deriva" in ax.columns:
-            print(f"  {etiqueta:38s} RMS = {ax.loc[c,'rms_sin_deriva']:.4f} px | "
-                  f"skew = {ax.loc[c,'skew']:+.2f} | "
-                  f"pico {ax.loc[c,'frec_dominante_Hz']} Hz ({ax.loc[c,'pico_sobre_fondo']}x fondo)")
-    print("  (skew claramente negativo = poblacion de excursiones en un solo sentido =")
-    print("   compatible con contracciones. skew ~ 0 = simetrico = ruido.)")
+    for c_, etiqueta in [("desp_vert_px", "traslacion vertical de la franja"),
+                         ("desp_axial_px", "movimiento axial (a lo largo del gel)")]:
+        if c_ in R.index and "rms_sin_deriva" in R.columns:
+            arriba, abajo = R.loc[c_, "frac_sobre_+4sigma_pct"], R.loc[c_, "frac_bajo_-4sigma_pct"]
+            lado = "hacia +" if arriba > abajo else "hacia -" if abajo > arriba else "pareja"
+            print(f"  {etiqueta:38s} RMS = {R.loc[c_,'rms_sin_deriva']:.4f} px | "
+                  f"skew = {R.loc[c_,'skew']:+.2f} | cola pesada {lado} "
+                  f"({arriba:.2f}% / {abajo:.2f}% mas alla de +-4 sigma)")
+    print("  (una cola pesada hacia UN lado, cualquiera, = poblacion de excursiones =")
+    print("   compatible con contracciones; el signo depende del eje. Simetrico = ruido.)")
     print("=" * 74)
 
     # --- gráfico ---

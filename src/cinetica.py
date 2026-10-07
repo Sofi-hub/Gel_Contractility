@@ -57,12 +57,21 @@ Con eso:
 CUANDO SE REPORTA
 -----------------
 Un TTP de 2 fotogramas no mide la biologia, mide el intervalo de muestreo.
-Regla (propuesta 3 del documento de viabilidad): la metrica es reportable
-para un evento si abarca al menos `min_frames` fotogramas (default 5, que da
-~20 % de error de cuantizacion). Para el video: si la MEDIANA de fotogramas
-llega a `min_frames` y ademas el conteo de eventos es reportable (meseta del
-umbral con 0 falsos). Si no, el valor puntual queda en NaN y se reporta solo
-la cota superior: "TTP < X ms", nunca "TTP = X ms".
+Un evento es MEDIBLE para una metrica si esta abarca al menos `min_frames`
+fotogramas (default 5, que da ~20 % de error de cuantizacion). Para el video
+(Fase 3, C2, H41): la mediana se calcula SOLO sobre los eventos medibles, y
+la metrica es reportable si lo es al menos la MITAD de los eventos con cruce
+y ademas el conteo de eventos es reportable (meseta del umbral con 0
+falsos). Antes la regla miraba la mediana de fotogramas de todos los eventos
+y un evento de 4 fotogramas entraba igual en la mediana (Video_466). Si no
+es reportable, el valor puntual queda en NaN y se da solo la cota: "TTP < X
+ms", nunca "TTP = X ms". La cota se calcula sobre todos los eventos.
+
+POR GRUPO (Fase 3, C1, H40): `contraction_report` llama a `resumir` sobre
+todos los eventos, sobre los estimulados y sobre los espontaneos por
+separado. Si hay tren, la cifra principal es la de los estimulados: mezclar
+grupos daba, en Video_prueba, la amplitud relativa de las espontaneas
+(0.71 %) como si fuera la del video (estimulados: 2.29 %).
 
 Nada de esto necesita calibracion: TTP y RT50 estan en segundos y la
 amplitud relativa en %.
@@ -224,9 +233,11 @@ def _iqr(x: np.ndarray) -> str | None:
 
 def resumir(ev: pd.DataFrame, conteo_reportable: bool,
             min_frames: int = MIN_FRAMES) -> dict:
-    """Resumen por video. El valor puntual de TTP / RT50 solo se emite si es
-    medible; si no, queda NaN y se da la cota superior."""
-    out: dict = {"cinetica_min_frames": int(min_frames)}
+    """Resumen de un conjunto de eventos (el video entero o un grupo). El valor
+    puntual de TTP / RT50 es la mediana de los eventos MEDIBLES y solo se emite
+    si lo es al menos la mitad; si no, queda NaN y se da la cota superior."""
+    out: dict = {"cinetica_min_frames": int(min_frames),
+                 "n_eventos_cinetica": 0 if ev is None else int(len(ev))}
     if ev is None or len(ev) == 0:
         out["cinetica_motivo"] = "sin eventos"
         return out
@@ -244,21 +255,28 @@ def resumir(ev: pd.DataFrame, conteo_reportable: bool,
         if not ok.any():
             out[f"{m}_reportable"] = False
             out[f"{m}_s"] = float("nan")
+            out[f"{m}_n_medibles"] = 0
             motivos.append(f"{m.upper()}: ningun evento cruza el nivel dentro de la ventana")
             continue
-        fr_med = float(np.median(fr[ok]))
-        out[f"{m}_frames_mediana"] = fr_med
-        reportable = bool(conteo_reportable and fr_med >= min_frames)
+        medible = ok & ev[f"{m}_medible"].to_numpy(bool)
+        n_med = int(medible.sum())
+        out[f"{m}_n_medibles"] = n_med
+        out[f"{m}_frames_mediana"] = float(np.median(fr[ok]))
+        reportable = bool(conteo_reportable and n_med > 0 and n_med >= 0.5 * ok.sum())
         out[f"{m}_reportable"] = reportable
-        val = ev[f"{m}_s"].to_numpy(float)[ok]
+        val = ev[f"{m}_s"].to_numpy(float)[medible]
         out[f"{m}_s"] = float(np.median(val)) if reportable else float("nan")
         out[f"{m}_iqr_s"] = _iqr(val) if reportable else None
         out[f"{m}_cota_inf_s"] = float(np.median(ev[f"{m}_min_s"].to_numpy(float)[ok]))
         out[f"{m}_cota_sup_s"] = float(np.median(ev[f"{m}_max_s"].to_numpy(float)[ok]))
         if not conteo_reportable:
             motivos.append(f"{m.upper()}: el conteo de eventos no es reportable")
-        elif fr_med < min_frames:
-            motivos.append(f"{m.upper()}: {fr_med:g} fotogramas (< {min_frames}); "
+        elif not reportable:
+            motivos.append(f"{m.upper()}: medible en {n_med} de {int(ok.sum())} eventos "
+                           f"(< la mitad con >= {min_frames} fotogramas); "
                            f"solo cota {m.upper()} < {1000 * out[f'{m}_cota_sup_s']:.0f} ms")
+        elif n_med < ok.sum():
+            motivos.append(f"{m.upper()}: mediana sobre los {n_med} de {int(ok.sum())} eventos medibles")
     out["cinetica_motivo"] = "; ".join(motivos) if motivos else "TTP y RT50 medibles"
+    out["n_eventos_cinetica"] = int(len(ev))
     return out

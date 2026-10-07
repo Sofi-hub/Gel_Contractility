@@ -513,6 +513,15 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
     junto = np.array([bool(sin_medida[max(0, p - 1):p + 2].any()) for p in picos], dtype=bool)
     res["_junto_a_hueco"] = junto
     res["eventos_junto_a_hueco"] = int(junto.sum())
+    # Fase 4 (H11): un evento a menos de media ventana del detrend del inicio o
+    # del fin del video tiene la linea base estimada con media ventana. Se
+    # detecta igual (en 063, t = 0.31 s es una contraccion real: se ve en la
+    # senal cruda y por intensidad), pero queda marcado.
+    t_ok = t[np.isfinite(t)]
+    borde = np.array([bool(t[p] - t_ok[0] < win_s / 2 or t_ok[-1] - t[p] < win_s / 2)
+                      for p in picos], dtype=bool)
+    res["_junto_al_borde"] = borde
+    res["eventos_junto_al_borde"] = int(borde.sum())
 
     # --- Fase 2.2: ventana, estabilidad y todas las mesetas ------------------
     res["win_s_usado"] = float(win_s)
@@ -566,6 +575,10 @@ def imprimir(nombre: str, a: dict) -> None:
         print(f"  AVISO: {a['eventos_junto_a_hueco']} evento(s) con un fotograma sin medida en el "
               f"pico o al lado: su instante y su amplitud son inciertos (columna "
               f"'junto_a_hueco' de la hoja eventos_*).")
+    if a.get("eventos_junto_al_borde"):
+        print(f"  nota: {a['eventos_junto_al_borde']} evento(s) a menos de media ventana del "
+              f"detrend del inicio o del fin del video: su linea base se estima con media "
+              f"ventana (columna 'junto_al_borde' de la hoja eventos_*).")
     if a.get("fotogramas_low_quality"):
         print(f"  nota: {a['fotogramas_low_quality']} fotograma(s) LOW_QUALITY entran al analisis "
               f"como los demas.")
@@ -1021,7 +1034,8 @@ def main():
                 pd.DataFrame({"evento": np.arange(1, r["n_eventos"] + 1),
                               "tiempo_s": r["tiempos_s"],
                               "amplitud_px": r["_r"][r["_picos"]],
-                              "junto_a_hueco": r["_junto_a_hueco"]}
+                              "junto_a_hueco": r["_junto_a_hueco"],
+                              "junto_al_borde": r["_junto_al_borde"]}
                              ).to_excel(w, sheet_name=f"eventos_{nombre[:18]}", index=False)
             if r.get("_cinetica") is not None and len(r["_cinetica"]):
                 r["_cinetica"].to_excel(w, sheet_name=f"cinetica_{nombre[:18]}", index=False)

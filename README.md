@@ -27,8 +27,11 @@ python scripts/contraction_report.py \
 ```
 
 Eso es todo: los dos comandos generan los `.xlsx` y los PNG numerados en la
-carpeta de salida. `--frecuencia-estimulo` es opcional; sin él igual se mide la
-frecuencia del tren, sólo que no se contrasta contra el valor configurado.
+carpeta de salida. `--frecuencia-estimulo` decide **dónde se busca el tren**:
+con ella, solo cerca de esa frecuencia (±10 %), y el reporte dice "enganchado" o
+"no hay enganche"; si el protocolo cambia de frecuencia, se pasan todas
+(`--frecuencia-estimulo 0.1 0.2`). Sin ella, se busca un tren en todos los
+períodos y el veredicto aclara que no se configuró ninguna frecuencia.
 
 Flags que conviene conocer:
 
@@ -86,6 +89,7 @@ relativos (porcentaje del grosor, cocientes) o dentro de un mismo aumento.
     src/cinetica.py          TTP, RT50 y amplitud relativa, con cotas cuando no son medibles
     tests/test_seleccion_k.py       regresión de la elección automática del umbral
     tests/test_cinetica.py          TTP/RT50 sobre eventos sintéticos de cinética conocida
+    tests/test_ritmo.py             estimuladas/espontáneas: pulsos que fallan, R5, R6, veredictos
 
 Resultados vigentes: `data/processed_data/<video>/` (sin sufijo). Las corridas
 anteriores están archivadas en `data/processed_data/_superadas/`.

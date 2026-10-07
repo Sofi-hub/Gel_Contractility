@@ -42,6 +42,11 @@ El grosor **sigue midiéndose**, porque es la variable biomecánicamente
 interesante, pero promediando eventos alineados en el tiempo, no evento a
 evento.
 
+> **Fase 4 (2026-10-07): verificado por un método independiente.** La traslación
+> medida por correlación de intensidad (sin bordes, `motion_check` arreglado)
+> coincide con `center_px` en magnitud: 0.96 en Video_prueba, 0.99 en 063 y 0.88 en
+> 466 (esta última sin explicar).
+
 > **Fase 3 (2026-10-08): una sola métrica de contractilidad, la traslación.** Se
 > reporta la amplitud de `center_px` como **% del grosor en reposo** (cifra
 > principal, comparable entre videos) y en **px** al lado (solo a igual aumento).
@@ -200,15 +205,16 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     src/qc_visualization.py  overlay de inliers/outliers, perfil de ROI
     src/plotting.py          figuras numeradas
     scripts/contraction_report.py   EL script principal de análisis
-    scripts/motion_check.py         diagnóstico: QUÉ se mueve
-    scripts/signal_check.py         diagnóstico: ¿hay población de eventos?
+    scripts/motion_check.py         diagnóstico: QUÉ se mueve; confirma center_px por intensidad
+    scripts/signal_check.py         diagnóstico sin umbral: ¿hay población de eventos? (cualquier sentido)
     tests/test_seleccion_k.py       regresión de la elección automática de k
     tests/test_cinetica.py          TTP/RT50 sobre eventos sintéticos de cinética conocida
     tests/test_nan.py               fotogramas sin medida (NaN): el análisis no se anula
     tests/test_deteccion.py         la detección ENTERA sobre sintéticos de conteo conocido
     tests/test_ritmo.py             estimuladas/espontáneas: pulsos que fallan, R5, R6, veredictos
     tests/test_roi.py               elección de ROI: columnas adaptables, piso 40, rescate con cintura
-    scripts/medir_*.py              mediciones de la Fase 3 (no son parte del flujo)
+    tests/test_diagnosticos.py      motion_check (corrimiento conocido), signal_check, junto_al_borde
+    scripts/medir_*.py              mediciones de las Fases 3 y 4 (no son parte del flujo)
 
 Flujo normal:
 
@@ -222,9 +228,12 @@ Flujo normal:
 en vez de avisar y seguir emitiendo números.
 
 Los resultados vigentes están en `data/processed_data/<video>/`, **sin sufijo**,
-regenerados al cerrar la Fase 3 (2026-10-08). Las corridas anteriores están en
-`data/processed_data/_superadas/` (`_v4`, `_v5` y `_v6`, la vigente hasta la
-Fase 3). Línea base: Video_prueba 29 eventos (6 estimulados, T = 10.00043 ±
+regenerados al cerrar la Fase 4 (2026-10-07; la Fase 4 no cambió ninguna
+medición). Las corridas anteriores están en `data/processed_data/_superadas/`
+(`_v4`, `_v5`, `_v6` y `_v7`, la vigente hasta la Fase 4). **No guardar en
+`processed_data` salidas del cuaderno**: el `contracciones.xlsx` de Video_prueba
+apareció reescrito con `win_s` fijo de 2 s (28 eventos; probablemente el
+cuaderno) y la regeneración lo devolvió a 29. Línea base: Video_prueba 29 eventos (6 estimulados, T = 10.00043 ±
 0.0023 s); 063: 6; 268: 6; 466: 5 (ROI automática); 583: 6; 491: 2.
 
 ## Límites conocidos
@@ -240,10 +249,19 @@ Fase 3). Línea base: Video_prueba 29 eventos (6 estimulados, T = 10.00043 ±
   motion blur, no engrosamiento. Usar siempre la medida robusta.
 - `frequency_profile` no resuelve períodos mayores a `window_s / 2`. Con el
   default de 8 s no ve el ritmo de 10 s: subirlo a 20.
-- El chequeo `outlier_frac` < 10 % no es comparable entre ROIs (H24): el umbral
-  de descarte se adapta al fotograma. Video_466 queda en 10.5 % con menor residuo
-  que su vieja ROI manual; `main.py` avisa "en el límite" sin bloquear. A revisar
-  en la Fase 4.
+- **Fase 4: el chequeo `outlier_frac` < 10 % ya no es criterio de aceptación**
+  (H24): el umbral de descarte se adapta al fotograma y, medido en 063 y 466,
+  ordena las ROIs al revés del ruido del canal. La ROI se acepta por su forma
+  (variación ≤ 6 %, contiene la cintura). `resumen` registra `outlier_frac` y el
+  **error de modelo** (cuánto se aparta la parábola del borde de forma estable)
+  como diagnóstico, sin umbral. Revisar con `RARITOS`.
+- **Una vibración del montaje entra en `center_px` igual que una contracción** y
+  el reporte no la distingue. Video_583 tiene una en 71.9–73.9 s (~10 Hz, tiembla
+  toda la imagen): da un 7.º candidato a 11 σ que la meseta deja afuera por poco.
+  Detectarla necesita una referencia fija con textura en la imagen.
+- Un evento a menos de media ventana del detrend del inicio o del fin queda
+  marcado `junto_al_borde` (su línea base se estima con media ventana). El de
+  Video_063 en 0.31 s es real (se ve en la señal cruda y por intensidad).
 - Varias reglas de la Fase 3 salieron de pocos videos (piso de 40 columnas, "zona
   plana mejor que ancha"): revisarlas con `RARITOS`. Lista en
   `claude/propuesta-fase-3-resto.md`.

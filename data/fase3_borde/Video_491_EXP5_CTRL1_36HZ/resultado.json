@@ -1,0 +1,254 @@
+{
+ "video": "Video_491_EXP5_CTRL1_36HZ",
+ "n_frames": 1846,
+ "roi": "459-1206",
+ "segundos_proceso": 277.9,
+ "control_max_dif_center_px": 0.0,
+ "control_max_dif_thickness_px": 1.4210854715202004e-13,
+ "eventos_vs_vigente": {
+  "clahe_mco": {
+   "nuevos_s": [],
+   "perdidos_s": []
+  },
+  "crudo": {
+   "nuevos_s": [],
+   "perdidos_s": []
+  },
+  "crudo_mco": {
+   "nuevos_s": [],
+   "perdidos_s": []
+  },
+  "ventana25": {
+   "nuevos_s": [],
+   "perdidos_s": []
+  }
+ },
+ "B_clahe_menos_crudo": {
+  "center_px": {
+   "ruido_dif_px": 0.04492278000001645,
+   "desvio_dif_total_px": 0.05433334325169141,
+   "excursion_en_eventos_px": [
+    0.046,
+    0.049
+   ],
+   "excursion_mediana_en_ruidos": 1.0573700024809929,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.0,
+   "corr_con_senal": 0.19562256098072747
+  },
+  "thickness_px": {
+   "ruido_dif_px": 0.11069805783120697,
+   "desvio_dif_total_px": 0.1468187838235577,
+   "excursion_en_eventos_px": [
+    -0.047,
+    0.168
+   ],
+   "excursion_mediana_en_ruidos": 0.9729898244408547,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.5991285403050108,
+   "corr_con_senal": -0.2499458518434238
+  },
+  "y_top_px": {
+   "ruido_dif_px": 0.0786519299999352,
+   "desvio_dif_total_px": 0.10102986019179401,
+   "excursion_en_eventos_px": [
+    0.074,
+    -0.107
+   ],
+   "excursion_mediana_en_ruidos": 1.1493678540382002,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.32679738562091504,
+   "corr_con_senal": 0.25846228941051846
+  },
+  "y_bottom_px": {
+   "ruido_dif_px": 0.043810830000042746,
+   "desvio_dif_total_px": 0.05615939791749388,
+   "excursion_en_eventos_px": [
+    0.064,
+    0.043
+   ],
+   "excursion_mediana_en_ruidos": 1.218876702403457,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.7625272331154684,
+   "corr_con_senal": -0.09245657302974541
+  },
+  "media_dif_px": {
+   "y_top_px": 0.5860899241603462,
+   "y_bottom_px": -0.3106436619718326
+  }
+ },
+ "C_ransac_menos_mco": {
+  "center_px": {
+   "ruido_dif_px": 0.030245039999908442,
+   "desvio_dif_total_px": 0.03926931696136596,
+   "excursion_en_eventos_px": [
+    -0.026,
+    -0.033
+   ],
+   "excursion_mediana_en_ruidos": 0.9654475576852071,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.8714596949891068,
+   "corr_con_senal": 0.21694658615318071
+  },
+  "thickness_px": {
+   "ruido_dif_px": 0.097440522448427,
+   "desvio_dif_total_px": 0.11854045007499064,
+   "excursion_en_eventos_px": [
+    0.09,
+    -0.06
+   ],
+   "excursion_mediana_en_ruidos": 0.7666164538258178,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.16339869281045752,
+   "corr_con_senal": -0.09038189103699226
+  },
+  "y_top_px": {
+   "ruido_dif_px": 0.05841443999995867,
+   "desvio_dif_total_px": 0.07379327350020203,
+   "excursion_en_eventos_px": [
+    -0.075,
+    -0.039
+   ],
+   "excursion_mediana_en_ruidos": 0.9809218405592598,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 0.3812636165577342,
+   "corr_con_senal": 0.19989364413106425
+  },
+  "y_bottom_px": {
+   "ruido_dif_px": 0.016753380000092636,
+   "desvio_dif_total_px": 0.02605847251592032,
+   "excursion_en_eventos_px": [
+    0.003,
+    -0.028
+   ],
+   "excursion_mediana_en_ruidos": 0.9222019675970853,
+   "frac_fotogramas_fuera_de_eventos_sobre_4ruidos_pct": 2.342047930283224,
+   "corr_con_senal": 0.10576367017556097
+  },
+  "media_dif_px": {
+   "y_top_px": -0.007405850487540813,
+   "y_bottom_px": -0.045817334777898774
+  }
+ },
+ "C_columnas": {
+  "superior": {
+   "primeras10": {
+    "descartadas_pct": 0.6,
+    "residuo_mediano_px": 0.449
+   },
+   "centro": {
+    "descartadas_pct": 5.0,
+    "residuo_mediano_px": 0.705
+   },
+   "ultimas10": {
+    "descartadas_pct": 13.7,
+    "residuo_mediano_px": 0.95
+   }
+  },
+  "inferior": {
+   "primeras10": {
+    "descartadas_pct": 5.7,
+    "residuo_mediano_px": 0.708
+   },
+   "centro": {
+    "descartadas_pct": 2.6,
+    "residuo_mediano_px": 0.8
+   },
+   "ultimas10": {
+    "descartadas_pct": 0.2,
+    "residuo_mediano_px": 0.523
+   }
+  }
+ },
+ "C_columnas_descartadas_mas_50pct": {
+  "superior": [
+   47,
+   49,
+   54
+  ],
+  "inferior": [
+   20
+  ]
+ },
+ "D_bordes_nan_pct": {
+  "clahe15": 0.545,
+  "crudo15": 0.094,
+  "clahe25": 0.027
+ },
+ "D_max_dif_ventana25_vs_15": {
+  "center_px": 0.18299999999999272,
+  "thickness_px": 0.5413779359830357
+ },
+ "E_separacion_columnas_px": 12.64,
+ "E_ruido_compartido": {
+  "clahe_superior": {
+   "r_a_1px": 0.376,
+   "r_a_3px": 0.084,
+   "r_a_la_separacion_actual": -0.006,
+   "distancia_r_bajo_0.5_px": 1,
+   "distancia_r_bajo_0.2_px": 2
+  },
+  "clahe_inferior": {
+   "r_a_1px": 0.436,
+   "r_a_3px": 0.17,
+   "r_a_la_separacion_actual": -0.019,
+   "distancia_r_bajo_0.5_px": 1,
+   "distancia_r_bajo_0.2_px": 3
+  },
+  "crudo_superior": {
+   "r_a_1px": 0.238,
+   "r_a_3px": 0.071,
+   "r_a_la_separacion_actual": -0.001,
+   "distancia_r_bajo_0.5_px": 1,
+   "distancia_r_bajo_0.2_px": 2
+  },
+  "crudo_inferior": {
+   "r_a_1px": 0.402,
+   "r_a_3px": 0.15,
+   "r_a_la_separacion_actual": -0.006,
+   "distancia_r_bajo_0.5_px": 1,
+   "distancia_r_bajo_0.2_px": 2
+  }
+ },
+ "F_rescate": {
+  "caso": "Video_491_EXP5_CTRL1_36HZ",
+  "metodo_auto": "gauge_cintura",
+  "roi_auto": "459-1206",
+  "var_auto_pct": 5.08,
+  "cintura_px": 257.0,
+  "minimo_perfil_en_ok_px": 256.0,
+  "alternativas": [
+   [
+    "gauge_plana",
+    661,
+    739,
+    1.17
+   ],
+   [
+    "gauge_cintura",
+    459,
+    1206,
+    5.08
+   ],
+   [
+    "gauge_relajada",
+    234,
+    1206,
+    10.16
+   ],
+   [
+    "solo_nitidez",
+    106,
+    1206,
+    15.62
+   ],
+   [
+    "franja_completa",
+    0,
+    1920,
+    360.44
+   ]
+  ],
+  "roi_auto_contiene_cintura": true,
+  "roi_auto_grosor_min_sobre_cintura_pct": -0.39,
+  "rescate_actual_min180": "420-1206",
+  "rescate_con_cintura_min180": "420-1206",
+  "rescate_actual_min150": "420-1206",
+  "rescate_con_cintura_min150": "420-1206",
+  "rescate_actual_min120": "420-1206",
+  "rescate_con_cintura_min120": "420-1206"
+ }
+}

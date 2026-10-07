@@ -1,6 +1,6 @@
 # Protocolo de análisis por video
 
-Actualizado 2026-09-29. Validado sobre seis videos: Video_prueba, Video_063 y
+Actualizado 2026-10-08 (cierre de la Fase 3). Validado sobre seis videos: Video_prueba, Video_063 y
 los cuatro de la batería (268, 466, 491, 583).
 
 ## Reglas centrales
@@ -27,6 +27,12 @@ justificarlo.
            --input data/processed_data/<nombre>/serie_temporal.xlsx \
            --frecuencia-estimulo 0.1
 
+`--frecuencia-estimulo` decide dónde se busca el tren (solo a ±10 % de esa
+frecuencia). Si el protocolo cambió de frecuencia, pasar todas
+(`--frecuencia-estimulo 0.1 0.2`); si no se sabe, omitirlo (búsqueda libre de un
+tren). Si hay tren, la cinética principal del resumen es la de los estimulados;
+la hoja `cin_grupos_*` tiene todos, estimulados y espontáneos.
+
 Opcional, cuando algo huele raro:
 
     python scripts/motion_check.py --video "<video>" --output-dir <carpeta>
@@ -43,15 +49,19 @@ Para que el pipeline **aborte** en vez de emitir números con una ROI mala:
    directamente. Métodos aceptables: `gauge_plana`, `gauge_cintura`,
    `gauge_rescate_plana` o `manual`. Si sale `solo_nitidez`,
    `franja_completa` o `fallback_margin`, mirar el perfil y forzar con
-   `--x-start/--x-end`.
+   `--x-start/--x-end`. Desde la Fase 3 la hoja trae también `n_columnas usadas`
+   (60, o menos en una ROI angosta, nunca menos de 40) y `ROI contiene cintura`
+   (tiene que ser 1). Ninguno de los seis videos validados necesita ROI manual.
 2. **`outlier_frac` medio < 10 %.** Si sube, correr el diagnóstico de
    outliers: si salen **contiguos** es el modelo que no sigue la geometría
    del borde (achicar o mover la ROI, o subir `--ransac-degree`); si salen
    **dispersos** son burbujas y se toleran.
-   > Cuidado: los dos primeros chequeos pueden tirar para lados distintos.
-   > En Video_466 la ventana más ancha y plana (944–1169, 5.77 %) deja 16 %
-   > de outliers, y una ventana más angosta (700–900, 5.47 %) deja 7.9 %.
-   > Gana la que cumple los dos.
+   > **Fase 3:** este criterio no es comparable entre ROIs (H24): el umbral de
+   > descarte se adapta al propio fotograma, y una zona con menor residuo de
+   > ajuste puede descartar más. Video_466 (ROI automática 696–846) queda en
+   > 10.5 % con menor residuo y menos ruido que su vieja ROI manual. Entre 10 y
+   > 12 % `main.py` avisa "en el límite" sin bloquear; mirar también el residuo.
+   > Revisar el criterio en la Fase 4.
 3. **Meseta del escaneo de estabilidad.** Ya es automático: el reporte
    imprime el `k` elegido y el rango de la meseta, y la hoja `resumen` graba
    `hay_meseta` y `conteo_reportable`.
@@ -63,9 +73,18 @@ Para que el pipeline **aborte** en vez de emitir números con una ROI mala:
 
 ## Métricas a tabular por video
 
-`n_eventos`, `intervalo_mediano_s`, `amplitud_traslacion_px`,
-`adelgazamiento_robusto_px`, `cociente_robusto_pct`, `ruido_canal_px`,
-`ruido_grosor_px`, más `k_usado`, `meseta_k_rango` y `conteo_reportable`.
+**Métrica de contractilidad (Fase 3): una sola, la traslación de la franja.**
+`amplitud_relativa_pct` (% del grosor en reposo: cifra principal, comparable
+entre videos) y `amplitud_traslacion_px` al lado (comparable solo a igual
+aumento). El **adelgazamiento** (`adelgazamiento_robusto_px`,
+`cociente_robusto_pct`) **no se reporta**: es un diagnóstico, porque depende del
+preproceso (con y sin CLAHE, Video_prueba 18 % contra 9 %; 268 y 466 cambian de
+signo).
+
+Además: `n_eventos`, `intervalo_mediano_s`, `ruido_canal_px`, `k_usado`,
+`mesetas` y `conteo_reportable`. Desde la Fase 3, `ruido_borde_sup_px`,
+`ruido_borde_inf_px` y `cociente_ruido_bordes`: si un borde es mucho más
+ruidoso que el otro, revisar la ROI y ese borde (H54; todavía sin umbral).
 Todas salen en `contracciones.xlsx`.
 
 **Desde la Fase 2.2 (2026-10-01)** además: `win_s_usado` (ventana del detrend,
@@ -82,11 +101,20 @@ reportable y la mediana de fotogramas de la subida (o de la bajada al 50 %) es
 y sí se puede comparar entre videos grabados a distinto aumento. Detalle por
 evento en la hoja `cinetica_<serie>`; figura `11_cinetica_*.png`.
 
-**`cociente_robusto_pct` va con signo.** Positivo = el gel adelgaza;
+**`cociente_robusto_pct` (diagnóstico) va con signo.** Positivo = el gel adelgaza;
 negativo = engruesa. Hasta el 2026-09-29 el código tomaba la magnitud y un
 engrosamiento se leía como adelgazamiento.
 
 ## Prueba de CLAHE: resuelta, CLAHE se queda encendido
+
+> **Fase 3 (2026-10-08), sobre los seis videos:** el conteo no depende de CLAHE
+> (salvo efectos de umbral en 063 y 583) y la amplitud de la traslación cambia
+> ≤ 4 %. Pero CLAHE desplaza los bordes de forma que varía con el tiempo: el
+> **adelgazamiento** depende de él (por eso no se reporta), y con un
+> desplazamiento conocido en Video_466 los bordes con CLAHE miden ~8 % de menos
+> (sin CLAHE, exacto). Si en videos nuevos la amplitud con/sin CLAHE difiere más
+> de ~5 %, reconsiderarlo. La tabla de abajo es la prueba original, sobre un solo
+> video.
 
 Video_063 procesado con y sin CLAHE:
 

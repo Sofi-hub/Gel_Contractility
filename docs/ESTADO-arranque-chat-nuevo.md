@@ -1,6 +1,6 @@
 # Estado del proyecto y arranque de un chat nuevo
 
-Actualizado 2026-09-30 (tarde). Este documento sirve para dos cosas: es el resumen del
+Actualizado 2026-10-08 (cierre de la Fase 3). Este documento sirve para dos cosas: es el resumen del
 estado actual, y su primera sección se puede pegar tal cual al abrir un chat
 nuevo dentro del proyecto.
 
@@ -98,31 +98,36 @@ copia vieja del código, anterior a la v4. No es el código vigente.
 | `claude/cambios-roi-y-k.md` | ROI automática y elección de k |
 | `claude/diagnostico-bateria-4videos.md` | el diagnóstico que arrancó todo |
 
-## Resultado de la batería (cerrada)
+## Resultado de la batería (regenerada al cerrar la Fase 3, 2026-10-08)
 
-| video | ROI | var | outliers | k (meseta) | eventos | frecuencia |
+| video | ROI (método, columnas) | var | outliers | k (meseta) | eventos | período del tren |
 |---|---|---|---|---|---|---|
-| Video_prueba | 454–1516 | 5.32 % | 3.6 % | 6 (6–15) | 28 → **29** (Fase 2.2) | 0.09993 ± 0.000041 Hz |
-| Video_063 | 390–1423 | 4.91 % | 7.7 % | 6 (6–8) | 6 | 0.10001 ± 0.000030 Hz |
-| Video_268 | 918–1328 | 5.24 % | 2.0 % | 6 (6–20) | 6 | 0.10000 ± 0.000023 Hz |
-| Video_466 | 700–900 \* | 5.47 % | 7.9 % | 4 (4–15) | 5 | 0.10006 ± 0.000120 Hz |
-| Video_583 | 718–1187 | 5.83 % | 4.0 % | 12 (12–20) | 6 | 0.09999 ± 0.000067 Hz |
+| Video_prueba | 454–1516 (`gauge_cintura`, 60) | 5.32 % | 3.6 % | 9.4 (5.3–15.2) | 29 (6 estimulados) | 10.00043 ± 0.00230 s |
+| Video_063 | **875–1039** (`gauge_plana`, 54) | 0.35 % | 6.8 % | 11.4 (9.4–13.8) | 6 | 9.99812 ± 0.00304 s |
+| Video_268 | 918–1328 (`gauge_cintura`, 60) | 5.24 % | 2.0 % | 12.5 (5.8–24.4) | 6 | 10.00132 ± 0.00230 s |
+| Video_466 | **696–846** (`gauge_cintura`, 50) | 4.85 % | 10.5 % † | 11.4 (6.4–20.2) | 5 | 10.00184 ± 0.00542 s |
+| Video_583 | 718–1187 (`gauge_cintura`, 60) | 5.83 % | 4.0 % | 16.7 (12.5–24.4) | 6 | 10.00024 ± 0.00230 s |
+| Video_491 | 459–1206 (`gauge_cintura`, 60) | 5.08 % | 4.2 % | 10.4 (7.8–13.8) | 2 | sin tren |
 
-Los cinco dan una frecuencia **indistinguible de los 0.1 Hz configurados** y
-pasan los tres chequeos de aceptación.
+Los cinco con tren dan **0.1 Hz** dentro del error, captura 100 % y p = 0.001. **Ningún video
+usa ROI manual** desde la Fase 3. Video_prueba, 268, 583 y 491 dieron exactamente lo mismo que
+antes; 063 y 466 cambiaron de ROI a propósito (ver `claude/propuesta-fase-3-resto.md`): mismos
+eventos, menos ruido (063: 0.034 → 0.024 px; 466: 0.212 → 0.182 px).
 
-Cinética (2026-09-29, detalle en `claude/metricas-cinetica-TTP-RT50.md`):
+† Apenas arriba del 10 % del chequeo 2; ese criterio no es comparable entre ROIs (H24) y el
+residuo es menor que con la vieja ROI manual. `main.py` avisa "en el límite". Fase 4.
 
-| video | TTP | RT50 | amplitud relativa |
-|---|---|---|---|
-| Video_prueba, Video_063, Video_268 | no medible: < ~100 ms | no medible: < ~100 ms | 0.71 / 0.53 / 0.57 % |
-| Video_466 | 284 ms [137, 365] | 160 ms [70, 260] | 2.13 % |
-| Video_583 | 258 ms [129, 335] | 181 ms [99, 301] | 1.31 % |
-| Video_491 (desde la Fase 2.2) | 570 ms | 467 ms | 0.40 % |
+**Métrica de contractilidad (Fase 3): una sola, la traslación de la franja** — amplitud
+relativa (% del grosor en reposo) y amplitud en px. El adelgazamiento es solo diagnóstico.
 
-\* Video_466 es el único que necesita ROI forzada (`--x-start 700 --x-end 900`).
-El rescate automático elige 944–1169, que es más ancha y cumple planitud
-(5.77 %) pero deja 16 % de outliers.
+| video | TTP | RT50 | amplitud relativa (estimulados) | amplitud (px) |
+|---|---|---|---|---|
+| Video_prueba | < ~100 ms (no medible) | < ~100 ms | 2.31 % | 2.09 |
+| Video_063 | < ~100 ms | < ~100 ms | 0.56 % | 1.59 |
+| Video_268 | < ~100 ms | < ~100 ms | 0.57 % | 1.55 |
+| Video_466 | 255 ms [137, 365] | 192 ms [33, 260] | 2.16 % | 4.36 |
+| Video_583 | 258 ms [129, 335] | 181 ms [99, 301] | 1.31 % | 3.10 |
+| Video_491 | 570 ms | 467 ms | 0.40 % (todos; sin tren) | 1.02 |
 
 **Video_491 (36 Hz): desde la Fase 2.2 (2026-10-01) da 2 eventos reportables**
 (13.0 y 34.0 s). Antes salía "sin meseta" porque la mediana móvil de 2 s se comía
@@ -162,6 +167,19 @@ reescrita, `--base-tiempo pts` como default de `main.py`,
    las mesetas listadas. **Nueva línea base: Video_prueba = 29 eventos;
    Video_491 = 2, reportable.** Los otros cuatro, iguales. Ver
    `claude/propuesta-fase-2-2.md` y `tests/test_deteccion.py`.
+0d. **✅ 2026-10-07: Fase 3, grupo 1 aplicada (ritmo y cinética).** Tren buscado
+   por la frecuencia configurada (o libre, sin ella), instante = inicio,
+   p-valor con 1000 listas al azar, R5/R6, cinética por grupo. Video_prueba
+   pasa a 6 estimulados. Ver `claude/propuesta-fase-3-ritmo-cinetica.md`.
+0e. **✅ 2026-10-08: Fase 3 cerrada (borde y ajuste, magnitud, canal).** ROI con
+   columnas adaptables (separación 3 px, piso 40, ancho mínimo 120 px) y rescate con
+   cintura (H19, H20): **Video_466 sin ROI manual**, Video_063 en su zona plana.
+   ±15 px y RANSAC se quedan (H27, H29). CLAHE se queda (H26). `center_px` mide bien
+   la magnitud; el 0.18 de H51 era un defecto de `motion_check`. H54: ruido desigual
+   entre bordes (se registra por borde). Una sola métrica: la traslación. Todo en
+   `claude/propuesta-fase-3-resto.md`, con la lista de **lo que puede cambiar con
+   `RARITOS`**. **Fase 4:** chequeo 2 (H24), `motion_check` (H50, H51),
+   `signal_check` (H49), sexto evento de 063 (H11), ráfaga final de 583.
 1. **Conversar con el equipo la adquisición a alta velocidad.** Es la
    limitación de fondo: a 30 fps la cinética de las muestras rápidas no se
    puede medir. Hacen falta 200–300 fps en un subconjunto.
@@ -171,8 +189,8 @@ reescrita, `--base-tiempo pts` como default de `main.py`,
    luz gradual o un parpadeo. Es lo único que falta para convertir el
    argumento contra MuscleMotion ("medimos geometría de borde, no intensidad")
    en un número.
-4. **Si algún video cambia de frecuencia de estimulación a mitad**,
-   `rhythm_split` encuentra un solo tren; habría que extenderlo a varios.
+4. ~~Cambio de frecuencia a mitad del video~~ **✅ Fase 3:** pasar todas las
+   frecuencias (`--frecuencia-estimulo 0.1 0.2`); se busca un tren por cada una.
 
 Mejoras propuestas (no están en ningún pedido; ordenadas por valor/esfuerzo):
 
@@ -180,11 +198,10 @@ Mejoras propuestas (no están en ningún pedido; ordenadas por valor/esfuerzo):
    (hoy la regla "Video_prueba y Video_063 no cambian" se chequea a mano).
 6. **Script por lotes** con una tabla consolidada, una fila por video. Útil
    para `RARITOS`.
-7. **Que la ROI automática mire también `outlier_frac`**: Video_466 es el
-   único que necesita ROI forzada.
-8. **Adelgazamiento relativo** (`adelgazamiento_robusto_px / grosor en
-   reposo`): deformación sin calibrar.
-9. **Cinética por grupo** (estimulados vs espontáneos).
+7. ~~ROI forzada de Video_466~~ **✅ Fase 3** (columnas adaptables).
+8. ~~Adelgazamiento relativo~~ **Descartado en la Fase 3:** el adelgazamiento
+   depende del preproceso; queda como diagnóstico.
+9. ~~Cinética por grupo~~ **✅ Fase 3** (hoja `cin_grupos_*`).
 10. **Intervalos de confianza por bootstrap** para las medianas por video.
 11. **Versiones fijas en `requirements.txt`.**
 
@@ -193,12 +210,12 @@ Mejoras propuestas (no están en ningún pedido; ordenadas por valor/esfuerzo):
 - Una serie espontánea **muy** regular es indistinguible de una estimulada por
   los tiempos solos. Ahí hay que mirar la amplitud y saber si el estimulador
   estaba encendido.
-- `rhythm_split` necesita al menos 4 latidos estimulados.
+- `rhythm_split` necesita al menos 4 latidos estimulados y el 75 % de las
+  ranuras ocupadas (si fallan 2 pulsos de 6, no hay tren).
 - El grosor da un salto **positivo** en el fotograma de máxima velocidad: es
   motion blur, no engrosamiento. Usar siempre la medida robusta.
-- El rescate de ROI por barrido maximiza ancho sujeto a planitud, y puede
-  elegir una ventana plana pero con bordes difíciles de seguir (Video_466).
-  Mirar siempre el `outlier_frac`.
+- Varias reglas de la Fase 3 salieron de pocos videos (piso de 40 columnas,
+  "zona plana mejor que ancha", sesgo de CLAHE en 466): revisarlas con `RARITOS`.
 - **A 30 fps, TTP y RT50 no son medibles cuando la subida dura menos de ~5
   fotogramas.** No es un defecto del pipeline: el twitch es más rápido que la
   cámara. En esos casos se reporta la cota (TTP < 100 ms), no un valor.

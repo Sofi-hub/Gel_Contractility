@@ -1,6 +1,6 @@
 # Documentación del Pipeline de Contractilidad de Geles 3D
 
-Actualizada 2026-09-30 (pipeline v4 + cinética). Reemplaza a la versión de
+Actualizada 2026-10-08 (pipeline v4 + Fase 3). Reemplaza a la versión de
 2026-09-05, que describía la detección sobre el grosor, la calibración a mm y
 `analyze_contractions.py` como flujo principal: las tres cosas cambiaron.
 
@@ -28,8 +28,8 @@ gel se deforma. El pipeline:
 5. Detecta las contracciones, con una verificación estadística de que no son
    ruido.
 6. Separa las contracciones estimuladas de las espontáneas.
-7. Mide la amplitud, el adelgazamiento y la cinética (TTP, RT50) de las
-   contracciones, diciendo cuándo una métrica **no** se puede medir.
+7. Mide la amplitud (traslación de la franja, la **única** métrica de contractilidad
+   que se reporta) y la cinética (TTP, RT50) de las contracciones, diciendo cuándo una métrica **no** se puede medir.
 8. Deja figuras de control para auditar cada paso.
 
 **Sin software externo.** No usa ImageJ ni MuscleMotion: todo ocurre dentro
@@ -80,9 +80,15 @@ con `--exigir-roi` el programa se detiene en vez de seguir con una zona mala.
 Si sale `solo_nitidez`, `franja_completa` o no cumple, se fuerza la zona a mano
 con `--x-start/--x-end` mirando `00_roi_profile.png`.
 
-El ancho mínimo de la zona sale de cuántas columnas se muestrean (60 columnas ×
-3 px), no del largo del gel: una regla anterior que dependía del largo se había
-fijado mirando un solo video y fallaba en los demás.
+El ancho mínimo de la zona sale de cuántas columnas se muestrean y de cuán
+juntas pueden estar, no del largo del gel (una regla anterior que dependía del
+largo se había fijado mirando un solo video y fallaba en los demás). Desde la
+Fase 3, con mediciones: las columnas van separadas al menos **3 px** (más cerca
+comparten ruido) y son como mínimo **40** (con menos, un video ya daba eventos
+falsos). La zona tiene que medir al menos 120 px; se usan hasta 60 columnas, menos
+si la zona es angosta. Así ningún video validado necesita zona forzada a mano.
+Si la cascada no encuentra nada plano, el **rescate** busca la ventana plana más
+ancha **que contenga la cintura** (si no, podía elegir un anclaje ancho y plano).
 
 ### 2.3 El borde, con precisión subpíxel
 
@@ -90,8 +96,9 @@ En ~60 columnas de la zona útil, y en cada fotograma, se calcula el gradiente
 de intensidad (dónde la imagen pasa de oscuro a claro) y se ajusta una
 parábola alrededor de su máximo: el vértice da la posición del borde con
 resolución de fracciones de píxel. Antes se normaliza el contraste con
-**CLAHE**, que mejora la relación señal/ruido 1.5× sin deformar la señal
-(probado con y sin CLAHE sobre Video_063). Si el gradiente es demasiado débil
+**CLAHE**, que mejora la relación señal/ruido en la mayoría de los videos. La
+amplitud de la traslación cambia ≤ 4 % con o sin CLAHE (probado en los seis), pero
+el grosor sí depende de él: por eso el adelgazamiento no se reporta (3.5). Si el gradiente es demasiado débil
 (`min_gradient`), la columna se descarta en vez de forzar una medición dudosa.
 
 ### 2.4 Robustez frente a burbujas
@@ -107,6 +114,9 @@ columnas, se queda con el que reúne más columnas coherentes (*inliers*) y
   la dispersión típica **de ese fotograma**, no un número fijo de píxeles.
 
 **Criterio de aceptación:** en promedio se descarta **< 10 %** de las columnas.
+(Fase 3: este porcentaje no es comparable entre zonas distintas, porque el umbral
+se adapta a cada fotograma; entre 10 y 12 % el programa avisa "en el límite" y hay
+que mirar también el residuo del ajuste. Se revisa en la Fase 4.)
 Si los descartes son **dispersos**, son burbujas y se toleran; si son
 **contiguos**, el modelo no sigue la forma del borde y hay que achicar o mover
 la zona.
@@ -189,15 +199,36 @@ es ruido.
 
 El estimulador dispara en instantes `t = fase + n·T`; las contracciones
 espontáneas no saben nada de ese reloj. El programa busca la grilla `(T,
-fase)` que mejor explica un subconjunto de los eventos, con un p-valor por
-simulación, y todo lo que queda fuera es espontáneo. **La amplitud no se usa
-para clasificar**, así que si los dos grupos resultan de distinta amplitud,
-eso es evidencia independiente. Se reporta la frecuencia del tren con su
-error y se la compara con la configurada. Las espontáneas no tienen
+fase)` que mejor explica un subconjunto de los eventos, y todo lo que queda
+fuera es espontáneo. El instante de cada contracción es su **inicio**, no su
+pico (el pico de un evento lento lo decide el ruido).
+
+**Dónde se busca.** Si se le dice a qué frecuencia estaba el estimulador, busca
+solo cerca de ella (±10 %) y responde "enganchado a 0.1 Hz" o "no hay
+enganche": el estimulador no capturó. Si no se le dice, busca en todos los
+ritmos y lo aclara en el veredicto.
+
+**El p-valor.** El buscador siempre encuentra algún tren, así que en cada
+corrida se sortean 1000 listas de instantes al azar (tantos como eventos), se
+les corre la misma búsqueda y se mira qué fracción arma un tren tan bueno como
+el del video. Se exige menos de 1 en 100. Buscar solo cerca de la frecuencia
+configurada le da al azar menos intentos, y por eso detecta mejor.
+
+**La amplitud no se usa para clasificar**, así que si los dos grupos resultan
+de distinta amplitud, eso es evidencia independiente. Solo interviene junto
+con un desvío de tiempo: un latido que se corre más de un fotograma **y** tiene
+la amplitud de una espontánea sale del tren. Se reporta la frecuencia del tren
+con su error y se la compara con la configurada. Las espontáneas no tienen
 frecuencia constante: se reportan mediana, rango intercuartil y frecuencia
 instantánea. Detalle en `separacion-estimuladas-espontaneas.md`.
 
-### 3.5 Adelgazamiento
+### 3.5 Adelgazamiento (diagnóstico, no se reporta)
+
+**Desde la Fase 3 el adelgazamiento no se reporta.** La métrica de contractilidad
+es una sola: la **traslación** de la franja, en % del grosor en reposo (y en px al
+lado). El adelgazamiento depende de cómo se procesa la imagen: con y sin CLAHE,
+Video_prueba da 18 % contra 9 %, y en dos videos cambia de signo. Se sigue
+calculando para entender el movimiento.
 
 El grosor es la variable biomecánicamente interesante, pero por fotograma
 queda por debajo del ruido. Se mide **alineando todos los eventos en su pico
@@ -246,7 +277,7 @@ Gel_Contractility/
 ├── main.py
 ├── src/                    módulos (ver CLAUDE.md para la lista)
 ├── scripts/                los scripts de la tabla de arriba
-├── tests/                  pruebas: python tests/test_seleccion_k.py, python tests/test_cinetica.py
+├── tests/                  pruebas: python tests/test_<nombre>.py (seis archivos)
 ├── docs/                   esta documentación
 └── data/
     ├── raw_videos/

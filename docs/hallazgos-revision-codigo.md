@@ -37,17 +37,17 @@ Cada hallazgo tiene un número `H` para poder citarlo. H1–H7 venían de la gu�
 | H16 | PREGUNTA | La serie es irregular en el tiempo, pero el análisis posterior cuenta por índice (a verificar) |
 | H17 | DEUDA | Detalles menores de `io_utils` y `process_video` |
 | H18 | RIESGO | Una ROI manual no recibe veredicto de aceptación, y `--exigir-roi` no puede frenarla |
-| H19 | RIESGO | El ancho mínimo de 180 px rechazó la cintura real de Video_466, y su justificación no se sostiene |
-| H20 | RIESGO | El rescate no exige que la ventana contenga la cintura: el veredicto "cumple" no distingue cintura de meseta |
+| H19 | RIESGO | El ancho mínimo de 180 px rechazó la cintura real de Video_466, y su justificación no se sostiene — **resuelto 2026-10-08** (Fase 3: separación 3 px medida, piso 40 columnas, ancho mínimo 120 px; 466 sin ROI manual) |
+| H20 | RIESGO | El rescate no exige que la ventana contenga la cintura: el veredicto "cumple" no distingue cintura de meseta — **resuelto 2026-10-08** (Fase 3: el rescate exige contener la cintura) |
 | H21 | PREGUNTA | La cintura se estima con la mediana del grosor: depende de cuánto del cuadro ocupa la cintura |
 | H22 | RIESGO | `roi_min_gradient = 10` es un umbral de contraste absoluto sin origen documentado |
 | H23 | PREGUNTA | Ventanas de suavizado proporcionales al ancho del cuadro, no al gel |
-| H24 | PREGUNTA | `outlier_frac` no es comparable entre ROIs: el criterio favorece la ventana de peor ajuste absoluto |
+| H24 | PREGUNTA | `outlier_frac` no es comparable entre ROIs: el criterio favorece la ventana de peor ajuste absoluto — **a la vista** (466 queda en 10.5 % con ROI automática; aviso "en el límite"; Fase 4) |
 | H25 | DEUDA | `preprocessing.py`: parámetro muerto que reintroduce la trampa, y documentación vieja |
-| H26 | RIESGO | CLAHE desplaza el borde por una cantidad que cambia de fotograma a fotograma, del orden de la señal de grosor |
-| H27 | RIESGO | La ventana de ±15 px deja poco margen real y descarta columnas en Video_466 |
+| H26 | RIESGO | CLAHE desplaza el borde por una cantidad que cambia de fotograma a fotograma, del orden de la señal de grosor — **medido 2026-10-08** (Fase 3: conteo y traslación no dependen de CLAHE; el adelgazamiento sí → no se reporta; CLAHE se queda) |
+| H27 | RIESGO | La ventana de ±15 px deja poco margen real y descarta columnas en Video_466 — **cerrado 2026-10-08** (±25 px rompe 466: ±15 se queda) |
 | H28 | DEUDA | `min_gradient` nunca actúa en estos videos; código muerto en `edge_detection.py` |
-| H29 | RIESGO | En Video_466 el RANSAC agrega ruido y un corrimiento variable: los "outliers" son sistemáticos, no burbujas |
+| H29 | RIESGO | En Video_466 el RANSAC agrega ruido y un corrimiento variable: los "outliers" son sistemáticos, no burbujas — **cerrado 2026-10-08** (ningún ajuste gana en todos: RANSAC se queda) |
 | H30 | DEUDA | El umbral adaptativo casi nunca toca el piso y es muy grande; el MAD de residuos por columna es alto |
 | H31 | RIESGO | Un solo fotograma rechazado (NaN) deja sin resultado a todo el video, y `frame_quality` no se consulta nunca — **NaN resuelto 2026-10-01**; `frame_quality` solo se cuenta |
 | H32 | DEUDA | La hoja `resumen` no alcanza para reproducir una corrida, y algunas cifras se leen mal |
@@ -69,10 +69,10 @@ Cada hallazgo tiene un número `H` para poder citarlo. H1–H7 venían de la gu�
 | H48 | DEUDA | Promesas del docstring sin respaldo de pruebas y escalas absolutas ocultas |
 | H49 | RIESGO | `signal_check.py` sólo mira la cola negativa: sobre `center_px` no reconoce ninguna contracción real |
 | H50 | RIESGO | El veredicto de `motion_check.py` contradice el hallazgo 1 de CLAUDE.md |
-| H51 | PREGUNTA | La magnitud de `center_px` no coincide con la traslación medida por intensidad (0.18× en los eventos) |
+| H51 | PREGUNTA | La magnitud de `center_px` no coincide con la traslación medida por intensidad (0.18× en los eventos) — **resuelto 2026-10-08** (`center_px` mide bien la magnitud; el 0.18 es un defecto de `motion_check._subpixel_shift`: Fase 4) |
 | H52 | — | Las diferencias entre fotogramas llevan un peine de 10 fotogramas que no está en las series de bordes |
 | H53 | DEUDA | La MAD y la mediana móvil están copiadas 9 y 3 veces, y ninguna tolera NaN (cierra H4) — **resuelto 2026-10-01** (`src/estadistica.py`) |
-| H54 | RIESGO | `CANAL="auto"` del cuaderno elegía `y_top_px`/`y_bottom_px` y cambiaba el conteo (Video_063: 8 en vez de 6); ya fijado a `center_px` |
+| H54 | RIESGO | `CANAL="auto"` del cuaderno elegía `y_top_px`/`y_bottom_px` y cambiaba el conteo (Video_063: 8 en vez de 6); ya fijado a `center_px` — **resuelto 2026-10-08** (ruido desigual entre bordes, no otro observable; se registra el ruido por borde) |
 | H55 | RIESGO | Con eventos lentos y `sep_s` = 0.3 s, la cola de bajada cuenta como un segundo evento, y la regla "meseta de k más bajo" lo convalida (sintético: 9 en vez de 6) — **resuelto 2026-10-01** (Fase 2.2: prominencia) |
 
 ---
@@ -1374,6 +1374,65 @@ Detalle completo, con la medición previa y los resultados, en `claude/propuesta
 
 ---
 
+### Fase 3, grupo 1 — ritmo y cinética (2026-10-07, chat de implementación)
+
+Resuelve H36, H37, H38, H40, H41 y H43 (y H39: el código muerto y el docstring viejo de
+`rhythm_split.py`). Propuesta, mediciones y resultados en `claude/propuesta-fase-3-ritmo-cinetica.md`.
+
+- **`src/rhythm_split.py`**: el instante de cada latido es el inicio (lo pasa `contraction_report`);
+  `separar(..., frecuencia_configurada_Hz=...)` busca un tren por frecuencia a ±10 % (búsqueda
+  dirigida) o uno libre sin frecuencia; tabla `trenes` con veredicto; tolerancia de búsqueda 2
+  fotogramas con grilla de períodos fina; puntaje vectorizado (idéntico al anterior); "mejor
+  puntaje salvo múltiplo ×2/×3"; Monte Carlo desde 4 eventos, 1000 simulaciones, sobre el z de la
+  búsqueda; R5 (tiempo y amplitud, desvío contra el tren sin ese evento) y R6 (dudosos solo dentro del
+  tren, con amplitud compatible). Docstring del módulo reescrito (explica las listas al azar).
+- **`src/cinetica.py`**: `resumir` usa solo los eventos medibles en la mediana; reportable si lo es al
+  menos la mitad.
+- **`scripts/contraction_report.py`**: la cinética se calcula antes del ritmo (para tener el inicio);
+  resumen por grupo (`_cinetica_grupos`, hoja `cin_grupos_*`) con la cifra principal de los
+  estimulados; `--frecuencia-estimulo` acepta varias; hojas `trenes_*`, `sacados_*`, `dudosos_*`;
+  figura 10 con un tren por color.
+- **`src/io_utils.load_max_projection`**: lee con `np.fromfile` + `cv2.imdecode`, porque `cv2.imread`
+  no abre rutas con acentos en Windows ("Análisis"). Lo detectó Franco en el cuaderno.
+- **Cuaderno**: se recuperaron los cambios de la Fase 2.2, que se habían perdido al guardar una copia
+  vieja, y se agregaron los de la Fase 3 (celdas 4, 5, 21, 27, 28, 29, 31).
+
+### Fase 3, resto — borde y ajuste, magnitud, canal (2026-10-08, chat de implementación)
+
+Resuelve H19, H20, H51 y H54; cierra H27 y H29 sin cambio; mide H26. Mediciones,
+decisiones y la lista de lo que puede cambiar con `RARITOS` en
+`claude/propuesta-fase-3-resto.md`. Scripts de medición (no son del flujo):
+`scripts/medir_borde_ajuste.py`, `medir_magnitud_px.py`, `medir_roi_columnas.py`,
+`medir_roi_ancho.py`.
+
+- **Medido (seis videos, cinco variantes por fotograma):** ±25 px rompe Video_466 (H27);
+  RANSAC vs mínimos cuadrados: ninguno gana en todos (H29); CLAHE: conteo y amplitud de la
+  traslación estables (≤ 4 %), adelgazamiento no (Video_prueba 18 → 9 %, 268 y 466 cambian
+  de signo) (H26); el error de borde deja de ser compartido entre columnas a 2–3 px (H19).
+- **Decisión:** una sola métrica de contractilidad, la **traslación** (% del grosor en
+  reposo, y px al lado). El adelgazamiento queda como diagnóstico.
+- **`src/preprocessing.py`:** ancho mínimo = 40 columnas × 3 px = 120 px; columnas usadas
+  `min(60, ancho // 3)` (`roi_quality["n_columnas_usadas"]`); el rescate exige contener la
+  cintura (`roi_contiene_cintura`). Piso de 40: con 30 columnas Video_063 da eventos falsos.
+  Comentario del ancho mínimo reescrito con las mediciones (lo de "una zona corta mide más
+  ruidoso" era falso: en 063 la zona plana de 164 px da 30 % menos ruido que la de 1033 px).
+- **`src/pipeline.py`, `main.py`:** columnas según la ROI; `--roi-min-columnas`; hoja `resumen`
+  con columnas usadas, `ROI contiene cintura`, `outlier_frac medio`; aviso "en el límite" del
+  chequeo 2 (H24).
+- **H51:** con desplazamiento conocido, los bordes miden bien (1.00 en Video_prueba y 063; 0.92
+  con CLAHE en 466, 1.02 sin CLAHE). La correlación de `motion_check` da 0.18–0.43 aun con verdad
+  perfecta: suma productos sin normalizar por la superposición. Arreglo en la Fase 4.
+- **H54:** los dos bordes se mueven casi lo mismo; uno es mucho más ruidoso (063 inferior 3×,
+  268 superior 2×). `contraction_report` registra `ruido_borde_sup_px`, `ruido_borde_inf_px`,
+  `cociente_ruido_bordes`. Con la ROI nueva de 063 el cociente baja de 2.8 a 1.1.
+- **Cuaderno:** columnas según la ROI (celda 9), parámetros y textos.
+- **`tests/test_roi.py`** (nuevo). Las seis pruebas pasan.
+- **Regenerado (2026-10-08):** Video_prueba, 268, 583 y 491 **idénticos** a la corrida anterior
+  (archivada como `_superadas/<video>_v6`). Video_063: ROI 875–1039 (`gauge_plana`, 54 col.),
+  6 eventos, ruido 0.034 → 0.024 px, amplitud 1.51 → 1.59 px, T = 9.99812 ± 0.00304 s.
+  Video_466: **ROI automática** 696–846 (50 col.), 5 eventos, ruido 0.212 → 0.182 px,
+  T = 10.00184 ± 0.00542 s, `outlier_frac` 10.5 %.
+
 ## Qué arreglar primero
 
 Orden de prioridad, del que más puede torcer un número sin aviso al que sólo ordena. Cada ítem cita los hallazgos con la evidencia. **Nada de `src/` ni `scripts/` se cambió todavía**; el cuaderno sí (2026-09-30).
@@ -1388,11 +1447,11 @@ Orden de prioridad, del que más puede torcer un número sin aviso al que sólo 
 3. **✅ HECHO 2026-10-01 (borrado; ver "Implementación").** **Destino de `event_detection.py`** (H2, H44, H47, H48). Ya no lo usa el cuaderno; sólo `analyze_contractions.py` (obsoleto). Borrar, o archivar con una nota, y quitar sus promesas de docstring.
 
 ### Fase 3. Decisiones metodológicas que hay que validar con datos o con el equipo
-4. **Cinética** (H40, H41, H42). Resumir por grupo (la amplitud relativa de Video_prueba es la de las espontáneas: 0.71 % contra 2.29 % de las estimuladas); cambiar "reportable" (≥ 5 fotogramas de mediana) por algo que mire el ancho del intervalo y la meseta del pico; fijar `win_s` por encima de la duración del evento más lento.
-5. **Ritmo** (H36, H37, H38). El primer "estimulado" de Video_prueba (t = 4.87 s) tiene la amplitud de una espontánea y mueve el período de 10.00043 a 10.00744 s; el rescate de dudosos usa ±1 s y extrapola la grilla; la significancia no está calibrada para espontáneas agrupadas (28 % de falsos con intervalos barajados).
-6. **Borde y ajuste** (H26, H27, H29, H19, H20). CLAHE desplaza el borde por cantidades que cambian de fotograma a fotograma; RANSAC agrega ruido en Video_466 por rechazar columnas del extremo de la ROI; el ancho mínimo de 180 px rechazó la cintura real. Probar `--no-clahe` en los seis videos.
-7. **Magnitud en píxeles** (H51). `center_px` y la traslación por correlación coinciden en forma (0.915) pero no en valor (0.18× en los eventos). Probar con un desplazamiento subpíxel conocido antes de citar amplitudes absolutas.
-8. **Por qué `y_top`/`y_bottom` superan en SNR a `center_px` en 063 y 268** (H54). Decidir si eso cambia el observable o es ruido correlacionado entre bordes.
+4. **✅ HECHO 2026-10-07 (Fase 3, grupo 1; H42 ya en la 2.2).** **Cinética** (H40, H41, H42). Resumir por grupo (la amplitud relativa de Video_prueba es la de las espontáneas: 0.71 % contra 2.29 % de las estimuladas); cambiar "reportable" (≥ 5 fotogramas de mediana) por algo que mire el ancho del intervalo y la meseta del pico; fijar `win_s` por encima de la duración del evento más lento.
+5. **✅ HECHO 2026-10-07 (Fase 3, grupo 1).** **Ritmo** (H36, H37, H38). El primer "estimulado" de Video_prueba (t = 4.87 s) tiene la amplitud de una espontánea y mueve el período de 10.00043 a 10.00744 s; el rescate de dudosos usa ±1 s y extrapola la grilla; la significancia no está calibrada para espontáneas agrupadas (28 % de falsos con intervalos barajados).
+6. **✅ HECHO 2026-10-08 (Fase 3; ver "Implementación").** **Borde y ajuste** (H26, H27, H29, H19, H20). CLAHE desplaza el borde por cantidades que cambian de fotograma a fotograma; RANSAC agrega ruido en Video_466 por rechazar columnas del extremo de la ROI; el ancho mínimo de 180 px rechazó la cintura real. Probar `--no-clahe` en los seis videos.
+7. **✅ HECHO 2026-10-08 (Fase 3).** **Magnitud en píxeles** (H51). `center_px` y la traslación por correlación coinciden en forma (0.915) pero no en valor (0.18× en los eventos). Probar con un desplazamiento subpíxel conocido antes de citar amplitudes absolutas.
+8. **✅ HECHO 2026-10-08 (Fase 3).** **Por qué `y_top`/`y_bottom` superan en SNR a `center_px` en 063 y 268** (H54). Decidir si eso cambia el observable o es ruido correlacionado entre bordes.
 
 ### Fase 4. Herramientas que inducen a error si se las lee al pie de la letra
 9. `signal_check.py` (H49) y `motion_check.py` (H50): sus veredictos contradicen el hallazgo 1. Corregir el signo y el razonamiento, o retirarlos.

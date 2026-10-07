@@ -195,12 +195,21 @@ dispersión, mientras que los picos se dispersan ±35 ms.
 
 | video | TTP | RT50 | fotogramas (subida / bajada 50 %) | amplitud relativa |
 |---|---|---|---|---|
-| Video_prueba | **< 102 ms** (no medible) | **< 103 ms** | 2 / 2 | 0.71 % |
-| Video_063 | **< 100 ms** (no medible) | **< 99 ms** | 2 / 2 | 0.53 % |
+| Video_prueba | **< 102 ms** (no medible) | **< 103 ms** | 2 / 2 | 0.71 % → **2.31 %** (Fase 3) |
+| Video_063 | **< 100 ms** (no medible) | **< 99 ms** | 2 / 2 | 0.53 % → 0.54 % (Fase 3) |
 | Video_268 | **< 101 ms** (no medible) | **< 100 ms** | 2 / 2 | 0.57 % |
 | Video_466 | 284 ms [137, 365] | 160 ms [70, 260] | 9 / 5 | 2.13 % |
 | Video_583 | 258 ms [129, 335] | 181 ms [99, 301] | 8 / 6 | 1.31 % |
 | Video_491 | ~~no reportable~~ desde la Fase 2.2: **570 ms** | **467 ms** | 17.5 / 14.5 | 0.40 % |
+
+**Fase 3 (2026-10-07): resumen por grupo y "reportable" por eventos medibles.**
+Las cifras del resumen son ahora las de los **estimulados** si hay tren (antes,
+todos los eventos mezclados: la amplitud relativa de Video_prueba, 0.71 %, era
+la de sus 22 espontáneas; la de las estimuladas es 2.31 %). La hoja
+`cin_grupos_*` tiene todos, estimulados y espontáneos. La mediana de TTP y RT50
+usa **solo los eventos medibles** (≥ 5 fotogramas), y la métrica es reportable
+si lo es al menos la mitad. En Video_466 el RT50 queda en 160 ms con 4 de 5
+eventos medibles; en los demás no cambia ningún valor.
 
 Video_491 se agregó el 2026-10-01: con la ventana automática del detrend (3.1 s) sus dos
 eventos de ~1 s se detectan enteros. Son distintos de los demás (más largos y en sentido

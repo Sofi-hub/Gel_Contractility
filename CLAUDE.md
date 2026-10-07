@@ -13,11 +13,13 @@ automatizada, reproducible y **verificable**, a partir de video de microscopía.
    *cintura* usando sólo columnas cuyo grosor es compatible con el gel, y elige
    por planitud la *gauge region*. Reporta los niveles que descartó y un
    veredicto explícito contra el criterio de aceptación
-   (`cumple_criterio_aceptacion`).
+   (`cumple_criterio_aceptacion`). **Fase 3:** ancho mínimo 40 columnas × 3 px =
+   120 px; se usan `min(60, ancho // 3)` columnas; el rescate exige contener la
+   cintura. Ningún video necesita ROI manual.
 2. **Detección subpíxel.** Gradiente de intensidad por columna y ajuste
    parabólico al máximo. Si el gradiente no supera `min_gradient`, la columna se
    descarta en vez de forzar una medición dudosa.
-3. **Ajuste robusto.** RANSAC sobre ~60 columnas con **polinomio de grado 2** y
+3. **Ajuste robusto.** RANSAC sobre 40–60 columnas con **polinomio de grado 2** y
    **umbral de residuo adaptativo** (3×MAD del propio fotograma).
 4. **Cuatro series temporales, no una.** `y_top_px`, `y_bottom_px`,
    `thickness_px` (la resta) y `center_px` (el promedio).
@@ -40,6 +42,16 @@ El grosor **sigue midiéndose**, porque es la variable biomecánicamente
 interesante, pero promediando eventos alineados en el tiempo, no evento a
 evento.
 
+> **Fase 3 (2026-10-08): una sola métrica de contractilidad, la traslación.** Se
+> reporta la amplitud de `center_px` como **% del grosor en reposo** (cifra
+> principal, comparable entre videos) y en **px** al lado (solo a igual aumento).
+> Su amplitud cambia ≤ 4 % con o sin CLAHE y con o sin RANSAC, y una prueba con
+> desplazamiento conocido confirma que mide bien la magnitud. El
+> **adelgazamiento es solo diagnóstico, no se reporta**: con y sin CLAHE
+> Video_prueba da 18 % contra 9 %, y 268 y 466 hasta cambian de signo. Si un borde
+> solo tiene más SNR que el centro es porque el **otro** borde es más ruidoso
+> (H54), no porque mida otra cosa: no se pondera el centro.
+
 > **CORRECCIÓN (2026-09-30).** La versión anterior de este documento decía que
 > "sólo el 13–19 % de ese movimiento es cambio de grosor" y que el cociente era
 > el mismo en todos los videos. Medido sobre seis: **depende del video**. 18 %
@@ -53,6 +65,14 @@ no saben nada de ese reloj. La amplitud **no** se usa para clasificar, y por eso
 sirve como verificación independiente. Las espontáneas no mantienen frecuencia
 constante (CV medido del 91 %): se reporta mediana, rango intercuartil y
 frecuencia instantánea, nunca un solo número.
+
+> **Fase 3 (2026-10-07).** El instante de cada latido es su **inicio** (cruce del
+> 10 %), no el pico. Con `--frecuencia-estimulo` el tren se busca **solo cerca de
+> esa frecuencia** (±10 %): la pregunta es "¿el estimulador capturó?", y así el
+> p-valor tiene más poder. La amplitud entra **solo junto con un desvío de
+> tiempo** (sacar un latido que falla en las dos cosas; rescatar un dudoso), nunca
+> sola. Si hay tren, la cinética principal es la de los estimulados. Detalle en
+> `claude/separacion-estimuladas-espontaneas.md`.
 
 **3. El eje temporal sale de los timestamps del contenedor, no de
 `fotograma / fps`.** *(Reemplaza al viejo hallazgo "el fps declarado está mal",
@@ -137,12 +157,17 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
   - **Meseta del escaneo de umbral** con 0 falsos de control.
   - **Control simétrico de falsos positivos** sobre la señal invertida.
   - **Regresión sobre Video_prueba y Video_063** cada vez que se toca un
-    algoritmo. Los dos tienen que dar exactamente los mismos números que antes.
+    algoritmo. Los dos tienen que dar exactamente los mismos números que antes,
+    salvo un cambio **intencional, medido y aprobado** (28 → 29 en Video_prueba
+    en la Fase 2.2; nueva ROI de Video_063 en la Fase 3).
   - **Nunca** ajustar un parámetro hasta que el resultado dé lindo.
 * **Ningún parámetro atado al tamaño del sujeto.** El `min_roi_width_frac = 0.35`
   (35 % de las columnas con gel) es el ejemplo de qué no hacer: se fijó mirando
   un video y rompía en todos los demás. El ancho mínimo ahora sale de cuántas
-  columnas se muestrean.
+  columnas se muestrean y de cuán juntas pueden estar, **medido** (Fase 3): el
+  error de borde deja de ser compartido a 2–3 px (separación 3 px) y con menos de
+  40 columnas Video_063 da eventos falsos (piso 40). Detalle en
+  `claude/propuesta-fase-3-resto.md`.
 * **No suavizar con pasabanda.** Para quitar la deriva se usa mediana móvil. Un
   pasabanda convierte cada evento real en un valle flanqueado por dos picos
   falsos y destruye la asimetría, que es justamente lo que se mide.
@@ -181,6 +206,9 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     tests/test_cinetica.py          TTP/RT50 sobre eventos sintéticos de cinética conocida
     tests/test_nan.py               fotogramas sin medida (NaN): el análisis no se anula
     tests/test_deteccion.py         la detección ENTERA sobre sintéticos de conteo conocido
+    tests/test_ritmo.py             estimuladas/espontáneas: pulsos que fallan, R5, R6, veredictos
+    tests/test_roi.py               elección de ROI: columnas adaptables, piso 40, rescate con cintura
+    scripts/medir_*.py              mediciones de la Fase 3 (no son parte del flujo)
 
 Flujo normal:
 
@@ -193,25 +221,32 @@ Flujo normal:
 `--exigir-roi` hace que aborte si la ROI no cumple el criterio de aceptación,
 en vez de avisar y seguir emitiendo números.
 
-Los resultados vigentes están en `data/processed_data/<video>/`, **sin sufijo**.
-Las corridas anteriores (las primeras, `_v4` y `_v5`) están archivadas en
-`data/processed_data/_superadas/`. Los vigentes se generaron como `<video>_v6`
-y `ordenar_carpeta.py` les quitó el sufijo al archivar el resto.
+Los resultados vigentes están en `data/processed_data/<video>/`, **sin sufijo**,
+regenerados al cerrar la Fase 3 (2026-10-08). Las corridas anteriores están en
+`data/processed_data/_superadas/` (`_v4`, `_v5` y `_v6`, la vigente hasta la
+Fase 3). Línea base: Video_prueba 29 eventos (6 estimulados, T = 10.00043 ±
+0.0023 s); 063: 6; 268: 6; 466: 5 (ROI automática); 583: 6; 491: 2.
 
 ## Límites conocidos
 
 - Una serie espontánea **muy** regular es indistinguible de una estimulada por
   los tiempos solos. Ahí hay que mirar la amplitud y saber si el estimulador
   estaba encendido.
-- `rhythm_split` necesita al menos 4 latidos estimulados, y encuentra un solo
-  tren por video.
+- `rhythm_split` necesita al menos 4 latidos estimulados y el 75 % de las
+  ranuras ocupadas. Con `--frecuencia-estimulo` busca un tren por frecuencia
+  configurada (solo a ±10 % de cada una: búsqueda dirigida); sin ella, un tren
+  en todos los períodos. Ver `claude/separacion-estimuladas-espontaneas.md`.
 - El grosor da un salto **positivo** en el fotograma de máxima velocidad: es
   motion blur, no engrosamiento. Usar siempre la medida robusta.
 - `frequency_profile` no resuelve períodos mayores a `window_s / 2`. Con el
   default de 8 s no ve el ritmo de 10 s: subirlo a 20.
-- El rescate de ROI por barrido maximiza ancho sujeto a planitud, y puede elegir
-  una ventana plana pero con bordes difíciles de seguir (Video_466: 5.77 % de
-  variación pero 16 % de outliers). Mirar siempre el `outlier_frac`.
+- El chequeo `outlier_frac` < 10 % no es comparable entre ROIs (H24): el umbral
+  de descarte se adapta al fotograma. Video_466 queda en 10.5 % con menor residuo
+  que su vieja ROI manual; `main.py` avisa "en el límite" sin bloquear. A revisar
+  en la Fase 4.
+- Varias reglas de la Fase 3 salieron de pocos videos (piso de 40 columnas, "zona
+  plana mejor que ancha"): revisarlas con `RARITOS`. Lista en
+  `claude/propuesta-fase-3-resto.md`.
 - **Video_491 (36 Hz) es distinto de los otros cinco** y hay que consultarlo con el
   equipo antes de citarlo. Desde la Fase 2.2 da **2 eventos reportables** (13.0 y
   34.0 s): excursiones de ~1 s con el fondo plano, el doble de largas que las de

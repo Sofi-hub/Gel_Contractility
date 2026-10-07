@@ -1,6 +1,6 @@
 # Referencia: qué contiene cada archivo y qué significa cada eje
 
-Actualizado 2026-09-30 (v4). Cubre la salida del pipeline (`main.py`,
+Actualizado 2026-10-08 (v4 + Fase 3). Cubre la salida del pipeline (`main.py`,
 `scripts/contraction_report.py`, `scripts/motion_check.py`,
 `scripts/signal_check.py`) y el cuaderno `Analisis_Contractilidad_v4.ipynb`.
 
@@ -28,7 +28,7 @@ y `ordenar_carpeta.py` les quitó el sufijo al archivar el resto.
 |---|---|---|
 | `frame` | — | índice del fotograma, desde 0 |
 | `time_s` | s | instante del fotograma. **Con `--base-tiempo pts` sale del timestamp del contenedor; con `frames` es `frame / fps`** |
-| `y_top_px` | px | posición del **borde superior**, mediana del modelo RANSAC evaluado en las ~60 columnas muestreadas. Sube de valor cuando el borde baja en pantalla |
+| `y_top_px` | px | posición del **borde superior**, mediana del modelo RANSAC evaluado en las 40–60 columnas muestreadas (`n_columnas usadas`). Sube de valor cuando el borde baja en pantalla |
 | `y_bottom_px` | px | ídem para el **borde inferior** |
 | `thickness_px` | px | `y_bottom_px − y_top_px`. El **grosor** |
 | `center_px` | px | `(y_bottom_px + y_top_px) / 2`. La **posición** de la franja. **Es el canal de detección** |
@@ -74,7 +74,10 @@ Existe para que cualquier número sea reproducible sin adivinar la configuració
 | `frames faltantes estimados` | cuántos fotogramas se perdieron en esos huecos |
 | `frames faltantes (%)` | lo anterior como fracción. **Por encima del 1 % el pipeline avisa** |
 | `ROI cumple criterio` | `1` si la variación de grosor en la ROI está por debajo de `roi_max_variacion_pct`. **Chequeo de aceptación 1** |
-| `ROI ancho minimo exigido (px)` | `n_columns × roi_min_column_spacing_px`. Ya **no** depende del largo del gel |
+| `ROI ancho minimo exigido (px)` | `roi_min_columnas × roi_min_column_spacing_px` = 40 × 3 = 120 px (Fase 3; antes 60 × 3). No depende del largo del gel |
+| `n_columns (maximo)`, `n_columnas usadas`, `roi_min_columnas` | (Fase 3) se usan `min(60, ancho // 3)` columnas, nunca menos de 40 |
+| `ROI contiene cintura` | (Fase 3) `1` si la ROI incluye alguna columna con grosor ≤ cintura × 1.05. Tiene que ser `1` |
+| `outlier_frac medio` | (Fase 3) promedio de `outlier_frac`. Chequeo 2; no es comparable entre ROIs (H24) |
 
 ---
 
@@ -112,7 +115,7 @@ es ruido. **Desde la v4 el `k` se elige solo dentro de esa meseta.**
 | `intervalo_mediano_s` | mediana de los intervalos entre eventos |
 | `amplitud_traslacion_px` | mediana de la amplitud de los picos |
 | `adelgazamiento_px` / `_sigma` | mínimo del promedio de eventos alineados, y su significancia |
-| `adelgazamiento_robusto_px` / `_sigma` | promedio de los 3 fotogramas **posteriores** al pico. **Ésta es la que hay que usar** |
+| `adelgazamiento_robusto_px` / `_sigma` | promedio de los 3 fotogramas **posteriores** al pico. Mejor que el mínimo, pero **desde la Fase 3 el adelgazamiento es solo diagnóstico: no se reporta** (depende del preproceso) |
 | `cociente_adelg_trasl_pct`, `cociente_robusto_pct` | cuánto del movimiento es adelgazamiento, en %. **Van con signo: positivo adelgaza, negativo engruesa.** Hasta el 2026-09-29 el código tomaba la magnitud y un engrosamiento se leía como adelgazamiento |
 | `retardo_adelgazamiento_s` | dónde cae el mínimo de grosor respecto del pico |
 | `blur_px` / `blur_sigma` | tamaño del artefacto de motion blur, si lo hay |
@@ -123,6 +126,8 @@ es ruido. **Desde la v4 el `k` se elige solo dentro de esa meseta.**
 | `conteo_estable_ventana` | si los tres coinciden. **Si no, el conteo no es reportable** |
 | `mesetas` | todas las mesetas del escaneo, p. ej. `6 ev en k=5.3-8.6; 5 ev en k=9.4-24.4` |
 | `motivo_no_reportable` | por qué no se reporta: sin meseta, o depende de la ventana |
+| `ruido_borde_sup_px`, `ruido_borde_inf_px` | (Fase 3, H54) MAD sin deriva de cada borde por separado |
+| `cociente_ruido_bordes` | el mayor de los dos ruidos sobre el menor. Si es grande, un borde ensucia al centro: revisar la ROI y ese borde. Sin umbral todavía |
 
 (`picos_con_sep_menor` ya no existe: con la detección por prominencia no hay separación mínima que funda eventos.)
 
@@ -133,13 +138,29 @@ es ruido. **Desde la v4 el `k` se elige solo dentro de esa meseta.**
 que lo separa de un pico más alto). No hay separación mínima en tiempo. La hoja
 `estab_*` tiene ahora 23 filas: `k` de 3 a ~24 en pasos de ×1.1.
 
+**`trenes_<serie>`** (Fase 3) — una fila por búsqueda: `busqueda` ("dirigida a
+0.1 Hz", o "libre" sin frecuencia configurada), `veredicto` ("enganchado a la
+frecuencia configurada", "no hay enganche", "no se configuró ninguna frecuencia"),
+`clasificacion`, período y frecuencia con error, `jitter_ms`, `z`, `p_valor`
+(mínimo 1/1001), `n_eventos_tren`, `n_ranuras`, `captura_pct`, `n_dudosos`,
+`n_sacados_tiempo_amplitud`, `inicio_s`, `fin_s`. Aparece aunque no haya tren: es
+el "intento" que se buscó.
+
 **`ritmo_<serie>`** — una fila por grupo (`estimulados`, `estimulados_dudosos`,
 `espontaneos`), con `n`, ventana temporal, intervalo mediano e IQR, frecuencia
 mediana, `CV_intervalo_pct` y amplitud mediana e IQR.
 
-**`grilla_<serie>`** — la grilla del estimulador ajustada: una fila por ranura,
-con `t_esperado_s`, `t_medido_s`, `error_s` y `capturada`. Es donde se ve si
-faltó algún latido del tren.
+**`grilla_<serie>`** — la grilla del estimulador ajustada: una fila por ranura
+(columna `tren` si hay más de una frecuencia), con `t_esperado_s`, `t_medido_s`
+(el **inicio** de cada latido desde la Fase 3), `error_s` y `capturada`. Es donde
+se ve si faltó algún latido del tren.
+
+**`sacados_<serie>`** (Fase 3) — latidos que salieron del tren porque se desvían
+más de 1 fotograma **y** su amplitud está fuera de 0.5–2× la del tren, con el
+desvío y las dos amplitudes. Aparece solo si hay alguno (Video_prueba: 4.817 s).
+
+**`dudosos_<serie>`** — latidos corridos más que la tolerancia, dentro del tren y
+con amplitud compatible. Aparece solo si hay alguno.
 
 **`espont_<serie>`** — las espontáneas con su frecuencia instantánea evento a
 evento. Aparece sólo si las hay.
@@ -151,6 +172,7 @@ Todo sobre el canal de detección sin deriva, con el reposo en 0 y la amplitud
 | columna | qué es |
 |---|---|
 | `grupo` | `estimulados`, `estimulados_dudosos` o `espontaneos`, si se separó el ritmo |
+| `tren` | número de tren del evento (0 si no pertenece a ninguno) |
 | `amplitud_relativa_pct` | `100 × A / grosor_reposo_px`. No depende del aumento |
 | `grosor_reposo_px` | mediana móvil (la misma de la deriva) del grosor crudo, en el pico |
 | `meseta_pico_frames` | fotogramas a menos de 2×ruido del máximo: si es > 1, el instante del pico es ambiguo |
@@ -163,10 +185,19 @@ Todo sobre el canal de detección sin deriva, con el reposo en 0 y la amplitud
 
 Campos nuevos en **`resumen_<serie>`**: `amplitud_relativa_pct` (mediana) y
 `amplitud_relativa_iqr_pct`; para `ttp` y `rt50`: `_n_eventos`,
-`_frames_mediana`, **`_reportable`**, `_s` (mediana, **NaN si no es
-reportable**), `_iqr_s`, `_cota_inf_s`, `_cota_sup_s`; más `cinetica_min_frames`
-y `cinetica_motivo`. Si `ttp_reportable` es `False`, lo único que se reporta
-es "TTP < `ttp_cota_sup_s`".
+`_frames_mediana`, `_n_medibles`, **`_reportable`**, `_s` (mediana de los eventos
+**medibles**, **NaN si no es reportable**), `_iqr_s`, `_cota_inf_s`, `_cota_sup_s`;
+más `cinetica_min_frames`, `cinetica_motivo`, `n_eventos_cinetica` y
+**`cinetica_grupo_principal`**. Si `ttp_reportable` es `False`, lo único que se
+reporta es "TTP < `ttp_cota_sup_s`".
+
+Desde la Fase 3 estas cifras son las del grupo **principal**: los estimulados si
+hay tren, todos los eventos si no lo hay. Una métrica es reportable si es medible
+(≥ 5 fotogramas) en al menos la mitad de los eventos del grupo.
+
+**`cin_grupos_<serie>`** (Fase 3) — las mismas columnas de cinética del resumen,
+una fila por grupo: `todos`, `estimulados` y `espontaneos`. Ejemplo, Video_prueba:
+amplitud relativa 0.71 % (todos), 2.31 % (estimulados), 0.70 % (espontáneos).
 
 **`poblac_<serie>`** — aparece sólo si hay dos grupos de amplitud (razón de
 medianas ≥ 2). Precede a `ritmo_*` históricamente; la separación buena es la de

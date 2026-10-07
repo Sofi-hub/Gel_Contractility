@@ -20,6 +20,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+import pandas as pd
+
 from src.pipeline import PipelineConfig, process_video
 from src.qc_visualization import save_diagnostics, plot_roi_profile
 from src.output_paths import video_output_dir
@@ -110,6 +112,11 @@ def parse_args():
     g.add_argument("--low-quality-frac", type=float, default=0.30,
                    help="Fraccion de columnas descartadas (sobre 2N) para marcar LOW_QUALITY.")
 
+    p.add_argument("--verbose", action="store_true",
+                   help="Imprime tambien el detalle tecnico (metodo de la zona, columnas "
+                        "descartadas, zonas alternativas, diagnostico del ajuste). Todo eso "
+                        "queda igual guardado en serie_temporal.xlsx.")
+
     return p.parse_args()
 
 
@@ -144,7 +151,7 @@ def main():
     )
 
     print(f"Procesando {args.video} ...")
-    df = process_video(args.video, args.maxproj, config)
+    df = process_video(args.video, args.maxproj, config, detallado=args.verbose)
     roi = df.attrs.get("roi", {})
 
     n_rejected = int((df["frame_quality"] == "REJECTED").sum())
@@ -196,17 +203,31 @@ def main():
         "error de modelo peor / grosor (%)": round(100 * max(
             float(df.attrs.get("error_modelo_sup_px", float("nan"))),
             float(df.attrs.get("error_modelo_inf_px", float("nan")))) / float(df["thickness_px"].median()), 3),
+        # --- detalle de la zona (ROI) que antes solo salia en pantalla ---
+        "ROI criterio": q.get("criterio"),
+        "ROI cintura del gel (px)": q.get("cintura_px"),
+        "ROI grosor min en la zona (px)": q.get("grosor_min_en_roi_px"),
+        "ROI grosor max en la zona (px)": q.get("grosor_max_en_roi_px"),
+        "ROI fraccion del ancho de la imagen": q.get("roi_width_frac"),
+        "ROI columnas con franja seguida": q.get("n_franja_seguida"),
+        "ROI columnas de la imagen": q.get("n_columnas_imagen"),
+        "ROI columnas descartadas por nitidez": q.get("n_desc_por_nitidez"),
+        "ROI columnas descartadas por grosor": q.get("n_desc_por_grosor"),
+        "ROI columnas descartadas por pendiente": q.get("n_desc_por_pendiente"),
     }
 
-    frac = float(df.attrs.get("frac_frames_faltantes", float("nan")))
-    if frac == frac and frac > 0.01:
-        print(f"  AVISO: la grabacion perdio ~{df.attrs.get('frames_faltantes'):.0f} frames "
-              f"({100*frac:.1f}%), repartidos en {df.attrs.get('n_huecos_pts')} huecos de los "
-              f"timestamps. El fps real de captura segun los timestamps es "
-              f"{df.attrs.get('fps_segun_pts'):.4f}.")
-        if df.attrs.get("base_tiempo") != "pts":
-            print("         Con el eje frame/fps los huecos se comen y los eventos parecen")
-            print("         MAS JUNTOS de lo que fueron. Volve a correr con --base-tiempo pts.")
+    # ---------------- avisos (solo cuando hay que hacer algo) ----------------
+    frac_falt = float(df.attrs.get("frac_frames_faltantes", float("nan")))
+    if frac_falt == frac_falt and frac_falt > 0.01:
+        if df.attrs.get("base_tiempo") == "pts":
+            print(f"  nota: la camara perdio ~{df.attrs.get('frames_faltantes'):.0f} fotogramas "
+                  f"({100*frac_falt:.1f}%). El eje de tiempo usa las marcas de tiempo del "
+                  f"video, asi que los tiempos siguen siendo correctos.")
+        else:
+            print(f"  AVISO: la camara perdio ~{df.attrs.get('frames_faltantes'):.0f} fotogramas "
+                  f"({100*frac_falt:.1f}%) y el eje de tiempo se armo con fotograma / fps: "
+                  f"los eventos van a parecer MAS JUNTOS de lo que fueron. Volve a correr "
+                  f"con --base-tiempo pts.")
 
     if args.exigir_roi and q.get("cumple_criterio_aceptacion") is False:
         raise SystemExit(
@@ -218,36 +239,45 @@ def main():
     out_dir = Path(args.output_dir) if args.output_dir else video_output_dir(args.video)
     out_dir.mkdir(parents=True, exist_ok=True)
     video_name = Path(args.video).stem
+    archivos = []
 
     # Perfil de ROI: el gráfico que explica por dónde quedó la gauge region
     roi_profile_path = out_dir / f"00_roi_profile_{video_name}.png"
     try:
         plot_roi_profile(roi, roi_profile_path)
-        print(f"Perfil de ROI guardado en {roi_profile_path}")
+        archivos.append(roi_profile_path.name)
     except Exception as e:  # nunca dejar que un gráfico rompa el análisis
-        print(f"(no se pudo graficar el perfil de ROI: {e})")
+        print(f"  (no se pudo graficar el perfil de la zona: {e})")
 
-    saved = save_diagnostics(df, out_dir / "serie_temporal", fmt=args.table_format, summary=summary)
-    print(f"Resultados guardados en {saved}")
-    print(f"Frames totales: {len(df)} | Rechazados: {n_rejected} | Baja calidad: {n_low_quality}")
+    alts = q.get("alternativas") or []
+    extra = {"roi_alternativas": pd.DataFrame(alts)} if alts else None
+    saved = save_diagnostics(df, out_dir / "serie_temporal", fmt=args.table_format,
+                             summary=summary, extra_sheets=extra)
+    archivos.insert(0, Path(saved).name)
 
-    # --- Diagnostico del ajuste (Fase 4, H24) ---
-    # El viejo chequeo "outlier_frac < 10 %" ya NO es criterio de aceptacion:
-    # el umbral de descarte se adapta a cada fotograma, asi que una ROI con
-    # bordes limpios descarta MAS. Medido en 063 y 466: outlier_frac ordena las
-    # ROIs al reves del ruido del canal. La ROI se acepta por su FORMA
-    # (variacion <= 6 %, contiene la cintura). outlier_frac y el error de modelo
-    # quedan en `resumen` como diagnostico, sin umbral (revisar con RARITOS).
-    # Ver claude/propuesta-fase-4.md.
-    frac = float(df["outlier_frac"].mean())
-    resid = float(df[["residual_top_px", "residual_bottom_px"]].mean().mean())
-    print(f"Ajuste (diagnostico, sin umbral): outliers {100*frac:.1f}% | residuo tipico "
-          f"{resid:.3f} px | error de modelo sup/inf "
-          f"{summary['error de modelo borde sup (px)']}/{summary['error de modelo borde inf (px)']} px "
-          f"({summary['error de modelo peor / grosor (%)']}% del grosor)")
+    # Fotogramas sin borde. Antes solo aparecian los avisos de sklearn ("R^2
+    # score is not well-defined"), que no dicen nada. Causa medida en 068: el
+    # gel se mueve mas que la ventana de busqueda (+-half_window px).
+    n = len(df)
+    print(f"Fotogramas: {n} | sin borde (descartados): {n_rejected} | "
+          f"dudosos: {n_low_quality}")
+    frac_mal = (n_rejected + n_low_quality) / max(n, 1)
+    if frac_mal > 0.01:
+        print(f"  AVISO: {100*frac_mal:.0f}% de los fotogramas sin borde o dudosos. "
+              f"Lo mas comun: el gel se mueve mas que la ventana de busqueda "
+              f"(+-{args.half_window} px). Proba de nuevo agregando --half-window "
+              f"{2 * args.half_window}.")
 
-    if args.px_to_mm == 1.0:
-        print("AVISO: --px-to-mm sigue en 1.0, asi que los valores 'mm' son en realidad PIXELES.")
+    # --- Diagnostico del ajuste (Fase 4, H24): sin umbral, solo en detalle ---
+    # outlier_frac ya NO es criterio de aceptacion (el umbral de descarte se
+    # adapta a cada fotograma). Queda en `resumen`. Ver claude/propuesta-fase-4.md.
+    if args.verbose:
+        frac = float(df["outlier_frac"].mean())
+        resid = float(df[["residual_top_px", "residual_bottom_px"]].mean().mean())
+        print(f"  [detalle] ajuste (sin umbral): outliers {100*frac:.1f}% | residuo tipico "
+              f"{resid:.3f} px | error de modelo sup/inf "
+              f"{summary['error de modelo borde sup (px)']}/{summary['error de modelo borde inf (px)']} px "
+              f"({summary['error de modelo peor / grosor (%)']}% del grosor)")
 
     if args.plot:
         calibrated = abs(args.px_to_mm - 1.0) > 1e-9
@@ -257,7 +287,14 @@ def main():
             calibrated=calibrated,
             name=f"01_serie_temporal_{video_name}",
         )
-        print(f"Gráfico guardado en {p}")
+        archivos.append(Path(p).name)
+
+    if args.px_to_mm == 1.0:
+        print("Medidas en pixeles (sin calibrar a mm, a proposito: los videos no tienen "
+              "todos el mismo aumento).")
+    print(f"Archivos en {out_dir}:")
+    for a in archivos:
+        print(f"  {a}")
 
 
 if __name__ == "__main__":

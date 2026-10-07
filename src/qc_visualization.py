@@ -212,7 +212,8 @@ def plot_roi_profile(roi: dict, output_path=None):
     return fig
 
 
-def save_diagnostics(df: pd.DataFrame, output_path, fmt: str = "xlsx", summary: dict | None = None):
+def save_diagnostics(df: pd.DataFrame, output_path, fmt: str = "xlsx", summary: dict | None = None,
+                     extra_sheets: dict | None = None):
     """
     Guarda la tabla de diagnóstico. Por defecto .xlsx nativo (Excel no
     muestra el aviso de "se pueden perder datos" de los .csv), con las
@@ -226,12 +227,13 @@ def save_diagnostics(df: pd.DataFrame, output_path, fmt: str = "xlsx", summary: 
         df.to_csv(output_path.with_suffix(".csv"), index=False)
 
     if fmt in ("xlsx", "both"):
-        _write_xlsx(df, output_path.with_suffix(".xlsx"), summary)
+        _write_xlsx(df, output_path.with_suffix(".xlsx"), summary, extra_sheets)
 
     return output_path.with_suffix(".xlsx" if fmt != "csv" else ".csv")
 
 
-def _write_xlsx(df: pd.DataFrame, path, summary: dict | None = None):
+def _write_xlsx(df: pd.DataFrame, path, summary: dict | None = None,
+                extra_sheets: dict | None = None):
     """Escribe el xlsx con formato: encabezado fijo, autofiltro, ancho de
     columnas, y filas outlier resaltadas."""
     from openpyxl import Workbook
@@ -291,6 +293,25 @@ def _write_xlsx(df: pd.DataFrame, path, summary: dict | None = None):
             ws2.cell(row=i, column=2, value=v if isinstance(v, (int, float, str)) else str(v)).font = BODY_FONT
         ws2.column_dimensions["A"].width = 34
         ws2.column_dimensions["B"].width = 34
+
+    # Hojas extra (p. ej. `roi_alternativas`): tablas que antes solo salian
+    # en pantalla y ahora quedan guardadas.
+    for nombre, tabla in (extra_sheets or {}).items():
+        if tabla is None or not len(tabla):
+            continue
+        ws3 = wb.create_sheet(str(nombre)[:31])
+        for j, col in enumerate(tabla.columns, start=1):
+            c = ws3.cell(row=1, column=j, value=str(col))
+            c.font = HEADER_FONT
+            c.fill = HEADER_FILL
+            ws3.column_dimensions[get_column_letter(j)].width = max(14, len(str(col)) + 2)
+        for i, fila in enumerate(tabla.itertuples(index=False), start=2):
+            for j, val in enumerate(fila, start=1):
+                if isinstance(val, (np.floating, np.integer)):
+                    val = val.item()
+                if isinstance(val, (np.bool_, bool)):
+                    val = bool(val)
+                ws3.cell(row=i, column=j, value=val).font = BODY_FONT
 
     wb.save(path)
 

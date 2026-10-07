@@ -46,6 +46,7 @@ cada frame, en vez de estar calibrado a un único video de ejemplo.
 from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
+import warnings
 from sklearn.linear_model import RANSACRegressor
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
@@ -159,7 +160,14 @@ def fit_edge_ransac(
         PolynomialFeatures(degree=degree),
         RANSACRegressor(residual_threshold=thr, random_state=0, max_trials=max_trials),
     )
-    model.fit(xn.reshape(-1, 1), y_valid)
+    # Con muy pocas columnas validas sklearn avisa "R^2 score is not
+    # well-defined..." en cada fotograma. Ese aviso no cambia el ajuste y tapa
+    # la pantalla: se silencia aca, y main.py da un aviso claro si hay muchos
+    # fotogramas sin borde.
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=".*R\\^2 score is not well-defined.*")
+        warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
+        model.fit(xn.reshape(-1, 1), y_valid)
 
     ransac: RANSACRegressor = model.named_steps["ransacregressor"]
     inlier_mask_valid = ransac.inlier_mask_

@@ -66,7 +66,11 @@ from src.estadistica import mad, detrend_median, buscar_picos
 
 # --------------------------------------------------------------------------
 def _signo_evento(r: np.ndarray) -> int:
-    """+1 si los eventos son excursiones hacia arriba, -1 si hacia abajo.
+    """+1 si los eventos llevan la senal a valores MAYORES, -1 si a menores.
+
+    En la imagen la fila crece hacia ABAJO, asi que +1 = la franja se mueve
+    hacia abajo en la pantalla y -1 = hacia arriba. (Hasta 2026-10-07 este
+    texto y el que se imprimia estaban invertidos; el calculo no cambio.)
 
     Se decide por la cola de la distribucion, no por un supuesto: el signo
     de `center_px` depende de la convencion de la imagen y de si el gel
@@ -372,6 +376,9 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
         k_auto = False
 
     picos = detectar(r, k * m, fps, sep_s)
+    # Falsos de control en el k usado: el mismo detector sobre la senal
+    # invertida. Solo para dibujarlos (clave con "_": no va al xlsx).
+    falsos = detectar(-r, k * m, fps, sep_s)
 
     # --- control de estabilidad frente a la ventana (Fase 2.2) --------------
     # Mismo criterio que la meseta de k: un conteo que cambia con una eleccion
@@ -398,7 +405,7 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
         "conteo_reportable": bool(sel["hay_meseta"]) and estable_win,
         "_k_rango": sel.get("k_rango"),
         "_mesetas": sel.get("mesetas", []),
-        "_t": t, "_r": r, "_picos": picos, "_lag": lag,
+        "_t": t, "_r": r, "_picos": picos, "_falsos": falsos, "_lag": lag,
         "_prom_g": prom_g, "_prom_c": prom_c, "_n_prom": n_ev,
     }
 
@@ -556,117 +563,154 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
     return res
 
 
-def imprimir(nombre: str, a: dict) -> None:
+def _ms(x) -> str:
+    return f"{1000 * x:.0f}" if np.isfinite(x) else "-"
+
+
+def imprimir(nombre: str, a: dict, detallado: bool = False) -> None:
+    """Lo que se ve en pantalla. Corto por defecto: resultado, ritmo y cinetica,
+    con AVISOS solo cuando hay que hacer algo. `detallado` (--verbose) agrega
+    el detalle tecnico. TODO lo que aca no se imprime esta en contracciones.xlsx
+    (escaneo en `estab_*`, ruidos y ventanas en `resumen_*`, z/jitter en
+    `trenes_*`, cinetica por grupo en `cin_grupos_*`, etc.)."""
     print("=" * 74)
-    print(f"{nombre}   ({a['n_frames']} frames, {a['duracion_s']:.1f} s, {a['fps']:.2f} fps)")
-    print(f"  canal de deteccion: {a['canal']}  "
-          f"(eventos hacia {'arriba' if a['signo'] > 0 else 'abajo'} en la imagen)")
-    print(f"  ruido del canal: {a['ruido_canal_px']:.4f} px | "
-          f"ruido del grosor: {a['ruido_grosor_px']:.4f} px")
-    if np.isfinite(a.get("cociente_ruido_bordes", float("nan"))):
-        print(f"  ruido por borde: sup {a['ruido_borde_sup_px']:.4f} px | "
-              f"inf {a['ruido_borde_inf_px']:.4f} px (cociente {a['cociente_ruido_bordes']:.2f})")
+    print(f"{nombre}   ({a['n_frames']} fotogramas, {a['duracion_s']:.1f} s, {a['fps']:.2f} fps)")
+    # signo +1 = la senal (fila de la imagen) CRECE = la franja baja en pantalla.
+    print(f"  {'las contracciones mueven' if a.get('conteo_reportable') else 'los eventos mueven'} "
+          f"la franja hacia {'ABAJO' if a['signo'] > 0 else 'ARRIBA'} en la imagen")
+    print(f"  ruido de fondo de la senal: {a['ruido_canal_px']:.3f} px")
+
+    # --- avisos y notas sobre los datos ---
     if a.get("fotogramas_sin_medida"):
         print(f"  AVISO: {a['fotogramas_sin_medida']} fotograma(s) sin medida "
-              f"({a['fotogramas_sin_medida_pct']:.2f} %, NaN / REJECTED). No se interpolan: no "
-              f"cuentan para el ruido ni pueden ser picos. Si caen dentro de un evento, su "
-              f"TTP/RT50 queda sin medir.")
+              f"({a['fotogramas_sin_medida_pct']:.1f} %). No se rellenan: si caen dentro de una "
+              f"contraccion, su TTP/RT50 queda sin medir.")
     if a.get("eventos_junto_a_hueco"):
-        print(f"  AVISO: {a['eventos_junto_a_hueco']} evento(s) con un fotograma sin medida en el "
-              f"pico o al lado: su instante y su amplitud son inciertos (columna "
-              f"'junto_a_hueco' de la hoja eventos_*).")
+        print(f"  AVISO: {a['eventos_junto_a_hueco']} contraccion(es) con un fotograma sin medida "
+              f"en el pico o al lado: su instante y su amplitud son inciertos "
+              f"(columna 'junto_a_hueco' de la hoja eventos_*).")
     if a.get("eventos_junto_al_borde"):
-        print(f"  nota: {a['eventos_junto_al_borde']} evento(s) a menos de media ventana del "
-              f"detrend del inicio o del fin del video: su linea base se estima con media "
-              f"ventana (columna 'junto_al_borde' de la hoja eventos_*).")
+        print(f"  nota: {a['eventos_junto_al_borde']} evento(s) muy cerca del principio o del "
+              f"final del video: su linea de base es menos precisa "
+              f"(columna 'junto_al_borde' de la hoja eventos_*).")
     if a.get("fotogramas_low_quality"):
-        print(f"  nota: {a['fotogramas_low_quality']} fotograma(s) LOW_QUALITY entran al analisis "
-              f"como los demas.")
-    print()
-    print("  estabilidad del umbral (falsos = mismo detector sobre la senal invertida)")
-    print("      %5s %12s %10s %16s" % ("k", "umbral_px", "eventos", "falsos_control"))
-    for _, f in a["estabilidad"].iterrows():
-        print("      %5g %12.4f %10d %16d" % (f.k, f.umbral_px, f.eventos, f.falsos_control))
-    print()
-    if not a["n_eventos"]:
-        print("  NO se detectaron eventos con el umbral elegido.")
-        return
-    origen = "elegido automaticamente" if a.get("k_automatico") else "fijado a mano"
-    dmax = a.get("duracion_evento_max_s", float("nan"))
-    print(f"  VENTANA del detrend: {a['win_s_usado']:g} s "
-          f"({'automatica' if a.get('win_s_automatico') else 'fijada a mano'}; evento claro "
-          f"mas largo {dmax:.2f} s)" if np.isfinite(dmax) else
-          f"  VENTANA del detrend: {a['win_s_usado']:g} s (no hay eventos claros para medir su duracion)")
+        print(f"  nota: {a['fotogramas_low_quality']} fotograma(s) dudosos (LOW_QUALITY) entran "
+              f"al analisis como los demas.")
     if a.get("ventana_corta"):
-        print(f"    AVISO: la ventana es menor que 3 x el evento mas largo: la mediana puede "
-              f"comerse parte de la contraccion.")
-    print(f"    conteo con otras ventanas: {a['conteo_por_ventana']}"
-          + ("" if a.get("conteo_estable_ventana") else "   <- CAMBIA CON LA VENTANA"))
-    print(f"  UMBRAL: k = {a['k_usado']:g}  ({origen})")
-    print(f"    {a['meseta_motivo']}")
-    if not a.get("conteo_reportable"):
-        print(f"    >>> NO REPORTABLE: {a.get('motivo_no_reportable', '')}.")
-        print("        Los eventos de abajo son para auditar, no para tabular.")
-    print(f"  EVENTOS: {a['n_eventos']}"
-          + ("" if a.get("conteo_reportable") else "   [NO REPORTABLE]"))
-    print("    tiempos (s): " + ", ".join(f"{x:.2f}" for x in a["tiempos_s"]))
+        print("  AVISO: la ventana para quitar la deriva se fijo a mano mas corta que 3 veces "
+              "la contraccion mas larga: puede recortar las contracciones.")
+    if a.get("hay_meseta") and not a.get("conteo_estable_ventana", True):
+        print(f"  AVISO: el conteo cambia segun la ventana usada para quitar la deriva "
+              f"({a['conteo_por_ventana']}).")
+    if detallado:
+        _imprimir_detalle_senal(a)
+
+    # --- resultado ---
+    print()
+    reportable = bool(a.get("conteo_reportable"))
+    kr = a.get("_k_rango")
+    if not a["n_eventos"]:
+        if reportable:
+            print("  RESULTADO: no se detectaron contracciones.")
+        else:
+            print(f"  RESULTADO: NO REPORTABLE -> {a.get('motivo_no_reportable', '')}.")
+            print("    Con el umbral de auditoria no queda ningun candidato.")
+        return
+    if reportable:
+        print(f"  RESULTADO: {a['n_eventos']} contracciones  (conteo confiable)")
+        print(f"    umbral: {a['k_usado']:.1f} x ruido, dentro de la zona estable "
+              f"k = {kr[0]:.1f}-{kr[1]:.1f}, con 0 falsos de control")
+        otras = a.get("_mesetas", [])[1:]
+        if otras:
+            print("    (hay otra zona estable con " + ", ".join(
+                f"{n} eventos en k = {k0:.1f}-{k1:.1f}" for (k0, k1, n, *_) in otras)
+                + ": se usa la de umbral mas bajo)")
+    else:
+        print(f"  RESULTADO: NO REPORTABLE -> {a.get('motivo_no_reportable', '')}.")
+        print(f"    Hay {a['n_eventos']} candidatos, pero el control con la senal invertida no "
+              f"permite separarlos del ruido o la vibracion.")
+        print("    Los tiempos de abajo son para revisar el video, NO para informar.")
+    print("    momentos (s): " + ", ".join(f"{x:.2f}" for x in a["tiempos_s"]))
     if a["n_eventos"] > 1:
         iv = a["intervalo_mediano_s"]
-        print(f"    intervalo mediano: {iv:.3f} s  ({1 / iv:.4f} Hz)")
-    print(f"    traslacion (amplitud mediana): {a['amplitud_traslacion_px']:.3f} px")
+        print(f"    tiempo tipico entre eventos: {iv:.3f} s  ({1 / iv:.4f} Hz)")
+    print(f"    amplitud mediana: {a['amplitud_traslacion_px']:.3f} px")
+
+    # --- ritmo ---
+    rit = a.get("ritmo")
+    if rit is not None:
+        print()
+        print("  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)")
+        for _, f in rit["trenes"].iterrows():
+            extra = (f"  [{int(f['n_eventos_tren'])} de {int(f['n_ranuras'])} pulsos, "
+                     f"p = {f['p_valor']:.3f}]"
+                     if "z" in f and np.isfinite(f.get("z", np.nan)) else "")
+            print(f"    busqueda {f['busqueda']}: {f['veredicto']}{extra}")
+        if rit["hay_estimulacion"]:
+            print(f"    periodo: {rit['periodo_s']:.5f} +- {rit['periodo_err_s']:.5f} s  "
+                  f"({rit['frecuencia_Hz']:.5f} Hz) | capturados {rit['tasa_captura_pct']:.0f}% "
+                  f"| tren de {rit['tren_inicio_s']:.1f} a {rit['tren_fin_s']:.1f} s")
+            for _, x in rit["sacados_tiempo_amplitud"].iterrows():
+                print(f"    sacado del tren: el de {x['tiempo_s']:.2f} s (corrido "
+                      f"{1000 * x['desvio_s']:+.0f} ms y amplitud {x['amplitud']:.2f} px contra "
+                      f"{x['amplitud_mediana_tren']:.2f} px del tren)")
+        n_est = len(rit.get("estimulados", []))
+        n_dud = len(rit.get("estimulados_dudosos", []))
+        n_esp = len(rit.get("espontaneos", []))
+        print(f"    estimuladas: {n_est}" + (f" | dudosas: {n_dud}" if n_dud else "")
+              + f" | espontaneas: {n_esp}"
+              + ("" if reportable else "   (candidatos: no se informa)"))
+        if n_dud:
+            print("    (dudosas = cerca de un pulso pero corridas; amplitud como las del tren)")
+        if detallado:
+            _imprimir_detalle_ritmo(rit)
+
+    if detallado:
+        _imprimir_detalle_grosor(a)
+    imprimir_cinetica(a, detallado)
+
+
+def _imprimir_detalle_senal(a: dict) -> None:
+    print(f"  [detalle] canal: {a['canal']} | ruido del grosor: {a['ruido_grosor_px']:.4f} px")
+    if np.isfinite(a.get("cociente_ruido_bordes", float("nan"))):
+        print(f"  [detalle] ruido por borde: sup {a['ruido_borde_sup_px']:.4f} px | "
+              f"inf {a['ruido_borde_inf_px']:.4f} px (cociente {a['cociente_ruido_bordes']:.2f})")
+    dmax = a.get("duracion_evento_max_s", float("nan"))
+    print(f"  [detalle] ventana de la deriva: {a['win_s_usado']:g} s "
+          f"({'automatica' if a.get('win_s_automatico') else 'fijada a mano'}"
+          + (f"; evento claro mas largo {dmax:.2f} s" if np.isfinite(dmax) else "")
+          + f") | conteo con otras ventanas: {a['conteo_por_ventana']}")
+    print(f"  [detalle] umbral: k = {a['k_usado']:g} "
+          f"({'automatico' if a.get('k_automatico') else 'fijado a mano'}) | {a['meseta_motivo']}")
+    print("  [detalle] escaneo del umbral (falsos = mismo detector sobre la senal invertida)")
+    print("      %7s %12s %10s %16s" % ("k", "umbral_px", "eventos", "falsos_control"))
+    for _, f in a["estabilidad"].iterrows():
+        print("      %7g %12.4f %10d %16d" % (f.k, f.umbral_px, f.eventos, f.falsos_control))
+
+
+def _imprimir_detalle_ritmo(rit: dict) -> None:
+    print(f"    [detalle] instante de cada latido: {rit.get('fuente_tiempo')}")
+    if rit["hay_estimulacion"]:
+        print(f"    [detalle] z = {rit['z']:.1f} | jitter {rit['jitter_s']*1000:.1f} ms"
+              + (" (por debajo de un fotograma)" if rit.get("jitter_limitado_por_resolucion") else ""))
+    if rit.get("resumen_grupos") is not None:
+        print("    [detalle] grupos (la amplitud NO se uso para clasificar):")
+        for ln in rit["resumen_grupos"].to_string(index=False).split("\n"):
+            print("       " + ln)
+
+
+def _imprimir_detalle_grosor(a: dict) -> None:
     if a.get("poblaciones"):
-        print("    DOS POBLACIONES de eventos (separadas por amplitud):")
+        print("    [detalle] dos poblaciones por amplitud (separacion vieja; la buena es el ritmo):")
         print("        %-8s %4s %14s %14s %10s %14s" % (
             "grupo", "n", "amplitud_px", "intervalo_s", "Hz", "ventana_s"))
         for g in a["poblaciones"]:
             print("        %-8s %4d %14.3f %14.3f %10.2f %6.1f - %-6.1f" % (
                 g["grupo"], g["n"], g["amplitud_mediana_px"], g["intervalo_mediano_s"],
                 g["frecuencia_Hz"], g["t_inicio_s"], g["t_fin_s"]))
-    rit = a.get("ritmo")
-    if rit is not None:
-        print()
-        print(f"    RITMO (busqueda {rit['modo_busqueda']}; instante = {rit.get('fuente_tiempo')})")
-        for _, f in rit["trenes"].iterrows():
-            extra = (f"  [z={f['z']:.1f}, p={f['p_valor']:.4f}, {int(f['n_eventos_tren'])}/"
-                     f"{int(f['n_ranuras'])} ranuras]" if "z" in f and np.isfinite(f.get("z", np.nan)) else "")
-            print(f"       tren {int(f['tren'])} ({f['busqueda']}): {f['veredicto']}{extra}")
-        if not rit["hay_estimulacion"]:
-            print("       -> todos los eventos se toman como espontaneos.")
-        else:
-            print(f"    TREN ESTIMULADO (enganche de fase, z={rit['z']:.1f}, p={rit['p_valor']:.4f})")
-            print(f"       periodo    : {rit['periodo_s']:.5f} +- {rit['periodo_err_s']:.5f} s")
-            print(f"       frecuencia : {rit['frecuencia_Hz']:.5f} +- {rit['frecuencia_err_Hz']:.6f} Hz")
-            print(f"       jitter     : {rit['jitter_s']*1000:.1f} ms"
-                  + ("  (por debajo de un fotograma: es el piso de resolucion)"
-                     if rit.get("jitter_limitado_por_resolucion") else ""))
-            print(f"       captura    : {rit['tasa_captura_pct']:.0f}%  "
-                  f"({rit['n_estimulados']}/{rit['n_ranuras']} ranuras), "
-                  f"tren de {rit['tren_inicio_s']:.1f} a {rit['tren_fin_s']:.1f} s")
-            for _, x in rit["sacados_tiempo_amplitud"].iterrows():
-                print(f"       SACADO DEL TREN: evento en {x['tiempo_s']:.3f} s, desvio "
-                      f"{1000 * x['desvio_s']:+.0f} ms y amplitud {x['amplitud']:.2f} px contra "
-                      f"{x['amplitud_mediana_tren']:.2f} px del tren (falla en tiempo Y amplitud)")
-            if rit.get("n_estimulados_dudosos"):
-                print(f"       DUDOSOS    : {rit['n_estimulados_dudosos']} evento(s) cerca de una "
-                      f"ranura pero fuera de tolerancia, con amplitud compatible: probablemente "
-                      f"latidos del tren con el instante corrido.")
-        print("    Grupos (la amplitud NO se uso para clasificar; que difiera es evidencia aparte):")
-        if "resumen_grupos" not in rit or rit["resumen_grupos"] is None:
-            # Pasa cuando no se detecto tren y no hay grupos que resumir: es
-            # justo el caso de un video sin eventos, donde mas importa que el
-            # reporte salga igual en vez de abortar.
-            print("    (sin resumen de grupos: no se separo en estimulados/espontaneos)")
-            imprimir_cinetica(a)
-            return
-        for ln in rit["resumen_grupos"].to_string(index=False).split("\n"):
-            print("       " + ln)
-    if "picos_con_sep_menor" in a:
-        print(f"    AVISO: con una separacion minima menor apareceria(n) "
-              f"{a['picos_con_sep_menor']} pico(s) en vez de {a['n_eventos']}. "
-              f"--sep-s se queda con el pico MAS ALTO de cada ventana, asi que si hay "
-              f"un tren rapido lo esta borrando. Baja --sep-s.")
     if "adelgazamiento_px" in a:
-        print(f"    adelgazamiento (promedio de {a['_n_prom']} eventos alineados)")
+        print(f"    [detalle] adelgazamiento (solo diagnostico, no se informa; "
+              f"{a['_n_prom']} eventos alineados)")
         print(f"       minimo:  {a['adelgazamiento_px']:.4f} px  "
               f"({a['adelgazamiento_sigma']:.1f} sigma, a {a['retardo_adelgazamiento_s']:+.2f} s del pico)"
               f"   = {a['cociente_adelg_trasl_pct']:.1f}% de la traslacion")
@@ -675,53 +719,69 @@ def imprimir(nombre: str, a: dict) -> None:
                   f"({a['adelgazamiento_robusto_sigma']:.1f} sigma, 3 frames post-pico)"
                   f"   = {a['cociente_robusto_pct']:.1f}% de la traslacion")
         if "blur_sigma" in a:
-            print(f"    AVISO: el grosor da un salto POSITIVO de {a['blur_px']:.3f} px "
-                  f"({a['blur_sigma']:.1f} sigma) en el frame mas rapido. Eso no es "
-                  f"engrosamiento: es motion blur (el borde se emborrona y los dos bordes "
-                  f"se abren). Usa la medida robusta, no el minimo.")
-    imprimir_cinetica(a)
+            print(f"       salto POSITIVO de {a['blur_px']:.3f} px ({a['blur_sigma']:.1f} sigma) en el "
+                  f"frame mas rapido: motion blur, no engrosamiento.")
 
 
-def imprimir_cinetica(a: dict) -> None:
+def imprimir_cinetica(a: dict, detallado: bool = False) -> None:
     ev = a.get("_cinetica")
     if ev is None or not len(ev):
         return
     print()
-    print(f"    CINETICA (nivel onset/offset {cin.NIVEL_ONSET:.0%} de A, RT50 al "
-          f"{cin.NIVEL_RT:.0%}; medible si >= {a['cinetica_min_frames']} fotogramas)")
-    print(f"       cifra principal: {a.get('cinetica_grupo_principal', 'todos')} "
-          f"({a.get('n_eventos_cinetica', len(ev))} eventos)")
-    for m, nom in (("ttp", "TTP "), ("rt50", "RT50")):
-        if not a.get(f"{m}_n_eventos"):
-            print(f"       {nom}: no se pudo medir en ningun evento")
-            continue
-        fr = a[f"{m}_frames_mediana"]
-        lo, hi = 1000 * a[f"{m}_cota_inf_s"], 1000 * a[f"{m}_cota_sup_s"]
-        if a[f"{m}_reportable"]:
-            print(f"       {nom}: {1000 * a[f'{m}_s']:.0f} ms (mediana de {a[f'{m}_n_medibles']} "
-                  f"medibles, IQR {a[f'{m}_iqr_s']} s)"
-                  f"  | {fr:g} fotogramas | intervalo mediano [{lo:.0f}, {hi:.0f}] ms")
-        elif not a.get("conteo_reportable"):
-            print(f"       {nom}: NO REPORTABLE -> el conteo de eventos no es reportable "
-                  f"(sin meseta); {fr:g} fotogramas, intervalo mediano [{lo:.0f}, {hi:.0f}] ms "
-                  f"solo para auditar")
-        else:
-            print(f"       {nom}: NO MEDIBLE -> {nom.strip()} < {hi:.0f} ms"
-                  f"  ({fr:g} fotogramas: es el intervalo de muestreo, no la biologia)")
+    grupo = a.get("cinetica_grupo_principal", "todos")
+    print(f"  CONTRACTILIDAD ({grupo}, {a.get('n_eventos_cinetica', len(ev))} eventos)")
+    if not a.get("conteo_reportable"):
+        print("    no se informa: el conteo no es reportable.")
+        if detallado:
+            for m, nom in (("ttp", "TTP "), ("rt50", "RT50")):
+                if a.get(f"{m}_n_eventos"):
+                    lo, hi = 1000 * a[f"{m}_cota_inf_s"], 1000 * a[f"{m}_cota_sup_s"]
+                    print(f"    [detalle] {nom}: {a[f'{m}_frames_mediana']:g} fotogramas, "
+                          f"intervalo mediano [{lo:.0f}, {hi:.0f}] ms (solo para auditar)")
+        return
     if np.isfinite(a.get("amplitud_relativa_pct", np.nan)):
-        print(f"       amplitud relativa: {a['amplitud_relativa_pct']:.2f} % del grosor en reposo"
-              + (f"  (IQR {a['amplitud_relativa_iqr_pct']} %)"
+        print(f"    amplitud: {a['amplitud_relativa_pct']:.2f} % del grosor en reposo"
+              + (f"  (rango intercuartil {a['amplitud_relativa_iqr_pct']} %)"
                  if a.get("amplitud_relativa_iqr_pct") else ""))
-    if a["cinetica_motivo"] != "TTP y RT50 medibles":
-        print(f"       motivo: {a['cinetica_motivo']}")
-    cg = a.get("_cinetica_grupos")
-    if cg is not None and len(cg) > 1:
-        def _ms(x):
-            return f"{1000 * x:.0f}" if np.isfinite(x) else "-"
-        print("       por grupo:   grupo         n   TTP ms  RT50 ms  amplitud relativa %")
-        for _, f in cg.iterrows():
-            print(f"                    {f['grupo']:12s} {int(f['n_eventos_cinetica']):3d}  "
-                  f"{_ms(f['ttp_s']):>6s}  {_ms(f['rt50_s']):>7s}  {f['amplitud_relativa_pct']:.2f}")
+    lentas = []
+    for m, nom in (("ttp", "TTP (inicio -> pico)"), ("rt50", "RT50 (pico -> 50 % de relajacion)")):
+        if not a.get(f"{m}_n_eventos"):
+            print(f"    {nom}: no se pudo medir en ningun evento")
+            continue
+        hi = 1000 * a[f"{m}_cota_sup_s"]
+        if a[f"{m}_reportable"]:
+            lo = 1000 * a[f"{m}_cota_inf_s"]
+            print(f"    {nom}: {1000 * a[f'{m}_s']:.0f} ms  (mediana de "
+                  f"{a[f'{m}_n_medibles']} medibles; intervalo [{lo:.0f}, {hi:.0f}] ms)")
+        else:
+            print(f"    {nom}: menos de {hi:.0f} ms  ({a[f'{m}_frames_mediana']:g} fotogramas)")
+            lentas.append(m)
+    if lentas:
+        print(f"    (con menos de {a['cinetica_min_frames']} fotogramas no se puede dar un valor, "
+              f"solo un maximo: la contraccion es mas rapida que la camara)")
+    if detallado:
+        print(f"    [detalle] onset/offset al {cin.NIVEL_ONSET:.0%} de la amplitud, RT50 al "
+              f"{cin.NIVEL_RT:.0%} | {a['cinetica_motivo']}")
+        cg = a.get("_cinetica_grupos")
+        if cg is not None and len(cg) > 1:
+            print("    [detalle] por grupo:   grupo         n   TTP ms  RT50 ms  amplitud relativa %")
+            for _, f in cg.iterrows():
+                print(f"                         {f['grupo']:12s} {int(f['n_eventos_cinetica']):3d}  "
+                      f"{_ms(f['ttp_s']):>6s}  {_ms(f['rt50_s']):>7s}  {f['amplitud_relativa_pct']:.2f}")
+
+
+NO_REPORTABLE_TXT = "NO REPORTABLE \u2014 candidatos para auditar"
+
+
+def _dibujar_falsos(ax, a, t=None, r=None):
+    """Falsos de control en el k usado: picos de la senal INVERTIDA. Se dibujan
+    hacia abajo (son excursiones al reves). Si hay tantos como eventos, es ruido."""
+    t = a["_t"] if t is None else t
+    r = a["_r"] if r is None else r
+    fz = a.get("_falsos")
+    if fz is not None and len(fz):
+        ax.plot(t[fz], r[fz], "^", mfc="none", mec="#e74c3c", mew=1.0, ms=6, zorder=4,
+                label=f"{len(fz)} falsos de control (senal invertida)")
 
 
 def graficar(resultados, out_png: Path) -> None:
@@ -731,12 +791,20 @@ def graficar(resultados, out_png: Path) -> None:
     for i, (nombre, a) in enumerate(resultados):
         ax, ax2 = axes[i, 0], axes[i, 1]
         ax.plot(a["_t"], a["_r"], color="#1f77b4", lw=0.7, label=a["canal"])
+        reportable = bool(a.get("conteo_reportable"))
         if a["n_eventos"]:
-            ax.plot(a["_t"][a["_picos"]], a["_r"][a["_picos"]], "v", color="crimson",
-                    ms=7, label=f"{a['n_eventos']} eventos")
+            if reportable:
+                ax.plot(a["_t"][a["_picos"]], a["_r"][a["_picos"]], "v", color="crimson",
+                        ms=7, label=f"{a['n_eventos']} eventos")
+            else:
+                ax.plot(a["_t"][a["_picos"]], a["_r"][a["_picos"]], "v", mfc="none",
+                        mec="#7f8c8d", mew=1.0, ms=7, zorder=4,
+                        label=f"{a['n_eventos']} candidatos (no reportables)")
+        _dibujar_falsos(ax, a)
         ax.axhline(0, color="gray", lw=0.6)
         ax.set_ylabel(f"{a['canal']} (sin deriva, px)")
-        ax.set_title(nombre, fontsize=10)
+        ax.set_title(nombre if reportable else f"{nombre}   {NO_REPORTABLE_TXT}", fontsize=10,
+                     color="black" if reportable else "#c0392b")
         ax.legend(fontsize=8, loc="upper right")
         ax.grid(alpha=0.3)
 
@@ -748,7 +816,8 @@ def graficar(resultados, out_png: Path) -> None:
             ax2.set_xlabel("t respecto del pico (s)")
             ax2.set_ylabel("traslacion (px)", color="#1f77b4")
             ax2b.set_ylabel("grosor (px)", color="crimson")
-            ax2.set_title(f"promedio de {a['_n_prom']} eventos", fontsize=9)
+            ax2.set_title(f"promedio de {a['_n_prom']} "
+                          f"{'eventos' if reportable else 'candidatos (no reportable)'}", fontsize=9)
             ax2.grid(alpha=0.3)
     axes[-1, 0].set_xlabel("Tiempo (s)")
     fig.tight_layout()
@@ -768,6 +837,7 @@ def graficar_ritmo(resultados, out_png: Path):
         rit, ax, ax2 = a["ritmo"], axes[i, 0], axes[i, 1]
         t, r, pk = a["_t"], a["_r"], a["_picos"]
         ax.plot(t, r, color="#bdc3c7", lw=0.6, zorder=1)
+        reportable = bool(a.get("conteo_reportable"))
         colores = {"estimulados": "#c0392b", "estimulados_dudosos": "#e67e22",
                    "espontaneos": "#2980b9"}
         for grupo, col in colores.items():
@@ -775,16 +845,22 @@ def graficar_ritmo(resultados, out_png: Path):
                           np.array([], int))
             if len(idx) == 0:
                 continue
-            ax.plot(t[pk][idx], r[pk][idx], "v", color=col, ms=8, zorder=5,
-                    label=f"{grupo} (n={len(idx)})")
+            if reportable:
+                ax.plot(t[pk][idx], r[pk][idx], "v", color=col, ms=8, zorder=5,
+                        label=f"{grupo} (n={len(idx)})")
+            else:
+                ax.plot(t[pk][idx], r[pk][idx], "v", mfc="none", mec="#7f8c8d", mew=1.0, ms=8,
+                        zorder=5, label=f"{len(idx)} candidatos (no reportables)")
+        _dibujar_falsos(ax, a, t, r)
         if rit["hay_estimulacion"]:
             for _, g in rit["grilla"].iterrows():
                 ax.axvline(g.t_esperado_s, color="#c0392b", lw=0.8, ls="--", alpha=0.5, zorder=0)
-        ax.set_title(f"{nombre}" + (f"   tren a {rit['frecuencia_Hz']:.4f} Hz "
+        ax.set_title(f"{nombre}" + ("" if reportable else f"   {NO_REPORTABLE_TXT}")
+                     + (f"   tren a {rit['frecuencia_Hz']:.4f} Hz "
                                     f"(T={rit['periodo_s']:.4f} s), captura "
                                     f"{rit['tasa_captura_pct']:.0f}%"
                                     if rit["hay_estimulacion"] else "   sin tren periodico"),
-                     fontsize=10)
+                     fontsize=10, color="black" if reportable else "#c0392b")
         ax.set_ylabel("senal sin deriva (px)", fontsize=8)
         ax.legend(fontsize=7, loc="upper right"); ax.grid(alpha=0.25)
 
@@ -892,7 +968,10 @@ def graficar_cinetica(resultados, out_png: Path):
                 txt.append(f"{nom} = {1000 * a[f'{m}_s']:.0f} ms")
             else:
                 txt.append(f"{nom} < {1000 * a[f'{m}_cota_sup_s']:.0f} ms (no medible)")
-        ax.set_title(f"{nombre}   " + "   ".join(txt), fontsize=9)
+        if not a.get("conteo_reportable"):
+            txt = [NO_REPORTABLE_TXT]
+        ax.set_title(f"{nombre}   " + "   ".join(txt), fontsize=9,
+                     color="black" if a.get("conteo_reportable") else "#c0392b")
         ax.legend(fontsize=7, loc="upper right"); ax.grid(alpha=0.25)
 
         mf = a["cinetica_min_frames"] / a["fps"]
@@ -961,6 +1040,10 @@ def parse_args():
     p.add_argument("--sin-separar", action="store_true",
                    help="No intentar separar estimuladas de espontaneas.")
     p.add_argument("--output-dir", default=None)
+    p.add_argument("--verbose", action="store_true",
+                   help="Imprime tambien el detalle tecnico (escaneo del umbral, ruidos por "
+                        "borde, ventanas, z/jitter, grupos, adelgazamiento). Todo eso queda "
+                        "igual guardado en contracciones.xlsx.")
     return p.parse_args()
 
 
@@ -978,16 +1061,10 @@ def main():
                      separar=not a.sin_separar, min_captura=a.min_captura,
                      min_frames_cinetica=a.min_frames_cinetica,
                      frecuencia_estimulo=a.frecuencia_estimulo)
-        imprimir(nombre, r)
+        imprimir(nombre, r, detallado=a.verbose)
         resultados.append((nombre, r))
 
-    print()
-    print("  Como leer el escaneo: si 'eventos' tiene una MESETA (no cambia al subir k)")
-    print("  y 'falsos_control' es 0 en esa meseta, los eventos son reales. Si el conteo")
-    print("  cae monotonamente y hay falsos parecidos al conteo real, es ruido.")
-
     if a.frecuencia_estimulo:
-        print()
         for nombre, r in resultados:
             rit = r.get("ritmo")
             if rit is None:
@@ -996,9 +1073,13 @@ def main():
                 continue
             fc = min(a.frecuencia_estimulo, key=lambda x: abs(rit["frecuencia_Hz"] - x))
             c = rs.comparar_con_equipo(rit, fc, fps_nominal=r.get("fps_medido"))
-            print(f"  {nombre[:26]:26s} equipo vs medido")
-            for kk, vv in c.items():
-                print(f"       {kk:28s} {vv}")
+            print()
+            print(f"  ESTIMULADOR ({nombre}): configurado {fc:g} Hz, medido "
+                  f"{rit['frecuencia_Hz']:.5f} +- {rit['frecuencia_err_Hz']:.6f} Hz "
+                  f"-> {c.get('veredicto', c.get('motivo', ''))}")
+            if a.verbose:
+                for kk, vv in c.items():
+                    print(f"       [detalle] {kk:28s} {vv}")
 
     out = Path(a.output_dir) if a.output_dir else Path(a.input).parent
     out.mkdir(parents=True, exist_ok=True)
@@ -1041,13 +1122,11 @@ def main():
                 r["_cinetica"].to_excel(w, sheet_name=f"cinetica_{nombre[:18]}", index=False)
                 r["_cinetica_grupos"].to_excel(w, sheet_name=f"cin_grupos_{nombre[:16]}", index=False)
 
-    print(f"\nGrafico: {png_contracciones}")
-    if png_ritmo:
-        print(f"Grafico: {png_ritmo}")
-    if png_cinetica:
-        print(f"Grafico: {png_cinetica}")
-    print(f"Grafico: {png_estab}")
-    print(f"Tabla:   {out / 'contracciones.xlsx'}")
+    print()
+    print(f"Archivos en {out}:")
+    for f in ("contracciones.xlsx", png_estab, png_contracciones, png_ritmo, png_cinetica):
+        if f:
+            print(f"  {Path(f).name}")
 
 
 if __name__ == "__main__":

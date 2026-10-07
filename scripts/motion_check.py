@@ -34,7 +34,11 @@ diferencias |I(t)-I(t-1)| son informativas: no deciden nada.
 
 Uso:
     python scripts/motion_check.py --video data/raw_videos/mi_video.mp4 \
-        --output-dir data/processed_data/mi_video
+        --serie data/processed_data/mi_video/serie_temporal.xlsx
+
+Las salidas van a la carpeta de --serie (la del video). Sin --serie ni
+--output-dir, van a qc_output/<nombre del video>/ (antes iban todas a
+qc_output/ y se pisaban entre videos).
 
 Salidas:
     07_movimiento.png      grafico multipanel de todos los canales
@@ -145,7 +149,9 @@ def parse_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     p.add_argument("--video", required=True)
     p.add_argument("--maxproj", default=None)
-    p.add_argument("--output-dir", default="qc_output")
+    p.add_argument("--output-dir", default=None,
+                   help="Carpeta de salida. Por defecto, la de --serie; si no, "
+                        "qc_output/<nombre del video>.")
     p.add_argument("--x-start", type=int, default=None)
     p.add_argument("--x-end", type=int, default=None)
     p.add_argument("--roi-tolerance", type=float, default=0.05)
@@ -164,12 +170,21 @@ def parse_args():
                         "para comparar desp_vert_px con center_px.")
     p.add_argument("--stride", type=int, default=1, help="Procesar 1 de cada N cuadros.")
     p.add_argument("--max-frames", type=int, default=None)
+    p.add_argument("--verbose", action="store_true",
+                   help="Imprime tambien la tabla por canal, la zona y el detalle de |dI|. "
+                        "Todo queda igual en movimiento.xlsx.")
     return p.parse_args()
 
 
 def main():
     a = parse_args()
-    out = Path(a.output_dir); out.mkdir(parents=True, exist_ok=True)
+    if a.output_dir:
+        out = Path(a.output_dir)
+    elif a.serie:
+        out = Path(a.serie).parent
+    else:
+        out = Path("qc_output") / Path(a.video).stem
+    out.mkdir(parents=True, exist_ok=True)
 
     meta = io_utils.get_video_metadata(a.video)
     fps_video = meta["fps"] if meta["fps"] > 0 else 30.0
@@ -186,7 +201,8 @@ def main():
         max_proj, thickness_tolerance=a.roi_tolerance,
         min_gradient_for_roi=a.roi_min_gradient, max_thickness_slope=a.roi_max_slope,
         x_start=a.x_start, x_end=a.x_end)
-    describe_roi(roi, max_proj.shape[1])
+    if a.verbose:
+        describe_roi(roi, max_proj.shape[1], detallado=True)
 
     xs, xe = roi["x_start"], roi["x_end"]
     H, W = max_proj.shape
@@ -219,9 +235,10 @@ def main():
 
     tercios = np.array_split(np.arange(len(cols)), 3)
 
-    print(f"\nROI de analisis: x={xs}..{xe} ({len(cols)} columnas)")
-    print(f"Interior del gel: {gel.sum()} px por cuadro | franja de fondo: {fondo.sum()} px")
-    print("Procesando cuadros...")
+    print(f"Zona analizada: columnas {xs} a {xe}. Procesando fotogramas...")
+    if a.verbose:
+        print(f"  [detalle] interior del gel: {gel.sum()} px por cuadro | franja de fondo: "
+              f"{fondo.sum()} px")
 
     prev = None
     ref_axial = None
@@ -263,18 +280,19 @@ def main():
         rows.append(r)
 
         if len(rows) % 300 == 0:
-            print(f"  {len(rows)} cuadros...")
+            print(f"  {len(rows)} fotogramas...")
 
     # El primer fotograma no tiene |dI| (no hay anterior): queda NaN, no se borra.
     df = pd.DataFrame(rows)
     fps = 1.0 / np.median(np.diff(df.time_s.to_numpy()))
-    print(f"Listo: {len(df)} cuadros a {fps:.2f} fps\n")
+    print(f"Listo: {len(df)} fotogramas a {fps:.2f} fps")
 
     # --- resumen por canal ---
     canales = ["mov_gel", "mov_fondo", "mov_interior", "mov_gel_t1", "mov_gel_t2",
                "mov_gel_t3", "desp_axial_px", "desp_vert_px"]
     resumen = pd.DataFrame([_describe_channel(c, df[c].to_numpy(), fps) for c in canales])
-    print(resumen.to_string(index=False))
+    if a.verbose:
+        print(resumen.to_string(index=False))
 
     # --- veredicto (Fase 4, H50) ---
     # El veredicto viejo deducia "cambio de grosor" de que el interior del gel
@@ -285,8 +303,10 @@ def main():
     # queda confirmada por un metodo independiente.
     print()
     print("=" * 74)
-    print("VEREDICTO  (traslacion por intensidad vs center_px por bordes)")
-    serie = Path(a.serie) if a.serie else Path(a.output_dir) / "serie_temporal.xlsx"
+    print("VEREDICTO: ¿el movimiento medido por bordes (center_px) se confirma midiendo")
+    print("           la imagen entera por otro metodo (intensidad)?")
+    serie = Path(a.serie) if a.serie else out / "serie_temporal.xlsx"
+    veredicto = {"serie_comparada": str(serie)}
     if serie.exists():
         st = pd.read_excel(serie, sheet_name="diagnostics")
         d2 = df[["frame", "desp_vert_px"]].merge(st[["frame", "center_px"]], on="frame", how="inner")
@@ -296,40 +316,52 @@ def main():
         if ok.sum() > 30:
             pend = float(np.dot(c[ok], dv[ok]) / np.dot(c[ok], c[ok]))
             rho = float(np.corrcoef(c[ok], dv[ok])[0, 1])
-            print(f"  pendiente desp_vert / center_px = {pend:+.3f} | correlacion = {rho:+.3f}")
+            print(f"  tamano: {abs(pend):.2f} veces (1 = igual) | forma: correlacion "
+                  f"{abs(rho):.2f} (1 = identica)")
             if abs(rho) >= 0.9 and 0.8 <= abs(pend) <= 1.2:
-                print("  -> La traslacion por intensidad CONFIRMA a center_px (forma y magnitud).")
+                txt = "CONFIRMA: los dos metodos ven el mismo movimiento (forma y tamano)."
+                print(f"  -> {txt}")
             elif abs(rho) >= 0.9:
-                print("  -> Coinciden en forma pero no en magnitud: revisar (en 466 la intensidad")
-                print("     da 0.88x; no se sabe cual de los dos esta mas cerca de la verdad).")
+                txt = ("Coinciden en forma pero no en tamano: revisar (en 466 da 0.88; no se "
+                       "sabe cual de los dos esta mas cerca de la verdad).")
+                print(f"  -> {txt}")
             else:
-                print("  -> NO confirma: la traslacion por intensidad no sigue a center_px.")
-                print("     Mirar el video: puede haber vibracion, desenfoque o un borde mal medido.")
+                txt = ("NO confirma: el movimiento por intensidad no sigue a los bordes. Mirar "
+                       "el video: puede haber vibracion, desenfoque o un borde mal medido.")
+                print(f"  -> AVISO: {txt}")
+            veredicto.update({"pendiente_desp_vert_sobre_center_px": pend,
+                              "correlacion": rho, "veredicto": txt})
     else:
-        print(f"  (no hay {serie}: correr main.py antes, o pasar --serie, para comparar)")
+        print(f"  (no se encontro {serie}: correr main.py antes, o pasar --serie, para comparar)")
+        veredicto["veredicto"] = "sin serie_temporal para comparar"
     R = resumen.set_index("canal")
     base = max(float(R["rms_sin_deriva"].get("mov_fondo", np.nan)), 1e-9)
-    print(f"  |dI| (informativo, NO decide nada): gel con bordes "
-          f"{float(R['rms_sin_deriva'].get('mov_gel', np.nan)) / base:.1f}x el fondo, "
-          f"interior {float(R['rms_sin_deriva'].get('mov_interior', np.nan)) / base:.1f}x.")
+    if a.verbose:
+        print(f"  [detalle] |dI| (informativo, NO decide nada): gel con bordes "
+              f"{float(R['rms_sin_deriva'].get('mov_gel', np.nan)) / base:.1f}x el fondo, "
+              f"interior {float(R['rms_sin_deriva'].get('mov_interior', np.nan)) / base:.1f}x.")
 
     for nom, col in (("axial", "corr_axial"), ("vertical", "corr_vert")):
         if col in df.columns:
             buena = float(np.mean(df[col] > 0.5))
             if buena < 0.8:
-                print(f"  OJO: la correlacion {nom} engancha solo en el {100*buena:.0f}% de los "
-                      f"cuadros (mediana {df[col].median():.2f}); ese canal no es fiable aca.")
+                print(f"  AVISO: la medida {nom} por intensidad solo funciona en el {100*buena:.0f}% "
+                      f"de los fotogramas (mediana {df[col].median():.2f}); ese canal no es "
+                      f"fiable en este video.")
 
     for c_, etiqueta in [("desp_vert_px", "traslacion vertical de la franja"),
                          ("desp_axial_px", "movimiento axial (a lo largo del gel)")]:
         if c_ in R.index and "rms_sin_deriva" in R.columns:
             arriba, abajo = R.loc[c_, "frac_sobre_+4sigma_pct"], R.loc[c_, "frac_bajo_-4sigma_pct"]
             lado = "hacia +" if arriba > abajo else "hacia -" if abajo > arriba else "pareja"
-            print(f"  {etiqueta:38s} RMS = {R.loc[c_,'rms_sin_deriva']:.4f} px | "
+            if not a.verbose:
+                continue
+            print(f"  [detalle] {etiqueta:38s} RMS = {R.loc[c_,'rms_sin_deriva']:.4f} px | "
                   f"skew = {R.loc[c_,'skew']:+.2f} | cola pesada {lado} "
                   f"({arriba:.2f}% / {abajo:.2f}% mas alla de +-4 sigma)")
-    print("  (una cola pesada hacia UN lado, cualquiera, = poblacion de excursiones =")
-    print("   compatible con contracciones; el signo depende del eje. Simetrico = ruido.)")
+    if a.verbose:
+        print("  (una cola pesada hacia UN lado, cualquiera, = poblacion de excursiones =")
+        print("   compatible con contracciones; el signo depende del eje. Simetrico = ruido.)")
     print("=" * 74)
 
     # --- gráfico ---
@@ -353,13 +385,16 @@ def main():
     fig.tight_layout()
     png = out / "07_movimiento.png"
     fig.savefig(png, dpi=140); plt.close(fig)
-    print(f"\nGrafico: {png}")
 
     xlsx = out / "movimiento.xlsx"
     with pd.ExcelWriter(xlsx) as w:
         df.to_excel(w, sheet_name="movimiento", index=False)
         resumen.to_excel(w, sheet_name="resumen_canales", index=False)
-    print(f"Tabla:   {xlsx}")
+        # El veredicto antes solo salia en pantalla.
+        pd.DataFrame([veredicto]).to_excel(w, sheet_name="veredicto", index=False)
+    print(f"Archivos en {out}:")
+    print(f"  {xlsx.name}")
+    print(f"  {png.name}")
 
 
 if __name__ == "__main__":

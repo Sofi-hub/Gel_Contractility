@@ -186,6 +186,7 @@ def process_video(
     max_projection_path: str | None = None,
     config: PipelineConfig | None = None,
     verbose: bool = True,
+    detallado: bool = False,
 ) -> pd.DataFrame:
     """
     Procesa un video completo y devuelve un DataFrame con:
@@ -254,12 +255,12 @@ def process_video(
     )
 
     if verbose:
-        describe_roi(roi, max_proj.shape[1])
+        describe_roi(roi, max_proj.shape[1], detallado=detallado)
 
     usar_pts = (config.base_tiempo == "pts") and n_pts > 1
     if config.base_tiempo == "pts" and not usar_pts:
-        print("  AVISO: se pidio base de tiempo PTS pero el contenedor no trae "
-              "timestamps usables; se vuelve a frame/fps.")
+        print("  AVISO: el video no trae marcas de tiempo usables; el eje de tiempo se "
+              "arma con fotograma / fps.")
 
     n_cols = int(roi.get("roi_quality", {}).get("n_columnas_usadas") or config.n_columns)
     x_positions = np.linspace(roi["x_start"], roi["x_end"] - 1, n_cols).astype(int)
@@ -315,47 +316,57 @@ def process_video(
     return df
 
 
-def describe_roi(roi: dict, image_width: int) -> None:
-    """Imprime el reporte del auto-ROI, con avisos cuando algo huele mal."""
+def describe_roi(roi: dict, image_width: int, detallado: bool = False) -> None:
+    """Imprime la zona analizada (ROI). Corto por defecto; todo con `detallado`.
+
+    Lo que aca no se imprime queda igual en la hoja `resumen` de
+    serie_temporal.xlsx (y la tabla de alternativas en `roi_alternativas`).
+    Los AVISOS salen solo cuando hay que hacer algo.
+    """
     q = roi.get("roi_quality", {})
     xs, xe = roi["x_start"], roi["x_end"]
-    print(f"ROI (gauge region): x = {xs} a {xe}  "
-          f"({100 * (xe - xs) / image_width:.0f}% del ancho de la imagen)")
-    print(f"  metodo: {q.get('method')}  -> {q.get('criterio', '')}")
-    if q.get("n_columnas_usadas") is not None:
-        print(f"  columnas muestreadas: {q['n_columnas_usadas']}"
-              f" (separacion {(xe - xs) / max(q['n_columnas_usadas'], 1):.1f} px)")
-    if q.get("roi_contiene_cintura") is False:
-        print("  AVISO: la ROI no contiene ninguna columna cerca de la cintura del gel.")
-    if q.get("cintura_px") is not None:
-        print(f"  cintura del gel: {q['cintura_px']} px | "
-              f"grosor en la ROI: {q.get('grosor_min_en_roi_px')} - "
-              f"{q.get('grosor_max_en_roi_px')} px "
-              f"({q.get('variacion_en_roi_pct')}% de variacion)")
-    if q.get("n_franja_seguida") is not None:
-        print(f"  columnas con franja seguida: {q['n_franja_seguida']}/{q['n_columnas_imagen']} | "
-              f"descartadas por nitidez: {q.get('n_desc_por_nitidez')}, "
-              f"por grosor: {q.get('n_desc_por_grosor')}, "
-              f"por pendiente: {q.get('n_desc_por_pendiente')}")
-
-    alts = q.get("alternativas")
-    if alts:
-        print("  alternativas de ROI (elegir a mano con --x-start/--x-end si conviene otra):")
-        print("      %-16s %14s %9s %11s" % ("nivel", "rango x", "ancho", "variacion"))
-        for a in alts:
-            print("      %-16s %6d-%-7d %9d %10s%% %s" % (
-                a["metodo"], a["x_start"], a["x_end"], a["ancho_px"],
-                a["variacion_pct"], "<-- usada" if a["elegida"] else ""))
-
     var = q.get("variacion_en_roi_pct")
-    if var is not None and var > 3:
-        print(f"  AVISO: el grosor varia {var}% dentro de la ROI. Eso ya no es una "
-              f"gauge region: probablemente incluye el hombro de un anclaje, donde la "
-              f"deformacion esta condicionada por el anclaje y no por la contractilidad. "
-              f"Mira roi_profile.png y, si hace falta, forza la ROI con --x-start/--x-end.")
+    lim = q.get("max_variacion_admitida_pct", 6.0)
+    print(f"Zona analizada del gel: columnas {xs} a {xe} ({xe - xs} px de ancho)")
+    if var is not None:
+        ok = var <= lim
+        print(f"  variacion del grosor dentro de la zona: {var}% "
+              f"(aceptable hasta {lim:g}%) -> {'OK' if ok else 'NO CUMPLE'}")
+
+    if detallado:
+        print(f"  [detalle] metodo: {q.get('method')}  -> {q.get('criterio', '')}")
+        print(f"  [detalle] la zona ocupa el {100 * (xe - xs) / image_width:.0f}% del ancho "
+              f"de la imagen")
+        if q.get("n_columnas_usadas") is not None:
+            print(f"  [detalle] columnas muestreadas: {q['n_columnas_usadas']}"
+                  f" (separacion {(xe - xs) / max(q['n_columnas_usadas'], 1):.1f} px)")
+        if q.get("cintura_px") is not None:
+            print(f"  [detalle] cintura del gel: {q['cintura_px']} px | grosor en la zona: "
+                  f"{q.get('grosor_min_en_roi_px')} - {q.get('grosor_max_en_roi_px')} px")
+        if q.get("n_franja_seguida") is not None:
+            print(f"  [detalle] columnas con franja seguida: {q['n_franja_seguida']}/"
+                  f"{q['n_columnas_imagen']} | descartadas por nitidez: "
+                  f"{q.get('n_desc_por_nitidez')}, por grosor: {q.get('n_desc_por_grosor')}, "
+                  f"por pendiente: {q.get('n_desc_por_pendiente')}")
+        alts = q.get("alternativas")
+        if alts:
+            print("  [detalle] zonas evaluadas (forzar otra con --x-start/--x-end):")
+            print("      %-16s %14s %9s %11s" % ("nivel", "rango x", "ancho", "variacion"))
+            for a in alts:
+                print("      %-16s %6d-%-7d %9d %10s%% %s" % (
+                    a["metodo"], a["x_start"], a["x_end"], a["ancho_px"],
+                    a["variacion_pct"], "<-- usada" if a["elegida"] else ""))
+
+    # Avisos: solo cuando hay que actuar. El umbral es el MISMO del criterio de
+    # aceptacion (antes saltaba a 3 % y afirmaba "anclaje" sin comprobarlo: fue
+    # falso en 613, 304 y 341).
+    if var is not None and var > lim:
+        print(f"  AVISO: el grosor varia {var}% dentro de la zona (mas del {lim:g}% aceptable). "
+              f"Puede que incluya el ensanchamiento cerca de un anclaje. Mira "
+              f"00_roi_profile y, si hace falta, elegi la zona a mano con --x-start/--x-end.")
+    if q.get("roi_contiene_cintura") is False:
+        print("  AVISO: la zona no incluye la parte mas angosta del gel (la cintura). "
+              "Mira 00_roi_profile.")
     if q.get("method") in ("solo_nitidez", "franja_completa", "fallback_margin"):
-        print("  AVISO: hubo que relajar el criterio de gauge region. Revisa roi_profile.png.")
-    if (xe - xs) < 0.25 * image_width:
-        print(f"  AVISO: la ROI cubre solo el {100 * (xe - xs) / image_width:.0f}% del ancho. "
-              f"Verifica en roi_profile.png si se corto por halo/desenfoque o si el gel "
-              f"realmente es corto.")
+        print("  AVISO: no se encontro una zona plana del gel con el criterio normal; se uso "
+              "uno mas flojo. Mira 00_roi_profile antes de confiar en los numeros.")

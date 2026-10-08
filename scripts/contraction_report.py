@@ -740,7 +740,9 @@ def _dibujar_falsos(ax, a, t=None, r=None):
                 label=f"{len(fz)} falsos de control (senal invertida)")
 
 
-def graficar(resultados, out_png: Path) -> None:
+def graficar(resultados, out_png: Path, detallado: bool = False) -> None:
+    """Figura 09. El grosor promedio (linea roja) solo con --verbose: el
+    adelgazamiento es diagnostico y no se informa (CLAUDE.md, hallazgo 1)."""
     n = len(resultados)
     fig, axes = plt.subplots(n, 2, figsize=(13, 3.1 * n), squeeze=False,
                              gridspec_kw={"width_ratios": [2.4, 1]})
@@ -766,12 +768,13 @@ def graficar(resultados, out_png: Path) -> None:
 
         if a["_lag"] is not None:
             ax2.plot(a["_lag"], a["_prom_c"], color="#1f77b4", lw=1.4, label="traslacion")
-            ax2b = ax2.twinx()
-            ax2b.plot(a["_lag"], a["_prom_g"], color="crimson", lw=1.4, label="grosor")
-            ax2b.axhline(0, color="crimson", lw=0.5, ls=":")
+            if detallado:
+                ax2b = ax2.twinx()
+                ax2b.plot(a["_lag"], a["_prom_g"], color="crimson", lw=1.4, label="grosor")
+                ax2b.axhline(0, color="crimson", lw=0.5, ls=":")
+                ax2b.set_ylabel("grosor (px, diagnostico)", color="crimson")
             ax2.set_xlabel("t respecto del pico (s)")
             ax2.set_ylabel("traslacion (px)", color="#1f77b4")
-            ax2b.set_ylabel("grosor (px)", color="crimson")
             ax2.set_title(f"promedio de {a['_n_prom']} "
                           f"{'eventos' if reportable else 'candidatos (no reportable)'}", fontsize=9)
             ax2.grid(alpha=0.3)
@@ -1033,7 +1036,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     nombre_video = resultados[0][0]
     png_contracciones = out / f"09_contracciones_{nombre_video}.png"
-    graficar(resultados, png_contracciones)
+    graficar(resultados, png_contracciones, detallado=a.verbose)
     png_ritmo = graficar_ritmo(resultados, out / f"10_ritmo_{nombre_video}.png")
     png_cinetica = graficar_cinetica(resultados, out / f"11_cinetica_{nombre_video}.png")
     png_estab = graficar_estabilidad(resultados, out / f"05_estabilidad_umbral_{nombre_video}.png")

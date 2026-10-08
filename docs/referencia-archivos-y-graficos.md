@@ -328,10 +328,12 @@ Si el rojo acompaña al azul y no hay franja verde, el título dice NO REPORTABL
   huecos hacia abajo: los picos de la señal invertida). Si los rojos acompañan a
   los grises, es ruido o vibración.
 - **Derecha:** el **promedio de eventos alineados**. `x` = tiempo respecto del
-  pico (s). Eje `y` izquierdo (azul) = traslación promedio (px); eje `y` derecho
-  (rojo) = cambio de grosor promedio (px). **Los dos ejes tienen escalas
-  distintas a propósito**: el punto es comparar la forma y el retardo, no la
-  magnitud. El pico positivo que a veces aparece justo antes es motion blur.
+  pico (s), `y` = traslación promedio (px, azul). **Solo con `--verbose`**
+  (desde 2026-10-08) se agrega un eje `y` derecho (rojo) con el cambio de grosor
+  promedio (px, diagnóstico): el adelgazamiento no se informa (CLAUDE.md,
+  hallazgo 1). Los dos ejes tienen escalas distintas a propósito: el punto es
+  comparar la forma y el retardo, no la magnitud. El pico positivo del grosor
+  que a veces aparece justo antes es motion blur.
 
 ### `10_ritmo.png` — dos paneles por serie
 - **Izquierda:** `x` = tiempo (s), `y` = el canal sin deriva (px). Los eventos

@@ -58,7 +58,7 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
      - Regla: la ventana solo lanza los scripts y muestra resultados; nunca calcula
        (así no se vuelve más lenta ni puede dar números distintos de la consola).
        Un gráfico en vivo, si se agrega, se redibuja cada 1–2 s como mucho.
-4. **Sacar el grosor (línea roja) del gráfico de contracciones** (`09_contracciones_*`) y dejarlo solo con `--verbose`: el adelgazamiento es diagnóstico y no se informa (CLAUDE.md, hallazgo 1), y en el gráfico invita a interpretarlo. No cambia ningún número. (Pedido por Franco, 2026-10-08.)
+4. **Hecho (2026-10-08). Sacar el grosor (línea roja) del gráfico de contracciones** (`09_contracciones_*`) y dejarlo solo con `--verbose`: el adelgazamiento es diagnóstico y no se informa (CLAUDE.md, hallazgo 1), y en el gráfico invita a interpretarlo. No cambia ningún número. (Pedido por Franco, 2026-10-08.)
 5. **Hecho (2026-10-08):** test de regresión automático (`tests/test_regresion.py`, referencia congelada en `tests/referencia_regresion.json`; `scripts/regenerar_todo.py` para regenerar).
 6. Intervalos de confianza por bootstrap para las medianas por video.
 7. Versiones fijas en `requirements.txt`.

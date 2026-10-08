@@ -24,6 +24,7 @@ CAMBIOS RESPECTO DE LA VERSIÓN ANTERIOR
 """
 
 from __future__ import annotations
+import itertools
 from dataclasses import dataclass
 import numpy as np
 import pandas as pd
@@ -52,7 +53,6 @@ class PipelineConfig:
     edge_method: str = "parabolic"   # "parabolic" o "sigmoid"
 
     # --- ajuste robusto ---
-    fit_method: str = "ransac"       # "ransac" o "median"
     ransac_degree: int = 2
     ransac_residual_threshold: float | None = None   # None = adaptativo
     ransac_residual_k: float = 3.0
@@ -100,15 +100,13 @@ class PipelineConfig:
 
 
 def _fit(x, y, config: PipelineConfig):
-    if config.fit_method == "ransac":
-        return robust_fitting.fit_edge_ransac(
-            x, y,
-            degree=config.ransac_degree,
-            residual_threshold=config.ransac_residual_threshold,
-            residual_k=config.ransac_residual_k,
-            residual_floor=config.ransac_residual_floor,
-        )
-    return robust_fitting.fit_edge_median(x, y)
+    return robust_fitting.fit_edge_ransac(
+        x, y,
+        degree=config.ransac_degree,
+        residual_threshold=config.ransac_residual_threshold,
+        residual_k=config.ransac_residual_k,
+        residual_floor=config.ransac_residual_floor,
+    )
 
 
 def process_frame(
@@ -181,12 +179,58 @@ def process_frame(
     }
 
 
+# --------------------------------------------------------------------------
+# Procesamiento en paralelo (2026-10-08). Cada fotograma se calcula sin mirar
+# a los demas (posicion de busqueda fija por la ROI; RANSAC con semilla fija),
+# asi que repartirlos entre procesos da EXACTAMENTE el mismo resultado que en
+# serie (verificado bit a bit). Los fotogramas se mandan en tandas para no
+# llenar la memoria (cada uno pesa ~2 MB).
+# --------------------------------------------------------------------------
+_TRABAJO: dict = {}
+
+
+def _iniciar_proceso(x_positions, top_guess, bottom_guess, config):
+    _TRABAJO.update(x=x_positions, top=top_guess, bot=bottom_guess, config=config)
+
+
+def _procesar_en_proceso(frame):
+    w = _TRABAJO
+    return process_frame(frame, w["x"], w["top"], w["bot"], w["config"])
+
+
+def _procesar_fotogramas(video_path, x_positions, top_guess, bottom_guess, config, n_procesos):
+    """Devuelve [(indice, resultado), ...] en orden, en serie o en paralelo."""
+    frames = io_utils.frame_generator(video_path)
+    if n_procesos <= 1:
+        for idx, frame in frames:
+            yield idx, process_frame(frame, x_positions, top_guess, bottom_guess, config)
+        return
+    import multiprocessing as mp
+    tanda = 32 * n_procesos
+    with mp.get_context("spawn").Pool(
+            n_procesos, initializer=_iniciar_proceso,
+            initargs=(x_positions, top_guess, bottom_guess, config)) as pool:
+        # Mientras los procesos calculan una tanda, este lee la siguiente del
+        # video: asi la lectura (que es en serie) no deja a nadie esperando.
+        pendiente = None
+        while True:
+            lote = list(itertools.islice(frames, tanda))
+            nuevo = (pool.map_async(_procesar_en_proceso, [f for _, f in lote], chunksize=8)
+                     if lote else None)
+            if pendiente is not None:
+                idxs, trabajo = pendiente
+                yield from zip(idxs, trabajo.get())
+            if nuevo is None:
+                break
+            pendiente = ([i for i, _ in lote], nuevo)
+
+
 def process_video(
     video_path: str,
-    max_projection_path: str | None = None,
     config: PipelineConfig | None = None,
     verbose: bool = True,
     detallado: bool = False,
+    n_procesos: int = 1,
 ) -> pd.DataFrame:
     """
     Procesa un video completo y devuelve un DataFrame con:
@@ -208,10 +252,9 @@ def process_video(
     # Timestamps reales del contenedor. Se leen SIEMPRE, aunque la base de
     # tiempo sea "frames", porque comparar la duracion que declaran contra
     # n_frames/fps es lo que detecta que la grabacion perdio frames.
-    try:
-        pts = io_utils.read_pts_seconds(video_path)
-    except Exception:
-        pts = np.array([])
+    # Una sola lectura para los timestamps y el mapa de maximos (antes eran
+    # dos lecturas completas del video; el resultado es identico).
+    pts, max_proj = io_utils.read_pts_and_max_projection(video_path, stride=5)
     n_pts = len(pts)
     dur_pts = float(pts[-1] - pts[0]) if n_pts > 1 else float("nan")
 
@@ -235,11 +278,6 @@ def process_video(
     else:
         dt_med = fps_pts = faltantes = frac_faltantes = float("nan")
         n_huecos = 0
-
-    if max_projection_path is not None:
-        max_proj = io_utils.load_max_projection(max_projection_path)
-    else:
-        max_proj = io_utils.compute_max_projection(video_path, stride=5)
 
     roi = preprocessing.auto_detect_roi(
         max_proj,
@@ -267,8 +305,8 @@ def process_video(
 
     rows = []
     rcol = {"top": [], "bot": []}
-    for idx, frame in io_utils.frame_generator(video_path):
-        result = process_frame(frame, x_positions, roi["top_guess"], roi["bottom_guess"], config)
+    for idx, result in _procesar_fotogramas(video_path, x_positions, roi["top_guess"],
+                                            roi["bottom_guess"], config, n_procesos):
         for b in ("top", "bot"):
             rcol[b].append(result.pop(f"_rcol_{b}", np.full(len(x_positions), np.nan)))
         result["frame"] = idx

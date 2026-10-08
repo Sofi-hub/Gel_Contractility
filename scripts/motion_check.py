@@ -149,7 +149,6 @@ def parse_args():
         description="Diagnostico: que se mueve en el video (grosor / traslacion / axial)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     p.add_argument("--video", required=True)
-    p.add_argument("--maxproj", default=None)
     p.add_argument("--output-dir", default=None,
                    help="Carpeta de salida. Por defecto, la de --serie; si no, "
                         "qc_output/<nombre del video>.")
@@ -191,13 +190,8 @@ def main():
     fps_video = meta["fps"] if meta["fps"] > 0 else 30.0
     # Eje de tiempo por PTS (hallazgo 3 de CLAUDE.md), como el pipeline. Con
     # fotograma / fps declarado el error llegaba a 0.33 s a mitad del video.
-    try:
-        pts = io_utils.read_pts_seconds(a.video)
-    except Exception:
-        pts = np.array([])
-
-    max_proj = (io_utils.load_max_projection(a.maxproj) if a.maxproj
-                else io_utils.compute_max_projection(a.video, stride=5))
+    # Timestamps y mapa de maximos en una sola lectura (como main.py).
+    pts, max_proj = io_utils.read_pts_and_max_projection(a.video, stride=5)
     roi = preprocessing.auto_detect_roi(
         max_proj, thickness_tolerance=a.roi_tolerance,
         min_gradient_for_roi=a.roi_min_gradient, max_thickness_slope=a.roi_max_slope,

@@ -47,6 +47,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
 import warnings
+import sklearn
 from sklearn.linear_model import RANSACRegressor
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
@@ -164,23 +165,31 @@ def fit_edge_ransac(
     # well-defined..." en cada fotograma. Ese aviso no cambia el ajuste y tapa
     # la pantalla: se silencia aca, y main.py da un aviso claro si hay muchos
     # fotogramas sin borde.
-    with warnings.catch_warnings():
+    #
+    # VELOCIDAD (2026-10-08): sklearn revisa en cada llamada que los datos
+    # sean numeros finitos y que los parametros tengan el tipo correcto. Se
+    # lo llama ~4000 veces por video con datos ya filtrados (sin NaN, linea
+    # `valid` de arriba) y parametros fijos, asi que esos chequeos nunca
+    # encuentran nada. Saltearlos no cambia ninguna cuenta (verificado bit a
+    # bit en Video_prueba) y ahorra ~7 % del tiempo.
+    with warnings.catch_warnings(), sklearn.config_context(
+            assume_finite=True, skip_parameter_validation=True):
         warnings.filterwarnings("ignore", message=".*R\\^2 score is not well-defined.*")
         warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
         model.fit(xn.reshape(-1, 1), y_valid)
 
-    ransac: RANSACRegressor = model.named_steps["ransacregressor"]
-    inlier_mask_valid = ransac.inlier_mask_
+        ransac: RANSACRegressor = model.named_steps["ransacregressor"]
+        inlier_mask_valid = ransac.inlier_mask_
 
-    # Máscara de inliers en el espacio ORIGINAL de x (las columnas que ya
-    # eran NaN quedan marcadas como outlier)
-    full_inlier_mask = np.zeros_like(x, dtype=bool)
-    full_inlier_mask[valid] = inlier_mask_valid
+        # Máscara de inliers en el espacio ORIGINAL de x (las columnas que ya
+        # eran NaN quedan marcadas como outlier)
+        full_inlier_mask = np.zeros_like(x, dtype=bool)
+        full_inlier_mask[valid] = inlier_mask_valid
 
-    xn_all = (x.astype(np.float64) - x0) / scale
-    y_fitted_all = model.predict(xn_all.reshape(-1, 1))
+        xn_all = (x.astype(np.float64) - x0) / scale
+        y_fitted_all = model.predict(xn_all.reshape(-1, 1))
 
-    resid_in = y_valid[inlier_mask_valid] - model.predict(xn[inlier_mask_valid].reshape(-1, 1))
+        resid_in = y_valid[inlier_mask_valid] - model.predict(xn[inlier_mask_valid].reshape(-1, 1))
 
     return RobustEdgeFit(
         x=x,
@@ -189,51 +198,5 @@ def fit_edge_ransac(
         n_inliers=int(full_inlier_mask.sum()),
         n_outliers=int((~full_inlier_mask).sum()),
         residual_px=_robust_mad(resid_in),
-        threshold_px=float(thr),
-    )
-
-
-def fit_edge_median(x: np.ndarray, y: np.ndarray, mad_k: float = 3.5) -> RobustEdgeFit | None:
-    """
-    Alternativa liviana a RANSAC: mediana + MAD, sin scikit-learn.
-
-    ATENCIÓN: este método ajusta una CONSTANTE, o sea que asume que el
-    borde es horizontal. Si el borde tiene pendiente (en el Video_063 el
-    borde superior baja 9 px a lo largo de la ROI), la mediana no
-    representa la geometría y este método va a marcar como outlier a los
-    extremos de la ROI. Usalo solo para un preview rápido o cuando ya
-    verificaste que el borde es realmente plano; para medir, usá RANSAC.
-
-    Un punto se descarta si |y_i - mediana(y)| > mad_k * MAD, con
-    MAD = mediana(|y_i - mediana(y)|) * 1.4826.
-    """
-    valid = ~np.isnan(y)
-    if valid.sum() < 5:
-        return None
-
-    y_valid = y[valid]
-    median_y = np.median(y_valid)
-    mad = _robust_mad(y_valid)
-
-    if not np.isfinite(mad) or mad < 1e-6:
-        inlier_valid = np.ones_like(y_valid, dtype=bool)
-        thr = float("nan")
-    else:
-        thr = mad_k * mad
-        inlier_valid = np.abs(y_valid - median_y) <= thr
-
-    full_inlier_mask = np.zeros_like(x, dtype=bool)
-    full_inlier_mask[valid] = inlier_valid
-
-    robust_value = np.median(y_valid[inlier_valid])
-    y_fitted_all = np.full_like(x, robust_value, dtype=float)
-
-    return RobustEdgeFit(
-        x=x,
-        y_fitted=y_fitted_all,
-        inlier_mask=full_inlier_mask,
-        n_inliers=int(full_inlier_mask.sum()),
-        n_outliers=int((~full_inlier_mask).sum()),
-        residual_px=_robust_mad(y_valid[inlier_valid] - robust_value),
         threshold_px=float(thr),
     )

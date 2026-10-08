@@ -262,7 +262,6 @@ hacen falta 200–300 fps. Detalle en `metricas-cinetica-TTP-RT50.md`.
 |---|---|
 | `main.py` | video → `serie_temporal_<video>.xlsx` (las cuatro series + hoja `resumen` con todos los parámetros), `00_roi_profile_<video>.png`, y con `--plot` `01_serie_temporal_<video>.png`. El mapa de máxima intensidad lo calcula internamente; `00_max_projection.png` como archivo lo guarda el cuaderno |
 | `scripts/contraction_report.py` | **el análisis principal**: serie temporal → `contracciones_<video>.xlsx` y las figuras `05_estabilidad_umbral`, `09_contracciones`, `10_ritmo` y `11_cinetica`. Es el **único** detector de eventos del proyecto: el viejo (`event_detection.py` y `analyze_contractions.py`) se borró el 2026-10-01 |
-| `scripts/inspect_frame.py` | revisa un solo fotograma: overlay de inliers/outliers y perfil de una columna. Para calibrar parámetros o entender por qué se descartó una columna |
 | `scripts/motion_check.py` | segunda opinión, sin usar los bordes: mide el desplazamiento de la franja por intensidad y lo compara con `center_px` (CONFIRMA / no confirma) |
 | `scripts/signal_check.py` | diagnóstico: ¿hay una población de eventos por encima del ruido en una serie? |
 | `interfaz.py` (`Analizar.bat`) | la ventana: elegir video y carpeta, marcar los pasos y ver la salida en vivo. Corre los mismos scripts, no calcula nada propio |

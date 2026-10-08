@@ -237,41 +237,6 @@ def promedio_alineado(r: np.ndarray, picos: np.ndarray, fps: float,
     return lag, np.nanmean(segs, axis=0), len(segs)
 
 
-def _poblaciones(tiempos: np.ndarray, amplitudes: np.ndarray):
-    """Separa los eventos en dos poblaciones por amplitud, si las hay.
-
-    Un mismo video puede tener contracciones espontaneas (chicas y rapidas) y
-    contracciones estimuladas (grandes y lentas). Promediar las dos juntas da
-    una amplitud y un intervalo que no describen a ninguna. El corte se pone
-    en el hueco mas grande de las amplitudes ordenadas en escala log, y solo
-    se acepta si separa de verdad (razon de medianas >= 2 y al menos 3 eventos
-    de cada lado).
-    """
-    if len(amplitudes) < 6:
-        return None
-    orden = np.argsort(amplitudes)
-    a = amplitudes[orden]
-    huecos = np.diff(np.log(np.maximum(a, 1e-9)))
-    i = int(np.argmax(huecos))
-    if i < 2 or i > len(a) - 4:
-        return None
-    chica, grande = a[:i + 1], a[i + 1:]
-    if np.median(grande) / max(np.median(chica), 1e-9) < 2.0:
-        return None
-
-    corte = 0.5 * (a[i] + a[i + 1])
-    out = []
-    for nombre, sel in (("chicos", amplitudes <= corte), ("grandes", amplitudes > corte)):
-        tt = tiempos[sel]
-        iv = float(np.median(np.diff(tt))) if len(tt) > 1 else float("nan")
-        out.append({"grupo": nombre, "n": int(sel.sum()),
-                    "amplitud_mediana_px": float(np.median(amplitudes[sel])),
-                    "intervalo_mediano_s": iv,
-                    "frecuencia_Hz": (1 / iv) if iv and np.isfinite(iv) and iv > 0 else float("nan"),
-                    "t_inicio_s": float(tt.min()), "t_fin_s": float(tt.max())})
-    return out
-
-
 # --------------------------------------------------------------------------
 WIN_MIN_S = 2.0           # ventana minima del detrend (s)
 WIN_FACTOR = 3.0          # la ventana mide al menos 3 veces el evento mas largo
@@ -428,7 +393,6 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
         res["intervalo_mediano_s"] = (float(np.median(np.diff(t[picos])))
                                       if len(picos) > 1 else float("nan"))
         res["amplitud_traslacion_px"] = float(np.median(r[picos]))
-        res["poblaciones"] = _poblaciones(t[picos], r[picos])
         if _SEPARAR and len(picos) >= 4:
             # R1: el instante de cada latido es su INICIO; si no tiene inicio
             # medible (hueco, o no cruza el 10 % antes del pico vecino), su pico.
@@ -700,14 +664,6 @@ def _imprimir_detalle_ritmo(rit: dict) -> None:
 
 
 def _imprimir_detalle_grosor(a: dict) -> None:
-    if a.get("poblaciones"):
-        print("    [detalle] dos poblaciones por amplitud (separacion vieja; la buena es el ritmo):")
-        print("        %-8s %4s %14s %14s %10s %14s" % (
-            "grupo", "n", "amplitud_px", "intervalo_s", "Hz", "ventana_s"))
-        for g in a["poblaciones"]:
-            print("        %-8s %4d %14.3f %14.3f %10.2f %6.1f - %-6.1f" % (
-                g["grupo"], g["n"], g["amplitud_mediana_px"], g["intervalo_mediano_s"],
-                g["frecuencia_Hz"], g["t_inicio_s"], g["t_fin_s"]))
     if "adelgazamiento_px" in a:
         print(f"    [detalle] adelgazamiento (solo diagnostico, no se informa; "
               f"{a['_n_prom']} eventos alineados)")
@@ -1004,10 +960,6 @@ def parse_args():
     p.add_argument("--input", required=True)
     p.add_argument("--compare", default=None,
                    help="Segunda serie, como control (ideal: un video que ya sabes que contrae).")
-    p.add_argument("--canal", default="center_px",
-                   help="Observable de DETECCION. 'center_px' = posicion media de la franja "
-                        "(sensible a traslacion). 'thickness_px' solo si ya verificaste que "
-                        "en tu montaje la contraccion es adelgazamiento puro.")
     p.add_argument("--k", default="auto",
                    help="Umbral en multiplos del ruido. 'auto' (default) lo elige "
                         "dentro de la meseta del escaneo de estabilidad, que es la "
@@ -1016,12 +968,6 @@ def parse_args():
                    help="Ventana (s) de la mediana movil que quita la deriva. 'auto' (default): "
                         "al menos 3 veces la duracion del evento mas largo, minimo 2 s. Un numero "
                         "la fija a mano.")
-    p.add_argument("--sep-s", type=float, default=None,
-                   help="Separacion minima entre eventos (s). APAGADA por defecto: desde la "
-                        "Fase 2.2 un evento se separa del vecino por su PROMINENCIA (la senal "
-                        "tiene que bajar entre los dos), no por tiempo. Si se da, find_peaks se "
-                        "queda con el pico MAS ALTO de cada ventana y borra eventos reales "
-                        "seguidos.")
     p.add_argument("--half-s", type=float, default=1.5,
                    help="Semiventana (s) del promedio de eventos alineados.")
     p.add_argument("--frecuencia-estimulo", default=None,
@@ -1057,7 +1003,9 @@ def main():
     for nombre, df in entradas:
         k_arg = None if str(a.k).strip().lower() == "auto" else float(a.k)
         win_arg = None if str(a.win_s).strip().lower() == "auto" else float(a.win_s)
-        r = analizar(df, a.canal, k_arg, win_arg, a.sep_s, a.half_s,
+        # Siempre center_px y sin separacion minima (--canal y --sep-s se
+        # borraron el 2026-10-08; ver CLAUDE.md, hallazgo 1 y Fase 2.2).
+        r = analizar(df, "center_px", k_arg, win_arg, None, a.half_s,
                      separar=not a.sin_separar, min_captura=a.min_captura,
                      min_frames_cinetica=a.min_frames_cinetica,
                      frecuencia_estimulo=a.frecuencia_estimulo)
@@ -1095,7 +1043,7 @@ def main():
         for nombre, r in resultados:
             r["estabilidad"].to_excel(w, sheet_name=f"estab_{nombre[:20]}", index=False)
             fila = {kk: vv for kk, vv in r.items()
-                    if not kk.startswith("_") and kk not in ("estabilidad", "tiempos_s", "poblaciones")}
+                    if not kk.startswith("_") and kk not in ("estabilidad", "tiempos_s")}
             pd.DataFrame([fila]).to_excel(w, sheet_name=f"resumen_{nombre[:18]}", index=False)
             rit = r.get("ritmo")
             if rit is not None:
@@ -1110,8 +1058,6 @@ def main():
                 if len(rit.get("espontaneas_instantanea", [])):
                     rit["espontaneas_instantanea"].to_excel(
                         w, sheet_name=f"espont_{nombre[:18]}", index=False)
-            if r.get("poblaciones"):
-                pd.DataFrame(r["poblaciones"]).to_excel(w, sheet_name=f"poblac_{nombre[:19]}", index=False)
             if r["n_eventos"]:
                 pd.DataFrame({"evento": np.arange(1, r["n_eventos"] + 1),
                               "tiempo_s": r["tiempos_s"],

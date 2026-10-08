@@ -62,7 +62,7 @@ automática rota).
 Registra el vídeo de origen, el conteo de fotogramas por categoría de calidad,
 los estadísticos globales del grosor, la ROI elegida con su método y su
 porcentaje de variación, y **todos los parámetros usados** (`n_columns`,
-`half_window`, `min_gradient`, `edge_method`, `fit_method`, `ransac_degree`,
+`half_window`, `min_gradient`, `edge_method`, `fit_method` (siempre `ransac`), `ransac_degree`,
 `ransac_residual_threshold`, `use_clahe`, `px_to_mm`) más los residuos medios.
 Existe para que cualquier número sea reproducible sin adivinar la configuración.
 
@@ -212,9 +212,9 @@ hay tren, todos los eventos si no lo hay. Una métrica es reportable si es medib
 una fila por grupo: `todos`, `estimulados` y `espontaneos`. Ejemplo, Video_prueba:
 amplitud relativa 0.71 % (todos), 2.31 % (estimulados), 0.70 % (espontáneos).
 
-**`poblac_<serie>`** — aparece sólo si hay dos grupos de amplitud (razón de
-medianas ≥ 2). Precede a `ritmo_*` históricamente; la separación buena es la de
-enganche de fase, no ésta.
+**`poblac_<serie>`** — ya no se genera (borrada el 2026-10-08). Separaba los
+eventos en dos grupos por amplitud; la separación que vale es la de enganche de
+fase (`ritmo_*`). Puede aparecer en resultados anteriores.
 
 ---
 

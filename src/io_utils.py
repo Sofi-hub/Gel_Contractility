@@ -87,6 +87,36 @@ def read_pts_seconds(video_path: str | Path) -> np.ndarray:
     return np.asarray(out, dtype=float)
 
 
+def read_pts_and_max_projection(video_path: str | Path, stride: int = 5
+                                 ) -> tuple[np.ndarray, np.ndarray]:
+    """Timestamps (s) y mapa de maximos en UNA sola lectura del video.
+
+    Da exactamente lo mismo que `read_pts_seconds` + `compute_max_projection`
+    (verificado bit a bit en Video_prueba), pero lee el video una vez en vez
+    de dos: leer el video era ~40 % del tiempo de main.py (2026-10-08).
+    """
+    cap = cv2.VideoCapture(str(video_path))
+    if not cap.isOpened():
+        raise IOError(f"No se pudo abrir el video: {video_path}")
+    pts, max_proj, idx = [], None, 0
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            pts.append(cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0)
+            if idx % stride == 0:
+                if frame.ndim == 3:
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                max_proj = frame.copy() if max_proj is None else np.maximum(max_proj, frame)
+            idx += 1
+    finally:
+        cap.release()
+    if max_proj is None:
+        raise IOError(f"No se pudo leer ningún frame de: {video_path}")
+    return np.asarray(pts, dtype=float), max_proj
+
+
 def get_video_metadata(video_path: str | Path) -> dict:
     """Devuelve fps, cantidad de frames y resolución. Útil para el eje
     temporal de los gráficos finales (segundos en vez de # de frame)."""
@@ -150,23 +180,3 @@ def compute_max_projection(
         raise IOError(f"No se pudo leer ningún frame de: {video_path}")
 
     return max_proj
-
-
-def load_max_projection(image_path: str | Path) -> np.ndarray:
-    """
-    Carga la imagen maxProjectStack (proyección de máxima intensidad
-    en el tiempo). La usamos en el pipeline para AUTO-DETECTAR la ROI
-    y la posición aproximada de los bordes superior/inferior, en vez
-    de hardcodearlas a mano para cada video.
-    """
-    # cv2.imread no abre rutas con caracteres no ASCII en Windows ("Análisis"):
-    # devuelve None sin explicar por que. Se leen los bytes con numpy y se
-    # decodifican en memoria, que funciona con cualquier ruta.
-    try:
-        datos = np.fromfile(str(image_path), dtype=np.uint8)
-    except OSError:
-        datos = np.array([], dtype=np.uint8)
-    img = cv2.imdecode(datos, cv2.IMREAD_GRAYSCALE) if datos.size else None
-    if img is None:
-        raise IOError(f"No se pudo leer la imagen: {image_path}")
-    return img

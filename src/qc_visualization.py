@@ -58,16 +58,12 @@ def run_frame_diagnostics(
         min_gradient=config.min_gradient,
     )
 
-    if config.fit_method == "ransac":
-        kw = dict(degree=config.ransac_degree,
-                  residual_threshold=config.ransac_residual_threshold,
-                  residual_k=config.ransac_residual_k,
-                  residual_floor=config.ransac_residual_floor)
-        top_fit = robust_fitting.fit_edge_ransac(x, y_top, **kw)
-        bot_fit = robust_fitting.fit_edge_ransac(x, y_bot, **kw)
-    else:
-        top_fit = robust_fitting.fit_edge_median(x, y_top)
-        bot_fit = robust_fitting.fit_edge_median(x, y_bot)
+    kw = dict(degree=config.ransac_degree,
+              residual_threshold=config.ransac_residual_threshold,
+              residual_k=config.ransac_residual_k,
+              residual_floor=config.ransac_residual_floor)
+    top_fit = robust_fitting.fit_edge_ransac(x, y_top, **kw)
+    bot_fit = robust_fitting.fit_edge_ransac(x, y_bot, **kw)
 
     if top_fit is not None and bot_fit is not None:
         thickness_px = float(np.median(bot_fit.y_fitted - top_fit.y_fitted))
@@ -212,7 +208,7 @@ def plot_roi_profile(roi: dict, output_path=None):
     return fig
 
 
-def save_diagnostics(df: pd.DataFrame, output_path, fmt: str = "xlsx", summary: dict | None = None,
+def save_diagnostics(df: pd.DataFrame, output_path, summary: dict | None = None,
                      extra_sheets: dict | None = None):
     """
     Guarda la tabla de diagnóstico. Por defecto .xlsx nativo (Excel no
@@ -223,13 +219,8 @@ def save_diagnostics(df: pd.DataFrame, output_path, fmt: str = "xlsx", summary: 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if fmt in ("csv", "both"):
-        df.to_csv(output_path.with_suffix(".csv"), index=False)
-
-    if fmt in ("xlsx", "both"):
-        _write_xlsx(df, output_path.with_suffix(".xlsx"), summary, extra_sheets)
-
-    return output_path.with_suffix(".xlsx" if fmt != "csv" else ".csv")
+    _write_xlsx(df, output_path.with_suffix(".xlsx"), summary, extra_sheets)
+    return output_path.with_suffix(".xlsx")
 
 
 def _write_xlsx(df: pd.DataFrame, path, summary: dict | None = None,

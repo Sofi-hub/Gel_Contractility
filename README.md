@@ -108,8 +108,6 @@ relativos (porcentaje del grosor, cocientes) o dentro de un mismo aumento.
     scripts/contraction_report.py   paso 2: contracciones, ritmo y cinética
     scripts/motion_check.py         paso 3 (opcional): confirma el movimiento por intensidad
     scripts/signal_check.py         diagnóstico: ¿hay población de eventos?
-    scripts/inspect_frame.py        diagnóstico de un solo fotograma
-    scripts/medir_*.py              mediciones de las fases (no son parte del flujo)
     interfaz.py, Analizar.bat       la ventana
     tests/test_*.py                 siete pruebas: python tests/test_<nombre>.py
 

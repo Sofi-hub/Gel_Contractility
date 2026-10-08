@@ -185,8 +185,8 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
   mínima en tiempo.** La vieja `--sep-s 0.3` fundía contracciones reales de una
   ráfaga (Video_prueba: 28 en vez de 29) y contaba la cola de un evento lento
   como otro evento. `find_peaks(distance=...)` no filtra ruido: se queda con el
-  pico **más alto** de cada ventana y borra el resto. `--sep-s` queda como
-  opción manual, apagada.
+  pico **más alto** de cada ventana y borra el resto. La opción `--sep-s` se
+  borró el 2026-10-08.
 * **La ventana del detrend no es fija (Fase 2.2):** al menos 3 veces el evento
   más largo, mínimo 2 s, y el conteo tiene que ser el mismo con 0.75×, 1× y
   1.5× esa ventana. Una mediana corta "baja con el evento" y se come la
@@ -215,7 +215,6 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     tests/test_ritmo.py             estimuladas/espontáneas: pulsos que fallan, R5, R6, veredictos
     tests/test_roi.py               elección de ROI: columnas adaptables, piso 40, rescate con cintura
     tests/test_diagnosticos.py      motion_check (corrimiento conocido), signal_check, junto_al_borde
-    scripts/medir_*.py              mediciones de las Fases 3 y 4 (no son parte del flujo)
     interfaz.py + Analizar.bat      ventana para correr los pasos sin consola (no calcula nada propio)
     docs/                           documentación vigente; docs/historia/ = propuestas y diagnósticos de fases cerradas
     docs/pendientes.md              la lista ÚNICA de lo que falta
@@ -228,6 +227,8 @@ Flujo normal: doble clic en `Analizar.bat` (la ventana corre estos mismos comand
            --input data/processed_data/<nombre>/serie_temporal_<nombre>.xlsx \
            --frecuencia-estimulo 0.1
 
+`--procesos N` (en `main.py`) reparte los fotogramas entre N núcleos; por
+defecto, todos menos uno. El resultado es idéntico con cualquier N.
 `--exigir-roi` hace que aborte si la ROI no cumple el criterio de aceptación,
 en vez de avisar y seguir emitiendo números. `--verbose` (en los tres scripts)
 imprime el detalle técnico; sin él la consola muestra solo resultados y AVISOS

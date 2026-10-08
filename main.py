@@ -18,6 +18,7 @@ particular, en vez de tener que editar el código para probar.
 
 from __future__ import annotations
 import argparse
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -34,7 +35,6 @@ def parse_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     p.add_argument("--video", required=True, help="Ruta al video del gel")
-    p.add_argument("--maxproj", default=None, help="Ruta al maxProjectStack (PNG/TIFF)")
     p.add_argument("--px-to-mm", type=float, default=1.0, help="Factor de calibración píxeles->mm")
     p.add_argument("--base-tiempo", choices=["frames", "pts"], default="pts",
                    help="Como se construye el eje temporal. 'frames' = frame/fps "
@@ -49,7 +49,10 @@ def parse_args():
                         "no hace falta.")
     p.add_argument("--output-dir", default=None,
                    help="Carpeta de salida. Por defecto: data/processed_data/<nombre_video>/")
-    p.add_argument("--table-format", choices=["xlsx", "csv", "both"], default="xlsx")
+    p.add_argument("--procesos", type=int, default=max(1, (os.cpu_count() or 1) - 1),
+                   help="Cuantos fotogramas se procesan a la vez (nucleos del procesador). "
+                        "Por defecto, todos menos uno. 1 = en serie. El resultado es "
+                        "identico con cualquier valor; solo cambia la velocidad.")
     p.add_argument("--plot", action="store_true", help="Genera la curva de grosor vs tiempo")
 
     g = p.add_argument_group("muestreo y deteccion de borde")
@@ -63,8 +66,6 @@ def parse_args():
     g.add_argument("--edge-method", choices=["parabolic", "sigmoid"], default="parabolic")
 
     g = p.add_argument_group("ajuste robusto (RANSAC)")
-    g.add_argument("--fit-method", choices=["ransac", "median"], default="ransac",
-                   help="'median' asume borde horizontal; si el borde tiene pendiente, usa ransac.")
     g.add_argument("--ransac-degree", type=int, default=2,
                    help="Grado del polinomio del borde. 1=recta, 2=permite la curvatura leve "
                         "que tiene el gel incluso dentro de la gauge region.")
@@ -128,7 +129,6 @@ def main():
         half_window=args.half_window,
         min_gradient=args.min_gradient,
         edge_method=args.edge_method,
-        fit_method=args.fit_method,
         ransac_degree=args.ransac_degree,
         ransac_residual_threshold=args.ransac_residual_threshold,
         ransac_residual_k=args.ransac_residual_k,
@@ -151,7 +151,8 @@ def main():
     )
 
     print(f"Procesando {args.video} ...")
-    df = process_video(args.video, args.maxproj, config, detallado=args.verbose)
+    df = process_video(args.video, config, detallado=args.verbose,
+                       n_procesos=args.procesos)
     roi = df.attrs.get("roi", {})
 
     n_rejected = int((df["frame_quality"] == "REJECTED").sum())
@@ -191,7 +192,7 @@ def main():
         "half_window": args.half_window,
         "min_gradient": args.min_gradient,
         "edge_method": args.edge_method,
-        "fit_method": args.fit_method,
+        "fit_method": "ransac",   # unica opcion desde 2026-10-08 (se borro "median")
         "ransac_degree": args.ransac_degree,
         "ransac_residual_threshold": args.ransac_residual_threshold or "adaptativo",
         "use_clahe": not args.no_clahe,
@@ -251,7 +252,7 @@ def main():
 
     alts = q.get("alternativas") or []
     extra = {"roi_alternativas": pd.DataFrame(alts)} if alts else None
-    saved = save_diagnostics(df, out_dir / f"serie_temporal_{video_name}", fmt=args.table_format,
+    saved = save_diagnostics(df, out_dir / f"serie_temporal_{video_name}",
                              summary=summary, extra_sheets=extra)
     archivos.insert(0, Path(saved).name)
 

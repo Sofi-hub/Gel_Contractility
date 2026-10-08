@@ -23,7 +23,7 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
    - ¿pueden no tocar el montaje durante la grabación?
    - ¿se anota el aumento?
    - ¿cómo exportan los videos? (compresión)
-4. Mail con gráficos de los RARITOS: **después** de la reunión, con sus respuestas.
+4. **La reunión del 2026-10-08 se suspendió.** Se armó un mail para Cami (borrador en Gmail) con el PDF `docs/RARITOS_resultados_y_preguntas.pdf` (resultados de los RARITOS + 10 preguntas). Anotar acá las respuestas.
 
 ## B. Cambios de código que cambian números (medir antes + regresión sobre Video_prueba y 063)
 1. **Posición inicial de búsqueda del borde por mediana**, no por la proyección de máximos (068). Arreglaría el caso "gel que se mueve mucho" sin tener que usar `--half-window 30` a mano.
@@ -38,7 +38,7 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
 1. **Hecho (2026-10-08).** **Nombres de los Excel con el nombre del video**, como las figuras: `serie_temporal_<video>.xlsx`, `contracciones_<video>.xlsx` y `movimiento_<video>.xlsx`. Los scripts y la ventana tienen que aceptar también el nombre viejo, y hay que actualizar la documentación. No cambia números.
 
 ## C. Herramientas nuevas (no cambian los números existentes)
-1. **Medida de actividad** para los videos con actividad continua (068, 304, 341), que corre después del reporte y no lo reemplaza. Mediría amplitud, fracción de tiempo activo, frecuencia y regularidad. Requisito: confirmar con un anclaje que lo que se mueve es el tejido y no toda la imagen. Esperar la respuesta de A2.
+1. **Medida de actividad** para los videos con actividad continua (068, 304, 341), que corre después del reporte y no lo reemplaza. Mediría amplitud, fracción de tiempo activo, frecuencia y regularidad. Requisito: confirmar con un anclaje que lo que se mueve es el tejido y no toda la imagen. Casi seguro les interesa cuantificarla (Franco, 2026-10-08; se les preguntó en la pregunta 4 del PDF, con esta propuesta): se puede ir diseñando, pero no es lo primero.
 2. **Detector de vibración** usando una referencia fija con textura (el anclaje). En 068, 304 y 341 los anillos del anclaje sirvieron; en 583 no había ninguna referencia usable.
 3. **Interfaz más amigable**. La ventana ya está hecha (`interfaz.py`, `Analizar.bat`). Quedan, de la sección 6 de la guía:
    - un solo comando que corra todo
@@ -46,9 +46,10 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
    - un informe por video
    - un archivo de doble clic o una ventanita
    - un archivo de configuración
-4. Test de regresión automático contra los `contracciones_<video>.xlsx` vigentes (hoy se compara a mano).
-5. Intervalos de confianza por bootstrap para las medianas por video.
-6. Versiones fijas en `requirements.txt`.
+4. **Sacar el grosor (línea roja) del gráfico de contracciones** (`09_contracciones_*`) y dejarlo solo con `--verbose`: el adelgazamiento es diagnóstico y no se informa (CLAUDE.md, hallazgo 1), y en el gráfico invita a interpretarlo. No cambia ningún número. (Pedido por Franco, 2026-10-08.)
+5. Test de regresión automático contra los `contracciones_<video>.xlsx` vigentes (hoy se compara a mano).
+6. Intervalos de confianza por bootstrap para las medianas por video.
+7. Versiones fijas en `requirements.txt`.
 
 ## D. Dudas abiertas para revisar con más videos
 1. 466: la medida por intensidad da 0.88 de la de bordes; no se sabe cuál está más cerca de la verdad. Puede que su % esté subestimado en un 10–20 %. ¿Pasa con toda la tanda EXP5? (476 da 0.82)

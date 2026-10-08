@@ -1,6 +1,6 @@
 # Estado del proyecto y arranque de un chat nuevo
 
-Actualizado 2026-10-08. Sirve para dos cosas: es el resumen del estado actual, y su primera sección se puede pegar tal cual al abrir un chat nuevo. **Lo que falta hacer está en `docs/pendientes.md`**, no acá.
+Actualizado 2026-10-08 (tarde). Sirve para dos cosas: es el resumen del estado actual, y su primera sección se puede pegar tal cual al abrir un chat nuevo. **Lo que falta hacer está en `docs/pendientes.md`**, no acá.
 
 ---
 
@@ -109,6 +109,7 @@ Actualizado 2026-10-08. Sirve para dos cosas: es el resumen del estado actual, y
   - `motion_check` arreglado;
   - el sexto evento de 063 es real;
   - la ráfaga final de 583 es vibración.
+- **2026-10-08 (código, sin cambiar números):** Excel con el nombre del video (se aceptan los nombres viejos); video leído una vez menos, fotogramas en paralelo (`--procesos`) y RANSAC propio (igual al de sklearn): de 5–6 min a ~70 s por video; borradas opciones y scripts sin uso. CLAHE sobre la franja: medido y descartado. Mail a Cami con los RARITOS y preguntas (`docs/RARITOS_resultados_y_preguntas.pdf`).
 - **2026-10-07:** se procesaron los RARITOS. Después: consola clara, `--verbose`, sentido de los eventos corregido, figuras NO REPORTABLE, la ventana (`interfaz.py`) y la documentación ordenada.
 
 ## Límites conocidos del método

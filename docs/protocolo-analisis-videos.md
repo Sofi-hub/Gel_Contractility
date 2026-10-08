@@ -1,7 +1,9 @@
 # Protocolo de análisis por video
 
-Actualizado 2026-10-08 (cierre de la Fase 3). Validado sobre seis videos: Video_prueba, Video_063 y
-los cuatro de la batería (268, 466, 491, 583).
+Actualizado 2026-10-08. Validado sobre seis videos (Video_prueba, Video_063, 268, 466, 491 y 583)
+y aplicado a los cinco `RARITOS` (476, 613, 068, 304 y 341; ver `raritos.md`). Para correrlo y
+entender la consola: `guia-salida-consola.md`. Este documento dice qué mirar **antes de informar
+un número**.
 
 ## Reglas centrales
 
@@ -13,7 +15,7 @@ de eventos alineados), no como canal de detección.
 
 **2. El eje temporal sale de los timestamps del contenedor, no de
 `fotograma / fps`.** Correr siempre con `--base-tiempo pts`. Ver
-`claude/base-de-tiempo-y-frames-perdidos.md`.
+`docs/base-de-tiempo-y-frames-perdidos.md`.
 
 **3. El `k` se elige dentro de la meseta, y eso ya es automático.** No pasar
 `--k` a mano salvo que quieras contradecir al escaneo, y en ese caso
@@ -21,26 +23,21 @@ justificarlo.
 
 ## Comandos por video
 
-    python main.py --video "<video>" --output-dir data/processed_data/<nombre> \
-           --base-tiempo pts
-    python scripts/contraction_report.py \
-           --input data/processed_data/<nombre>/serie_temporal.xlsx \
-           --frecuencia-estimulo 0.1
+Los comandos (y la ventana `Analizar.bat`, que corre los mismos) están en
+`guia-salida-consola.md`, sección 1. Lo que importa para el protocolo:
 
-`--frecuencia-estimulo` decide dónde se busca el tren (solo a ±10 % de esa
-frecuencia). Si el protocolo cambió de frecuencia, pasar todas
-(`--frecuencia-estimulo 0.1 0.2`); si no se sabe, omitirlo (búsqueda libre de un
-tren). Si hay tren, la cinética principal del resumen es la de los estimulados;
-la hoja `cin_grupos_*` tiene todos, estimulados y espontáneos.
-
-Opcional, cuando algo huele raro:
-
-    python scripts/motion_check.py --video "<video>" --output-dir <carpeta>
-    python scripts/signal_check.py --input .../serie_temporal.xlsx --column center_px
-
-Para que el pipeline **aborte** en vez de emitir números con una ROI mala:
-
-    python main.py ... --exigir-roi
+- `--frecuencia-estimulo` decide dónde se busca el tren (solo a ±10 % de esa
+  frecuencia). Si el protocolo cambió de frecuencia, pasar todas
+  (`--frecuencia-estimulo 0.1 0.2`); si no se sabe, omitirlo (búsqueda libre). Si
+  hay tren, la cinética principal es la de los estimulados; la hoja `cin_grupos_*`
+  tiene todos, estimulados y espontáneos.
+- Si `main.py` avisa que muchos fotogramas quedaron sin borde (el gel se mueve más
+  de ±15 px), repetirlo con `--half-window 30` en otra carpeta (`<video>_hw30`).
+- `--exigir-roi` hace que `main.py` **aborte** en vez de emitir números con una
+  zona mala.
+- Opcionales cuando algo huele raro: `motion_check.py --video ... --serie
+  .../serie_temporal.xlsx` (confirma el movimiento por intensidad) y
+  `signal_check.py --input .../serie_temporal.xlsx` (¿hay población de eventos?).
 
 ## Chequeos de aceptación por video
 
@@ -49,9 +46,12 @@ Para que el pipeline **aborte** en vez de emitir números con una ROI mala:
    directamente. Métodos aceptables: `gauge_plana`, `gauge_cintura`,
    `gauge_rescate_plana` o `manual`. Si sale `solo_nitidez`,
    `franja_completa` o `fallback_margin`, mirar el perfil y forzar con
-   `--x-start/--x-end`. Desde la Fase 3 la hoja trae también `n_columnas usadas`
+   `--x-start/--x-end`. La hoja trae también `n_columnas usadas`
    (60, o menos en una ROI angosta, nunca menos de 40) y `ROI contiene cintura`
-   (tiene que ser 1). Ninguno de los seis videos validados necesita ROI manual.
+   (tiene que ser 1). Ningún video (validados ni RARITOS) necesitó ROI manual.
+   `main.py` avisa en pantalla solo si la variación supera el 6 % o la zona no
+   contiene la cintura; el detalle de la zona está en `resumen` y en la hoja
+   `roi_alternativas`.
 2. **Ajuste del borde: diagnóstico, no criterio (Fase 4, H24).** La hoja
    `resumen` trae `outlier_frac medio` y `error de modelo borde sup/inf (px)` (y
    `peor / grosor (%)`). **No tienen umbral**: el viejo "outlier_frac < 10 %"
@@ -59,14 +59,18 @@ Para que el pipeline **aborte** en vez de emitir números con una ROI mala:
    comparar y para mirar videos raros: si el error de modelo es alto, correr el
    diagnóstico de outliers; outliers **contiguos** = el modelo no sigue el borde,
    **dispersos** = burbujas. Valores de los seis validados: error de modelo
-   0.33–1.01 % del grosor, `outlier_frac` 2.0–10.5 %.
-   **Ojo con vibraciones:** si a ojo tiembla toda la imagen (Video_583, 72–74 s),
-   eso entra en `center_px` como si fuera contracción; el reporte no lo distingue.
+   0.33–1.01 % del grosor, `outlier_frac` 2.0–10.5 % (RARITOS: 0.06–1.04 % y 2.5–5.2 %).
+   **Ojo con vibraciones:** si a ojo tiembla toda la imagen (Video_583, 72–74 s;
+   Video_613), eso entra en `center_px` como si fuera contracción. Si va hacia los
+   dos lados el control lo delata (NO REPORTABLE); si no, el reporte no lo distingue.
 3. **Meseta del escaneo de estabilidad.** Ya es automático: el reporte
    imprime el `k` elegido y el rango de la meseta, y la hoja `resumen` graba
    `hay_meseta` y `conteo_reportable`.
-4. **Si no hay meseta, el conteo no se reporta.** El reporte lo marca
-   `[NO REPORTABLE]`. No bajar `k` para "encontrar" eventos.
+4. **Si no hay meseta, el conteo no se reporta.** El reporte dice
+   `RESULTADO: NO REPORTABLE` y las figuras lo llevan en el título, con los
+   candidatos en gris y los falsos de control dibujados. No bajar `k` para
+   "encontrar" eventos. Mirar el video para distinguir vibración (picos a los dos
+   lados, 613) de actividad continua del tejido (sin pausas, 068 y 304).
 5. **Fotogramas perdidos.** La hoja `resumen` trae `frames faltantes (%)`. Por
    encima del 1 % el pipeline avisa. Con `--base-tiempo pts` ya está
    corregido; con `frames` no.
@@ -143,7 +147,7 @@ iluminación" hoy es teórica (medimos geometría de borde, no intensidad); ese
 video la vuelve un número.
 
 Lo que **sí** está medido contra MuscleMotion está en
-`claude/comparacion-musclemotion.md`: sobre-detección (35 y 47 picos donde
+`docs/comparacion-musclemotion.md`: sobre-detección (35 y 47 picos donde
 hay 6 y ninguno certificable), ausencia de control de falsos positivos, y una
 escala temporal comprimida entre 0.65 % y 4.05 % según el archivo.
 

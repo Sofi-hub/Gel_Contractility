@@ -113,7 +113,7 @@ su escala de tiempo por un factor que **depende de cada archivo**, entre
 0.65 % y 4.05 %. Todo TTP y RT50 calculado sobre esa señal hereda ese error, y
 como cambia de video a video **no se cancela al comparar muestras**.
 
-Detalle completo en `claude/base-de-tiempo-y-frames-perdidos.md`.
+Detalle completo en `docs/base-de-tiempo-y-frames-perdidos.md`.
 
 *Arreglo:* calcular las métricas sobre la señal del pipeline de Python
 (`center_px`), cuyo eje temporal sale de los timestamps del contenedor.

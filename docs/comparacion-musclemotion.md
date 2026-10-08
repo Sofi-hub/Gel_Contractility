@@ -1,5 +1,11 @@
 # Comparación contra MuscleMotion en los cinco videos de `OK`
 
+> **Nota (2026-10-08): los conteos "nuestro" y "meseta" de esta tabla son de septiembre.** Los vigentes están en
+> `ESTADO-arranque-chat-nuevo.md`: 063 = 6, 268 = 6, 466 = 5, 583 = 6, y **491 = 2 eventos reportables** desde la
+> Fase 2.2 (antes "sin meseta"). Las conclusiones sobre MuscleMotion no cambian. Un argumento nuevo, de los RARITOS
+> (`raritos.md`): en Video_476 el brillo da un salto cada 5 fotogramas exactos, también en el fondo vacío
+> (probablemente por la compresión del video), y MuscleMotion lo cuenta como ~90 picos; la medida por bordes no lo ve.
+
 Fecha 2026-09-29. La carpeta `OK` contiene los videos donde, en teoría,
 MuscleMotion detecta bien, junto con sus salidas. Eso la convierte en el
 mejor banco de comparación disponible.
@@ -51,7 +57,7 @@ diferencia es que el nuestro lo dice.
 
 ## La escala temporal de MuscleMotion está comprimida
 
-Ver `claude/base-de-tiempo-y-frames-perdidos.md` para el detalle. En resumen:
+Ver `docs/base-de-tiempo-y-frames-perdidos.md` para el detalle. En resumen:
 ImageJ importa menos fotogramas que OpenCV en los cinco videos (déficit de
 0.65 % a 4.05 %, según el archivo), y OpenCV coincide exactamente con el
 conteo de paquetes de ffprobe. Como MuscleMotion construye su eje temporal

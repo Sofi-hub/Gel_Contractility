@@ -1,6 +1,6 @@
 # Referencia: qué contiene cada archivo y qué significa cada eje
 
-Actualizado 2026-10-08 (v4 + Fase 3). Cubre la salida del pipeline (`main.py`,
+Actualizado 2026-10-08 (incluye la Fase 4 y la consola nueva). Cubre la salida del pipeline (`main.py`,
 `scripts/contraction_report.py`, `scripts/motion_check.py`,
 `scripts/signal_check.py`) y el cuaderno `Analisis_Contractilidad_v4.ipynb`.
 
@@ -35,7 +35,7 @@ y `ordenar_carpeta.py` les quitó el sufijo al archivar el resto.
 | `thickness_mm` | mm | `thickness_px × px_to_mm` |
 | `thickness_mm_smooth` | mm | lo anterior, suavizado con Savitzky-Golay |
 | `n_outlier_columns` | — | cuántas de las 2N mediciones (N columnas × 2 bordes) descartó RANSAC |
-| `outlier_frac` | 0–1 | `n_outlier_columns / (2N)`. **Chequeo de aceptación 2: sano < 0.10** |
+| `outlier_frac` | 0–1 | `n_outlier_columns / (2N)`. Diagnóstico, sin umbral desde la Fase 4 (H24): no es criterio de aceptación |
 | `residual_top_px` | px | MAD de los residuos del ajuste del borde superior en ese fotograma |
 | `residual_bottom_px` | px | ídem, borde inferior |
 | `frame_quality` | texto | `OK`, `LOW_QUALITY` (outlier_frac ≥ `low_quality_frac`) o `REJECTED` (ningún ajuste posible; las medidas quedan `NaN`) |
@@ -77,7 +77,15 @@ Existe para que cualquier número sea reproducible sin adivinar la configuració
 | `ROI ancho minimo exigido (px)` | `roi_min_columnas × roi_min_column_spacing_px` = 40 × 3 = 120 px (Fase 3; antes 60 × 3). No depende del largo del gel |
 | `n_columns (maximo)`, `n_columnas usadas`, `roi_min_columnas` | (Fase 3) se usan `min(60, ancho // 3)` columnas, nunca menos de 40 |
 | `ROI contiene cintura` | (Fase 3) `1` si la ROI incluye alguna columna con grosor ≤ cintura × 1.05. Tiene que ser `1` |
-| `outlier_frac medio` | (Fase 3) promedio de `outlier_frac`. Chequeo 2; no es comparable entre ROIs (H24) |
+| `outlier_frac medio` | promedio de `outlier_frac`. Solo diagnóstico: no es comparable entre ROIs (H24) |
+| `error de modelo borde sup/inf (px)`, `error de modelo peor / grosor (%)` | (Fase 4) cuánto se aparta la parábola del borde de forma estable. Diagnóstico sin umbral; validados 0.33–1.01 % |
+| `ROI criterio`, `ROI cintura del gel (px)`, `ROI grosor min/max en la zona (px)`, `ROI fraccion del ancho de la imagen`, `ROI columnas con franja seguida`, `ROI columnas de la imagen`, `ROI columnas descartadas por nitidez/grosor/pendiente` | (2026-10-07) el detalle de la zona elegida que antes solo salía en pantalla |
+
+### Hoja `roi_alternativas` (2026-10-07)
+
+Una fila por nivel de la cascada de la ROI (`gauge_plana`, `gauge_cintura`, …):
+rango `x`, ancho, variación de grosor y si fue la elegida. Sirve para forzar otra
+zona con `--x-start/--x-end` si hiciera falta.
 
 ---
 
@@ -131,7 +139,7 @@ es ruido. **Desde la v4 el `k` se elige solo dentro de esa meseta.**
 
 (`picos_con_sep_menor` ya no existe: con la detección por prominencia no hay separación mínima que funda eventos.)
 
-**`eventos_<serie>`** — `evento`, `tiempo_s`, `amplitud_px` y `junto_a_hueco` de cada uno.
+**`eventos_<serie>`** — `evento`, `tiempo_s`, `amplitud_px`, `junto_a_hueco` (un fotograma sin medida en el pico o al lado) y `junto_al_borde` (a menos de media ventana del inicio o del fin del video: su línea de base es menos precisa) de cada uno.
 
 **Qué es un evento (Fase 2.2):** un pico de la señal sin deriva con **altura** y
 **prominencia** ≥ `k × ruido` (la prominencia es cuánto sobresale sobre el valle
@@ -222,17 +230,23 @@ detección de bordes.
 | `desp_axial_px` | px | desplazamiento a lo largo del eje |
 | `corr_vert`, `corr_axial` | 0–1 | calidad del enganche de la correlación. Si es baja, el desplazamiento sale `NaN` |
 
+**Dónde se guarda:** en la carpeta de `--serie` (la del video). Sin `--serie` ni
+`--output-dir`, en `qc_output/<nombre del video>/`.
+
+**Hoja `veredicto`** (2026-10-07) — la comparación que decide: `pendiente_desp_vert_sobre_center_px`
+(tamaño del movimiento por intensidad respecto del de los bordes; 1 = igual),
+`correlacion` (misma forma en el tiempo; 1 = idéntica) y el texto del veredicto:
+CONFIRMA (correlación ≥ 0.9 y tamaño entre 0.8 y 1.2), coinciden solo en forma, o
+NO confirma. Medido: 0.96 / 0.99 / 0.88 / 0.82 en prueba / 063 / 466 / 476.
+
 **Hoja `resumen_canales`** — por canal: `rms_sin_deriva`, `ruido_MAD`, `skew`,
 `frac_bajo_-4sigma_pct`, `frec_dominante_Hz`, `pico_sobre_fondo`.
 
-Cómo se interpreta: se compara la **modulación** (RMS tras quitar la deriva) de
-cada canal contra la del fondo, **no** su nivel absoluto. Tres desenlaces:
-
-- gel ≈ fondo → no hay movimiento por encima del ruido
-- gel ≫ fondo pero interior ≈ fondo → **se mueven sólo los bordes**, compatible
-  con cambio de grosor
-- gel ≫ fondo **e** interior ≫ fondo → **se mueve la textura entera**:
-  traslación o movimiento axial, al que `thickness_px` es ciego
+Los canales `mov_*` (|ΔI|) son **informativos**: sirven para comparar con
+MuscleMotion, que mide eso mismo, pero no deciden nada. Desde la Fase 4 (H50) el
+veredicto sale de `desp_vert_px` contra `center_px` (hoja `veredicto`); la vieja
+regla "interior ≈ fondo ⇒ cambio de grosor" era falsa (un gel sin textura que se
+traslada también mueve solo sus bordes).
 
 ---
 
@@ -302,7 +316,11 @@ Si el rojo acompaña al azul y no hay franja verde, el título dice NO REPORTABL
 
 ### `09_contracciones.png` — dos paneles por serie
 - **Izquierda:** `x` = tiempo (s), `y` = canal sin deriva (px), con un triángulo
-  por evento.
+  rojo por evento. **Si el conteo es NO REPORTABLE**, el título lo dice en rojo
+  ("NO REPORTABLE — candidatos para auditar"), los candidatos van como triángulos
+  grises huecos y se dibujan también los **falsos de control** (triángulos rojos
+  huecos hacia abajo: los picos de la señal invertida). Si los rojos acompañan a
+  los grises, es ruido o vibración.
 - **Derecha:** el **promedio de eventos alineados**. `x` = tiempo respecto del
   pico (s). Eje `y` izquierdo (azul) = traslación promedio (px); eje `y` derecho
   (rojo) = cambio de grosor promedio (px). **Los dos ejes tienen escalas
@@ -312,7 +330,9 @@ Si el rojo acompaña al azul y no hay franja verde, el título dice NO REPORTABL
 ### `10_ritmo.png` — dos paneles por serie
 - **Izquierda:** `x` = tiempo (s), `y` = el canal sin deriva (px). Los eventos
   van coloreados por grupo (rojo estimulados, naranja dudosos, azul
-  espontáneos) y las verticales marcan la grilla del estimulador ajustada.
+  espontáneos) y las verticales marcan la grilla del estimulador ajustada. Si el
+  conteo es NO REPORTABLE: título en rojo, candidatos en gris y falsos de control,
+  como en la `09`.
 - **Derecha:** el error de cada latido respecto de su ranura, en ms. Si el tren
   está bien enganchado, todos caen por debajo de un fotograma (33 ms).
 
@@ -323,25 +343,15 @@ Si el rojo acompaña al azul y no hay franja verde, el título dice NO REPORTABL
   se vea cuántas muestras tiene la subida). `y` = señal / amplitud del evento.
   Gris = cada evento, azul con un punto por fotograma = mediana. Punteadas en
   el 10 % (onset/offset) y el 50 % (RT50). El título da TTP y RT50, o la cota
-  si no son medibles.
+  si no son medibles; si el conteo es NO REPORTABLE, lo dice en rojo en su lugar.
 - **Derecha:** `x` = número de evento, `y` = ms. TTP (azul) y RT50 (rojo) de
   cada evento con su intervalo [min, max]. La franja gris es la zona de menos
   de 5 fotogramas: un evento cuyo intervalo cae ahí no tiene cinética medible.
 
-## 5. Los tres chequeos de aceptación
+## 5. Chequeos de aceptación
 
-Ninguno es opcional. Están en `claude/protocolo-analisis-videos.md`.
-
-1. **Variación del grosor dentro de la ROI < 6 %.** Campo `ROI cumple criterio`
-   de la hoja `resumen`. Más que eso significa que la ROI incluye el hombro de
-   un anclaje, donde la deformación la manda el anclaje y no la contractilidad.
-2. **`outlier_frac` medio < 10 %.** Unos pocos por ciento es normal con
-   burbujas. Si sube, mirar si los outliers son **contiguos** (el modelo no
-   sigue la geometría: achicar o mover la ROI) o **dispersos** (burbujas: se
-   toleran).
-3. **Meseta del escaneo de umbral con 0 falsos.** Campo `conteo_reportable`.
-   Sin meseta, el conteo de eventos no se reporta.
-
-Y uno más, que no es de aceptación pero hay que mirarlo: **`frames faltantes
-(%)`**. Por encima del 1 %, el eje `fotograma/fps` está comprimido y hay que
-usar `--base-tiempo pts`.
+Están en un solo lugar: `protocolo-analisis-videos.md`, sección "Chequeos de
+aceptación por video". En resumen: la zona medida varía ≤ 6 % y contiene la
+cintura (`ROI cumple criterio`, `ROI contiene cintura`), y hay meseta con 0 falsos
+(`conteo_reportable`). `outlier_frac` y el error de modelo son diagnóstico, sin
+umbral. Mirar además `frames faltantes (%)`: con `--base-tiempo pts` no afecta.

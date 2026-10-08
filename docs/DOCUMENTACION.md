@@ -1,13 +1,12 @@
 # Documentación del Pipeline de Contractilidad de Geles 3D
 
-Actualizada 2026-10-08 (pipeline v4 + Fase 3). Reemplaza a la versión de
-2026-09-05, que describía la detección sobre el grosor, la calibración a mm y
-`analyze_contractions.py` como flujo principal: las tres cosas cambiaron.
+Actualizada 2026-10-08 (pipeline v4 hasta la Fase 4, consola nueva y ventana).
 
 Esta guía está escrita para quien diseña el experimento y necesita entender
 **qué hace el software y por qué**, sin leer código Python. Para el detalle de
 cada columna y cada eje de las salidas, ver `referencia-archivos-y-graficos.md`;
-para los comandos y los chequeos de aceptación, `protocolo-analisis-videos.md`.
+para los chequeos de aceptación, `protocolo-analisis-videos.md`; para correrlo y
+entender lo que imprime, `guia-salida-consola.md`.
 
 ---
 
@@ -113,13 +112,13 @@ columnas, se queda con el que reúne más columnas coherentes (*inliers*) y
 - **Umbral adaptativo**: una columna es *outlier* si se aparta más de 3 veces
   la dispersión típica **de ese fotograma**, no un número fijo de píxeles.
 
-**Criterio de aceptación:** en promedio se descarta **< 10 %** de las columnas.
-(Fase 3: este porcentaje no es comparable entre zonas distintas, porque el umbral
-se adapta a cada fotograma; entre 10 y 12 % el programa avisa "en el límite" y hay
-que mirar también el residuo del ajuste. Se revisa en la Fase 4.)
-Si los descartes son **dispersos**, son burbujas y se toleran; si son
-**contiguos**, el modelo no sigue la forma del borde y hay que achicar o mover
-la zona.
+**El porcentaje de columnas descartadas es un diagnóstico, no un criterio.**
+Como el umbral se adapta a cada fotograma, una zona con bordes muy limpios
+descarta *más*, y el porcentaje no sirve para comparar zonas (Fase 4). Se guarda
+en la hoja `resumen` junto con el **error de modelo** (cuánto se aparta la parábola
+del borde real de forma estable; 0.3–1 % del grosor en los videos validados). La
+zona se acepta por su forma (2.2). Si los descartes son **dispersos**, son
+burbujas y se toleran; si son **contiguos**, el modelo no sigue la forma del borde.
 
 Cada fotograma queda como `OK`, `LOW_QUALITY` (muchas columnas descartadas) o
 `REJECTED` (no se pudo medir: queda vacío, no se inventa).
@@ -264,8 +263,9 @@ hacen falta 200–300 fps. Detalle en `metricas-cinetica-TTP-RT50.md`.
 | `main.py` | video → `serie_temporal.xlsx` (las cuatro series + hoja `resumen` con todos los parámetros), `00_roi_profile_<video>.png`, y con `--plot` `01_serie_temporal.png`. El mapa de máxima intensidad lo calcula internamente; `00_max_projection.png` como archivo lo guarda el cuaderno |
 | `scripts/contraction_report.py` | **el análisis principal**: serie temporal → `contracciones.xlsx` y las figuras `05_estabilidad_umbral`, `09_contracciones`, `10_ritmo` y `11_cinetica`. Es el **único** detector de eventos del proyecto: el viejo (`event_detection.py` y `analyze_contractions.py`) se borró el 2026-10-01 |
 | `scripts/inspect_frame.py` | revisa un solo fotograma: overlay de inliers/outliers y perfil de una columna. Para calibrar parámetros o entender por qué se descartó una columna |
-| `scripts/motion_check.py` | diagnóstico independiente de los bordes: **qué** se mueve (bordes, textura interior o nada) |
+| `scripts/motion_check.py` | segunda opinión, sin usar los bordes: mide el desplazamiento de la franja por intensidad y lo compara con `center_px` (CONFIRMA / no confirma) |
 | `scripts/signal_check.py` | diagnóstico: ¿hay una población de eventos por encima del ruido en una serie? |
+| `interfaz.py` (`Analizar.bat`) | la ventana: elegir video y carpeta, marcar los pasos y ver la salida en vivo. Corre los mismos scripts, no calcula nada propio |
 | `Analisis_Contractilidad_v4.ipynb` | recorre el flujo entero paso a paso, mostrando la salida de cada etapa |
 
 ---
@@ -290,32 +290,14 @@ Gel_Contractility/
 
 ## 6. Procesar un video nuevo
 
-```bash
-# 1. serie temporal
-python main.py --video "data/raw_videos/mi_video.mp4" \
-               --output-dir data/processed_data/mi_video --base-tiempo pts
+Doble clic en `Analizar.bat`, o los comandos de `guia-salida-consola.md`
+(sección 1). Antes de informar un número, los chequeos de
+`protocolo-analisis-videos.md`:
 
-# 2. contracciones, ritmo y cinética
-python scripts/contraction_report.py \
-       --input data/processed_data/mi_video/serie_temporal.xlsx \
-       --frecuencia-estimulo 0.1
-```
+1. `ROI cumple criterio` = 1 (variación de grosor ≤ 6 %) y `ROI contiene cintura` = 1.
+2. `conteo_reportable` = True (meseta con 0 falsos de control).
+3. Para la cinética, `ttp_reportable` / `rt50_reportable`; si son `False`, solo la cota.
 
-Antes de reportar un número, los tres chequeos de aceptación
-(`protocolo-analisis-videos.md`):
-
-1. `ROI cumple criterio` = 1 (variación de grosor < 6 %).
-2. `outlier_frac` medio < 10 %.
-3. `conteo_reportable` = True (meseta con 0 falsos).
-
-Y además: `frames faltantes (%)` en la hoja `resumen`, y para la cinética,
-`ttp_reportable` / `rt50_reportable`.
-
-Si algo huele raro:
-
-```bash
-python scripts/inspect_frame.py --video "data/raw_videos/mi_video.mp4" --frame-index 0 \
-       --output-dir data/processed_data/mi_video/qc
-python scripts/motion_check.py --video "data/raw_videos/mi_video.mp4" \
-       --output-dir data/processed_data/mi_video
-```
+Si el resultado es NO REPORTABLE, mirar el video: picos hacia los dos lados son
+vibración; movimiento sin pausas es actividad continua del tejido, que este
+método de conteo no mide.

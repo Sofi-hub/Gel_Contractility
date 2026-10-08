@@ -119,7 +119,7 @@ este proyecto viene corrigiendo.
 ## Duda 3: corre sobre la salida de MuscleMotion
 
 El script lee `contraction.txt`, que es la señal de MuscleMotion. Ya medimos
-(`claude/base-de-tiempo-y-frames-perdidos.md`) que su eje temporal está
+(`docs/base-de-tiempo-y-frames-perdidos.md`) que su eje temporal está
 comprimido entre 0.65 % y 4.05 % según el archivo, porque ImageJ importa
 menos fotogramas que OpenCV. Cualquier TTP o RT50 calculado sobre esa señal
 hereda ese error, y el error **cambia de video a video**, así que no se

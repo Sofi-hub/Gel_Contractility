@@ -5,7 +5,7 @@
 > **Actualizado 2026-10-07 (Fase 3, grupo 1).** Cambió dónde se busca el tren (dirigido por la
 > frecuencia configurada), qué instante representa a cada latido (el inicio, no el pico), cómo se
 > calcula el p-valor y cuándo la amplitud puede intervenir. Los números de abajo son los nuevos.
-> Propuesta y mediciones: `claude/propuesta-fase-3-ritmo-cinetica.md`.
+> Propuesta y mediciones: `docs/historia/propuesta-fase-3-ritmo-cinetica.md`.
 
 ## El criterio: enganche de fase
 

@@ -9,7 +9,7 @@ El trabajo es para que **la Universidad de Tecnun** pueda medir contracciones en
 sea más robusto y **verificable** (ver `CLAUDE.md`, "Cero dependencia externa").
 
 MuscleMotion, en el uso de Tecnun, entrega: contracción (amplitud), velocidad de contracción y algún archivo más.
-El script de MATLAB del equipo (`Contraction_Analysis.mlx`) parte de su salida `contraction.txt` (ver `claude/revision-script-matlab.md`).
+El script de MATLAB del equipo (`Contraction_Analysis.mlx`) parte de su salida `contraction.txt` (ver `docs/revision-script-matlab.md`).
 
 ## La carpeta `OK`
 
@@ -27,12 +27,13 @@ Es la **misma carpeta donde están guardados los videos crudos** (`data/raw_vide
 
 La ruta completa `data/raw_videos/OK-20260904T142817Z-1-001/OK/` está dentro de la carpeta `raw_videos`, junto a `Video_prueba.mp4`
 y a `RARITOS-20260904T171415Z-1-001/RARITOS/`, que tiene el mismo formato (videos + `_-Contr-Results`) para los videos que MuscleMotion maneja mal:
-Video_068, Video_304, Video_341 (sin carpeta de resultados), Video_476 y Video_613. Todavía no se procesaron.
+Video_068, Video_304, Video_341 (sin carpeta de resultados), Video_476 y Video_613. Procesados el 2026-10-07: resultados y
+comparación con MuscleMotion en `raritos.md`.
 
 **Qué significa "OK".** No es un criterio estadístico ni técnico escrito en ningún lado. Son los videos que **cumplen los
 requerimientos de Tecnun** (los que sean: Franco no los conoce en detalle) y en los que, según el equipo, MuscleMotion
 funciona. Por eso sirven como banco de comparación, pero **"OK" no garantiza que MuscleMotion haya medido bien**: en
-`claude/comparacion-musclemotion.md` se midió que en Video_063 y Video_491 más de la mitad de los picos de MuscleMotion
+`docs/comparacion-musclemotion.md` se midió que en Video_063 y Video_491 más de la mitad de los picos de MuscleMotion
 llevan avisos de sus propios chequeos, y Video_491 está en `OK` aunque ninguno de los dos métodos pudo certificar eventos ahí.
 
 Los cinco videos de `OK` que se compararon: Video_063, Video_268, Video_466, Video_491, Video_583.

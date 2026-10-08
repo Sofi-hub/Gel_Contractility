@@ -16,6 +16,13 @@ pip install -r requirements.txt
 
 ## Uso
 
+**La forma fácil:** doble clic en `Analizar.bat`. Se abre una ventana donde se
+elige el video (o se lo arrastra; para eso, una vez, `pip install tkinterdnd2`)
+y la carpeta de resultados, se marcan los pasos a correr y se ve la salida en
+vivo. La ventana corre los mismos comandos de abajo: los números son idénticos.
+
+**Por consola:**
+
 ```bash
 python main.py --video "data/raw_videos/mi_video.mp4" \
                --output-dir data/processed_data/mi_video \
@@ -41,6 +48,18 @@ Flags que conviene conocer:
 | `--exigir-roi` | aborta si la ROI no cumple el criterio de aceptación, en vez de avisar y seguir |
 | `--x-start` / `--x-end` | fuerza la zona de medición a mano cuando la automática no sirve |
 | `--k` | fuerza el umbral de detección. Por defecto es `auto` y lo elige la meseta del escaneo |
+| `--half-window 30` | cuando el gel se mueve mucho y `main.py` avisa que hay fotogramas sin borde |
+| `--verbose` | (los tres scripts) imprime también el detalle técnico; sin él, solo resultados y avisos |
+
+Opcional, para confirmar el movimiento por un segundo método (intensidad, sin bordes):
+
+```bash
+python scripts/motion_check.py --video "data/raw_videos/mi_video.mp4" \
+       --serie data/processed_data/mi_video/serie_temporal.xlsx
+```
+
+Qué significa cada línea que se imprime, qué es normal y qué contestar si
+alguien pregunta: `docs/guia-salida-consola.md`.
 
 ## Tres cosas que hay que saber antes de usarlo
 
@@ -58,11 +77,12 @@ eventos aparecen más juntos de lo que fueron. Uno de nuestros videos perdió el
 4.7 % de sus fotogramas y su período de estimulación medía 9.51 s en vez de
 10.01 s, un error del +5 %. Con `--base-tiempo pts` el problema desaparece.
 
-**3. Ningún número se reporta sin verificarlo.** El pipeline aplica tres
-chequeos de aceptación y los deja por escrito en las salidas: variación de
-grosor dentro de la ROI < 6 %, `outlier_frac` medio < 10 %, y una meseta en el
-escaneo de umbral con cero falsos de control. **Si no hay meseta, el conteo de
-eventos se marca como no reportable** en vez de publicarse igual.
+**3. Ningún número se reporta sin verificarlo.** El pipeline deja por escrito
+en las salidas sus chequeos de aceptación: la variación de grosor dentro de la
+zona medida es ≤ 6 % y la zona contiene la cintura del gel; y el escaneo del
+umbral tiene una meseta con cero falsos de control (el mismo detector sobre la
+señal invertida). **Si no hay meseta, el conteo se marca NO REPORTABLE** en vez
+de publicarse igual, y las figuras lo dicen en el título.
 
 ## Calibración: fuera de alcance por decisión del proyecto
 
@@ -81,15 +101,17 @@ relativos (porcentaje del grosor, cocientes) o dentro de un mismo aumento.
     src/pipeline.py          orquestador -> 4 series por fotograma
     src/estadistica.py       MAD, mediana móvil y búsqueda de picos (una sola copia, tolera NaN)
     src/rhythm_split.py      estimuladas vs espontáneas por enganche de fase
-    src/qc_visualization.py  overlays de diagnóstico
-    src/plotting.py          figuras numeradas
-    scripts/contraction_report.py   el script principal de análisis
-    scripts/motion_check.py         diagnóstico: qué se mueve
-    scripts/signal_check.py         diagnóstico: ¿hay población de eventos?
     src/cinetica.py          TTP, RT50 y amplitud relativa, con cotas cuando no son medibles
-    tests/test_seleccion_k.py       regresión de la elección automática del umbral
-    tests/test_cinetica.py          TTP/RT50 sobre eventos sintéticos de cinética conocida
-    tests/test_ritmo.py             estimuladas/espontáneas: pulsos que fallan, R5, R6, veredictos
+    src/qc_visualization.py  overlays de diagnóstico y escritura de los Excel
+    src/plotting.py          figuras numeradas
+    main.py                         paso 1: video -> serie_temporal.xlsx
+    scripts/contraction_report.py   paso 2: contracciones, ritmo y cinética
+    scripts/motion_check.py         paso 3 (opcional): confirma el movimiento por intensidad
+    scripts/signal_check.py         diagnóstico: ¿hay población de eventos?
+    scripts/inspect_frame.py        diagnóstico de un solo fotograma
+    scripts/medir_*.py              mediciones de las fases (no son parte del flujo)
+    interfaz.py, Analizar.bat       la ventana
+    tests/test_*.py                 siete pruebas: python tests/test_<nombre>.py
 
 Resultados vigentes: `data/processed_data/<video>/` (sin sufijo). Las corridas
 anteriores están archivadas en `data/processed_data/_superadas/`.
@@ -97,32 +119,31 @@ anteriores están archivadas en `data/processed_data/_superadas/`.
 ## Documentación
 
 `Analisis_Contractilidad_v4.ipynb` recorre el flujo entero paso a paso,
-mostrando la salida de cada etapa. Es el mejor punto de entrada.
+mostrando la salida de cada etapa.
 
 En `docs/`:
 
 | documento | para qué |
 |---|---|
-| `ESTADO-arranque-chat-nuevo.md` | el estado actual y qué está pendiente |
-| `protocolo-analisis-videos.md` | los comandos por video y los chequeos de aceptación |
-| `referencia-archivos-y-graficos.md` | qué contiene cada archivo y qué significa cada eje |
+| `guia-salida-consola.md` | **para usarlo:** la ventana, los comandos y qué significa cada línea que se imprime |
+| `pendientes.md` | la lista única de lo que falta |
+| `ESTADO-arranque-chat-nuevo.md` | el estado actual, los resultados de referencia y el texto para arrancar un chat nuevo |
+| `protocolo-analisis-videos.md` | reglas del método y chequeos de aceptación antes de informar un número |
+| `referencia-archivos-y-graficos.md` | qué contiene cada archivo, cada columna y cada eje |
+| `DOCUMENTACION.md` | el método explicado sin código, para quien diseña el experimento |
+| `raritos.md` | resultados de los videos `RARITOS` |
+| `preguntas-reunion-equipo.md` | preguntas para el equipo de Tecnun |
 | `base-de-tiempo-y-frames-perdidos.md` | el eje temporal, en detalle |
 | `separacion-estimuladas-espontaneas.md` | el método de enganche de fase y sus límites |
-| `comparacion-musclemotion.md` | los números medidos contra MuscleMotion |
 | `metricas-cinetica-TTP-RT50.md` | métricas de cinética: viabilidad, implementación y resultados |
+| `comparacion-musclemotion.md` | los números medidos contra MuscleMotion |
+| `contexto-tecnun-y-musclemotion.md` | para quién es el trabajo y qué es la carpeta `OK` |
 | `revision-script-matlab.md` | revisión del script del equipo |
-| `guia-revision-codigo.md` | guía para revisar el código de punta a punta |
-| `DOCUMENTACION.md` | el método explicado sin código, para quien diseña el experimento |
+| `historia/` | propuestas y diagnósticos de las fases ya cerradas, y la revisión de código: cómo se llegó a cada decisión |
 
 ## Pendiente
 
-- Procesar los videos de la carpeta `RARITOS`.
-- Grabar un video de control de iluminación: mismo gel, quieto, con un cambio
-  de luz. Es lo único que falta para demostrar con un número que medir
-  geometría de borde es inmune a la iluminación.
-- Adquisición a 200–300 fps si se quieren medir TTP y RT50 de verdad: a 30 fps
-  la subida de las muestras rápidas dura 1–2 fotogramas y solo se puede dar
-  una cota (TTP < 100 ms). TTP, RT50 y amplitud relativa ya están
-  implementados y salen en `contracciones.xlsx`.
-
-El detalle de lo pendiente está en `docs/ESTADO-arranque-chat-nuevo.md`.
+Todo en `docs/pendientes.md`. Lo principal: respuestas del equipo de Tecnun
+(estimulación de los RARITOS, adquisición a 200–300 fps, video de control de
+iluminación), una medida de actividad para los videos con actividad continua, y
+optimizar el tiempo de procesamiento.

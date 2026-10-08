@@ -109,10 +109,12 @@ relativos (porcentaje del grosor, cocientes) o dentro de un mismo aumento.
     scripts/motion_check.py         paso 3 (opcional): confirma el movimiento por intensidad
     scripts/signal_check.py         diagnóstico: ¿hay población de eventos?
     interfaz.py, Analizar.bat       la ventana
-    tests/test_*.py                 ocho pruebas: python tests/test_<nombre>.py
+    tests/test_*.py                 nueve pruebas: python tests/test_<nombre>.py
+    tests/test_regresion.py         la regresión de los 11 videos (--completo: desde el video)
+    scripts/regenerar_todo.py       regenera todos los resultados vigentes
 
-Resultados vigentes: `data/processed_data/<video>/` (sin sufijo). Las corridas
-anteriores están archivadas en `data/processed_data/_superadas/`.
+Resultados vigentes: `data/processed_data/<carpeta>/`. Las corridas anteriores
+están en el historial de git.
 
 ## Documentación
 

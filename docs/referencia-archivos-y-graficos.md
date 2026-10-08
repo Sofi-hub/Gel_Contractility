@@ -18,10 +18,11 @@ las corridas anteriores (`_v4` a `_v7`) se borraron de la carpeta el 2026-10-08 
 
 **Nombres (desde 2026-10-08):** todos los archivos llevan el nombre del video al final, como las
 figuras. `main.py` y `motion_check.py` lo toman del archivo de video; `contraction_report.py`, del
-nombre de la carpeta (en `Video_068_hw30` queda `serie_temporal_Video_068.xlsx` y
-`contracciones_Video_068_hw30.xlsx`). Los resultados anteriores tienen el nombre sin video
+nombre de la carpeta (en `Video_068_hw30` queda `serie_temporal_Video_068_FAPS2_5V.xlsx` y
+`contracciones_Video_068_hw30.xlsx`). Los resultados anteriores tenían el nombre sin video
 (`serie_temporal.xlsx`, `contracciones.xlsx`, `movimiento.xlsx`, `07_movimiento.png`): los
-scripts y la ventana aceptan los dos.
+scripts y la ventana aceptan los dos. Desde el 2026-10-08 todas las carpetas vigentes usan el
+nombre nuevo, salvo `movimiento.xlsx` y `07_movimiento.png` de Video_476 (paso 3, no se regeneró).
 
 ---
 

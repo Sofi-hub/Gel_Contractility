@@ -216,6 +216,11 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     tests/test_roi.py               elección de ROI: columnas adaptables, piso 40, rescate con cintura
     tests/test_diagnosticos.py      motion_check (corrimiento conocido), signal_check, junto_al_borde
     tests/test_ransac.py            el RANSAC propio da lo mismo que el de sklearn (grados 1-3)
+    tests/test_regresion.py         REGRESIÓN de los 11 videos contra tests/referencia_regresion.json
+                                    (--completo: además Video_prueba y 063 desde el video)
+    tests/referencia.py             lista de videos de referencia, con sus argumentos, y la "huella"
+    tests/generar_referencia.py     congela la referencia; solo con --aprobar "motivo"
+    scripts/regenerar_todo.py       regenera los 11 y compara viejo contra nuevo antes de borrar
     interfaz.py + Analizar.bat      ventana para correr los pasos sin consola (no calcula nada propio)
     docs/                           documentación vigente; docs/historia/ = propuestas y diagnósticos de fases cerradas
     docs/pendientes.md              la lista ÚNICA de lo que falta
@@ -229,7 +234,9 @@ Flujo normal: doble clic en `Analizar.bat` (la ventana corre estos mismos comand
            --frecuencia-estimulo 0.1
 
 `--procesos N` (en `main.py`) reparte los fotogramas entre N núcleos; por
-defecto, todos menos uno. El resultado es idéntico con cualquier N.
+defecto 2 (en la notebook de Franco, 4 núcleos, más procesos no ganan nada y 7
+es más lento: lo que tarda es leer el video, en serie). El resultado es
+idéntico con cualquier N.
 `--exigir-roi` hace que aborte si la ROI no cumple el criterio de aceptación,
 en vez de avisar y seguir emitiendo números. `--verbose` (en los tres scripts)
 imprime el detalle técnico; sin él la consola muestra solo resultados y AVISOS
@@ -238,10 +245,18 @@ cuando hay que actuar, y todo queda igual en los Excel. Si el gel se mueve más 
 `--half-window 30` en otra carpeta (`<video>_hw30`). Qué significa cada línea de
 la consola: `docs/guia-salida-consola.md`.
 
-Los resultados vigentes están en `data/processed_data/<video>/`, **sin sufijo**,
-regenerados al cerrar la Fase 4 (2026-10-07; la Fase 4 no cambió ninguna
-medición). Las corridas anteriores están en `data/processed_data/_superadas/`
-(`_v4`, `_v5`, `_v6` y `_v7`, la vigente hasta la Fase 4). **No guardar en
+Los resultados vigentes están en `data/processed_data/<carpeta>/`,
+regenerados el 2026-10-08 con `scripts/regenerar_todo.py` (nombres nuevos, sin
+cambiar ningún número). Las corridas anteriores, solo en el historial de git.
+Qué argumentos lleva cada carpeta está en `tests/referencia.py`: **304 y 341 van
+con `--half-window 30` aunque la carpeta no tenga el sufijo** (con 15, 341 da 16
+eventos en vez de 22). La frecuencia 0.1 Hz de los seis videos de `OK` y de 476
+**no está confirmada** por el equipo (la midió el propio pipeline); se mantiene
+para la regresión, y en videos nuevos no se pasa salvo que el equipo la confirme.
+
+**Verificar un cambio:** `python tests/test_regresion.py` (segundos) y, si se tocó
+ROI, bordes o RANSAC, `--completo`. Si el cambio es intencional y aprobado:
+`python tests/generar_referencia.py --aprobar "motivo"`. **No guardar en
 `processed_data` salidas del cuaderno**: el `contracciones.xlsx` (nombre viejo) de Video_prueba
 apareció reescrito con `win_s` fijo de 2 s (28 eventos; probablemente el
 cuaderno) y la regeneración lo devolvió a 29. Línea base: Video_prueba 29 eventos (6 estimulados, T = 10.00043 ±

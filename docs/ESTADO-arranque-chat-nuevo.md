@@ -42,7 +42,7 @@ Actualizado 2026-10-08 (tarde). Sirve para dos cosas: es el resumen del estado a
 
 ## Dónde está todo
 
-**Resultados vigentes:** `data/processed_data/<video>/`, sin sufijo. Las corridas anteriores están solo en el historial de git. Mediciones de las fases: `data/_mediciones_fases/`. Los videos crudos (`data/raw_videos/`) no están en git. `Video_068_hw30` es 068 corrido con `--half-window 30`; esa es la medición buena.
+**Resultados vigentes:** `data/processed_data/<video>/`, sin sufijo. Las corridas anteriores están solo en el historial de git. Mediciones de las fases: `data/_mediciones_fases/`. Los videos crudos (`data/raw_videos/`) no están en git. `Video_068_hw30` es 068 corrido con `--half-window 30` (la carpeta `Video_068` se borró); 304 y 341 también llevan `--half-window 30`. Argumentos de cada carpeta: `tests/referencia.py`. **Regresión con un comando:** `python tests/test_regresion.py` (agregar `--completo` si se tocó ROI, bordes o RANSAC).
 
 | documento (`docs/`) | para qué |
 |---|---|
@@ -110,6 +110,7 @@ Actualizado 2026-10-08 (tarde). Sirve para dos cosas: es el resumen del estado a
   - el sexto evento de 063 es real;
   - la ráfaga final de 583 es vibración.
 - **2026-10-08 (código, sin cambiar números):** Excel con el nombre del video (se aceptan los nombres viejos); video leído una vez menos, fotogramas en paralelo (`--procesos`) y RANSAC propio (igual al de sklearn): de 5–6 min a ~70 s por video; borradas opciones y scripts sin uso. CLAHE sobre la franja: medido y descartado. Mail a Cami con los RARITOS y preguntas (`docs/RARITOS_resultados_y_preguntas.pdf`).
+- **2026-10-08 (tarde):** resultados regenerados con nombres nuevos (sin cambiar números); test de regresión automático de los 11 videos; `--procesos` por defecto 2 (medido en la notebook).
 - **2026-10-07:** se procesaron los RARITOS. Después: consola clara, `--verbose`, sentido de los eventos corregido, figuras NO REPORTABLE, la ventana (`interfaz.py`) y la documentación ordenada.
 
 ## Límites conocidos del método

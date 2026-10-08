@@ -29,7 +29,7 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
 1. **Posición inicial de búsqueda del borde por mediana**, no por la proyección de máximos (068). Arreglaría el caso "gel que se mueve mucho" sin tener que usar `--half-window 30` a mano.
 2. **Ruido estimado solo en los tramos quietos.** En 341 el tren de 22 s infla el ruido (0.10 contra 0.034 px) y sube el umbral.
 3. **Análisis de optimización del código** (pedido por Franco):
-   - (a) **Tiempo.** Medido el 2026-10-08 (Video_prueba, 99 s en la máquina de prueba): ~40 % era leer el video 3 veces, ~60 % procesar los fotogramas (sobre todo RANSAC de sklearn, después bordes y CLAHE). **Hecho, sin cambiar ningún número (bit a bit):** marcas de tiempo y mapa de máximos en una sola lectura; fotogramas en paralelo (`--procesos`); sin los chequeos internos de sklearn. **RANSAC propio, hecho:** mismo algoritmo y mismo sorteo que sklearn, 5–6 veces más rápido por ajuste (Video_prueba en un núcleo: 81 → 60 s); en los seis videos, mismas columnas inlier, `center_px` idéntico y mismos conteos (test: `tests/test_ransac.py`). **CLAHE solo sobre la franja: medido y descartado (2026-10-08).** No da idéntico (el CLAHE de OpenCV no es independiente por baldosa: recortar cambia el resultado aunque se corte en los bordes de las baldosas). En los seis videos cambia `center_px` en 3–4 % de los fotogramas (hasta 0.047 px en 466, 0.029 px en 063), sin cambiar eventos, instantes ni amplitudes; gana solo ~10 % en un núcleo y nada en paralelo. No vale romper la regresión exacta por eso. Lo que más pesa ahora es leer el video (dos pasadas, en serie). H29 (¿un ajuste sin RANSAC sería menos ruidoso en 466?) sigue abierto. Varios videos a la vez: junto con C3 (procesar una carpeta).
+   - (a) **Tiempo.** Medido el 2026-10-08 (Video_prueba, 99 s en la máquina de prueba): ~40 % era leer el video 3 veces, ~60 % procesar los fotogramas (sobre todo RANSAC de sklearn, después bordes y CLAHE). **Hecho, sin cambiar ningún número (bit a bit):** marcas de tiempo y mapa de máximos en una sola lectura; fotogramas en paralelo (`--procesos`); sin los chequeos internos de sklearn. **RANSAC propio, hecho:** mismo algoritmo y mismo sorteo que sklearn, 5–6 veces más rápido por ajuste (Video_prueba en un núcleo: 81 → 60 s); en los seis videos, mismas columnas inlier, `center_px` idéntico y mismos conteos (test: `tests/test_ransac.py`). **CLAHE solo sobre la franja: medido y descartado (2026-10-08).** No da idéntico (el CLAHE de OpenCV no es independiente por baldosa: recortar cambia el resultado aunque se corte en los bordes de las baldosas). En los seis videos cambia `center_px` en 3–4 % de los fotogramas (hasta 0.047 px en 466, 0.029 px en 063), sin cambiar eventos, instantes ni amplitudes; gana solo ~10 % en un núcleo y nada en paralelo. No vale romper la regresión exacta por eso. Lo que más pesa ahora es leer el video (dos pasadas, en serie). H29 (¿un ajuste sin RANSAC sería menos ruidoso en 466?) sigue abierto. Varios videos a la vez: junto con C3 (procesar una carpeta). **En la notebook de Franco (4 núcleos, 2026-10-08) el paralelo casi no gana:** Video_prueba, solo `main.py`: 1 proceso 108 s, 2 → 102 s, 4 → 102 s, 7 (el default de entonces) → 127 s. Se pasó el default a 2. Falta medir cuánto tarda cada parte (lectura del video, mapa de máximos, fotogramas) en esa máquina para ver si conviene atacar la lectura.
    - (b) **Recortar código. Hecho (2026-10-08):** se borraron `--sep-s`, `--canal`, `--fit-method median`, `--maxproj`, `--table-format` y los scripts `medir_*.py`, `regenerar_fase4.py` e `inspect_frame.py` (siguen en el historial de git; sus mediciones, en `data/_mediciones_fases/`). También la separación vieja en dos poblaciones por amplitud (hoja `poblac_*`): no se usaba para clasificar.
 
 4. **Comparar `--edge-method sigmoid` y `--denoise` contra lo actual** (quedan en el código porque nunca se midieron; H28: sigmoid difiere del parabólico +0.24 px en media, 0.57 px de desvío). Si alguno no es mejor, borrarlo.
@@ -46,8 +46,20 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
    - un informe por video
    - un archivo de doble clic o una ventanita
    - un archivo de configuración
+   - **Ventana más linda y con visor de resultados** (pedido por Franco, 2026-10-08):
+     - pestañas (correr / resultados / opciones), con mejor aspecto;
+     - abrir los gráficos del video que se acaba de correr, o de cualquier carpeta de
+       `processed_data`, dentro de la ventana;
+     - gráficos interactivos: zoom, desplazarse y leer valores con el mouse (por
+       ejemplo, rehacer el de contracciones con la barra de herramientas de
+       matplotlib o con plotly, leyendo los Excel; no regenerar nada);
+     - ver al lado los números principales del `resumen` (eventos, k, período,
+       amplitud, avisos y NO REPORTABLE).
+     - Regla: la ventana solo lanza los scripts y muestra resultados; nunca calcula
+       (así no se vuelve más lenta ni puede dar números distintos de la consola).
+       Un gráfico en vivo, si se agrega, se redibuja cada 1–2 s como mucho.
 4. **Sacar el grosor (línea roja) del gráfico de contracciones** (`09_contracciones_*`) y dejarlo solo con `--verbose`: el adelgazamiento es diagnóstico y no se informa (CLAUDE.md, hallazgo 1), y en el gráfico invita a interpretarlo. No cambia ningún número. (Pedido por Franco, 2026-10-08.)
-5. Test de regresión automático contra los `contracciones_<video>.xlsx` vigentes (hoy se compara a mano).
+5. **Hecho (2026-10-08):** test de regresión automático (`tests/test_regresion.py`, referencia congelada en `tests/referencia_regresion.json`; `scripts/regenerar_todo.py` para regenerar).
 6. Intervalos de confianza por bootstrap para las medianas por video.
 7. Versiones fijas en `requirements.txt`.
 
@@ -68,7 +80,7 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
 7. 476: oscilación chica (~0.3–0.5 px) después de cada contracción, debajo del umbral. ¿Se repite en otros videos?
 
 ## E. Mantenimiento
-1. Regenerar las figuras de 341, 304 y `068_hw30` con el código nuevo, para que digan NO REPORTABLE en el título (613 ya está). Con la ventana: solo el paso 2, sobre la carpeta existente y con la frecuencia vacía. No cambia ningún número.
+1. **Hecho (2026-10-08):** los 11 resultados vigentes regenerados con el código nuevo (nombres nuevos, figuras NO REPORTABLE, resumen con las filas nuevas), sin cambiar ningún número. Se borró `Video_068` (sin hw30). Ojo: 304 y 341 se habían corrido con `--half-window 30` sin sufijo en la carpeta (anotado en `tests/referencia.py`). Queda sin regenerar el paso 3 de 476 (`movimiento.xlsx`, nombre viejo).
 2. **Hecho (2026-10-08):** documentación ordenada:
    - una sola fuente en `docs/` (con copia de los vigentes en el proyecto);
    - fases cerradas en `docs/historia/`;

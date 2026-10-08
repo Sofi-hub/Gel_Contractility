@@ -49,9 +49,11 @@ def parse_args():
                         "no hace falta.")
     p.add_argument("--output-dir", default=None,
                    help="Carpeta de salida. Por defecto: data/processed_data/<nombre_video>/")
-    p.add_argument("--procesos", type=int, default=max(1, (os.cpu_count() or 1) - 1),
+    p.add_argument("--procesos", type=int, default=min(2, os.cpu_count() or 1),
                    help="Cuantos fotogramas se procesan a la vez (nucleos del procesador). "
-                        "Por defecto, todos menos uno. 1 = en serie. El resultado es "
+                        "Por defecto 2: medido en una notebook de 4 nucleos (Video_prueba), "
+                        "1 -> 108 s, 2 -> 102 s, 4 -> 102 s, 7 -> 127 s; lo que tarda es "
+                        "leer el video, que va en serie. 1 = en serie. El resultado es "
                         "identico con cualquier valor; solo cambia la velocidad.")
     p.add_argument("--plot", action="store_true", help="Genera la curva de grosor vs tiempo")
 

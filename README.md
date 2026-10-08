@@ -29,7 +29,7 @@ python main.py --video "data/raw_videos/mi_video.mp4" \
                --base-tiempo pts
 
 python scripts/contraction_report.py \
-       --input data/processed_data/mi_video/serie_temporal.xlsx \
+       --input data/processed_data/mi_video/serie_temporal_mi_video.xlsx \
        --frecuencia-estimulo 0.1
 ```
 
@@ -55,7 +55,7 @@ Opcional, para confirmar el movimiento por un segundo método (intensidad, sin b
 
 ```bash
 python scripts/motion_check.py --video "data/raw_videos/mi_video.mp4" \
-       --serie data/processed_data/mi_video/serie_temporal.xlsx
+       --serie data/processed_data/mi_video/serie_temporal_mi_video.xlsx
 ```
 
 Qué significa cada línea que se imprime, qué es normal y qué contestar si
@@ -104,7 +104,7 @@ relativos (porcentaje del grosor, cocientes) o dentro de un mismo aumento.
     src/cinetica.py          TTP, RT50 y amplitud relativa, con cotas cuando no son medibles
     src/qc_visualization.py  overlays de diagnóstico y escritura de los Excel
     src/plotting.py          figuras numeradas
-    main.py                         paso 1: video -> serie_temporal.xlsx
+    main.py                         paso 1: video -> serie_temporal_<video>.xlsx
     scripts/contraction_report.py   paso 2: contracciones, ritmo y cinética
     scripts/motion_check.py         paso 3 (opcional): confirma el movimiento por intensidad
     scripts/signal_check.py         diagnóstico: ¿hay población de eventos?

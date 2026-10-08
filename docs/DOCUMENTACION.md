@@ -77,7 +77,7 @@ de más a menos exigente:
 tiene que ser **< 6 %**. La salida lo deja escrito (`ROI cumple criterio`), y
 con `--exigir-roi` el programa se detiene en vez de seguir con una zona mala.
 Si sale `solo_nitidez`, `franja_completa` o no cumple, se fuerza la zona a mano
-con `--x-start/--x-end` mirando `00_roi_profile.png`.
+con `--x-start/--x-end` mirando `00_roi_profile_<video>.png`.
 
 El ancho mínimo de la zona sale de cuántas columnas se muestrean y de cuán
 juntas pueden estar, no del largo del gel (una regla anterior que dependía del
@@ -260,8 +260,8 @@ hacen falta 200–300 fps. Detalle en `metricas-cinetica-TTP-RT50.md`.
 
 | script | qué hace |
 |---|---|
-| `main.py` | video → `serie_temporal.xlsx` (las cuatro series + hoja `resumen` con todos los parámetros), `00_roi_profile_<video>.png`, y con `--plot` `01_serie_temporal.png`. El mapa de máxima intensidad lo calcula internamente; `00_max_projection.png` como archivo lo guarda el cuaderno |
-| `scripts/contraction_report.py` | **el análisis principal**: serie temporal → `contracciones.xlsx` y las figuras `05_estabilidad_umbral`, `09_contracciones`, `10_ritmo` y `11_cinetica`. Es el **único** detector de eventos del proyecto: el viejo (`event_detection.py` y `analyze_contractions.py`) se borró el 2026-10-01 |
+| `main.py` | video → `serie_temporal_<video>.xlsx` (las cuatro series + hoja `resumen` con todos los parámetros), `00_roi_profile_<video>.png`, y con `--plot` `01_serie_temporal_<video>.png`. El mapa de máxima intensidad lo calcula internamente; `00_max_projection.png` como archivo lo guarda el cuaderno |
+| `scripts/contraction_report.py` | **el análisis principal**: serie temporal → `contracciones_<video>.xlsx` y las figuras `05_estabilidad_umbral`, `09_contracciones`, `10_ritmo` y `11_cinetica`. Es el **único** detector de eventos del proyecto: el viejo (`event_detection.py` y `analyze_contractions.py`) se borró el 2026-10-01 |
 | `scripts/inspect_frame.py` | revisa un solo fotograma: overlay de inliers/outliers y perfil de una columna. Para calibrar parámetros o entender por qué se descartó una columna |
 | `scripts/motion_check.py` | segunda opinión, sin usar los bordes: mide el desplazamiento de la franja por intensidad y lo compara con `center_px` (CONFIRMA / no confirma) |
 | `scripts/signal_check.py` | diagnóstico: ¿hay una población de eventos por encima del ruido en una serie? |

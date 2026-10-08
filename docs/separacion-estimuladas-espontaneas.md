@@ -142,7 +142,7 @@ suficiente como para que no encuentre el tren (Video_583 con el viejo `k=8`). Po
 ## Salidas
 
 `10_ritmo_*.png` (eventos coloreados por grupo, grilla marcada y el desvío de cada latido en ms) y,
-en `contracciones.xlsx`: `trenes_*` (cada búsqueda con su veredicto, z, p, captura), `ritmo_*`
+en `contracciones_<video>.xlsx`: `trenes_*` (cada búsqueda con su veredicto, z, p, captura), `ritmo_*`
 (resumen por grupo), `grilla_*`, `sacados_*` (R5), `dudosos_*` (R6) y `espont_*`.
 
 ## Limitaciones conocidas

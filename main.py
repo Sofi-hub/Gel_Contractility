@@ -115,7 +115,7 @@ def parse_args():
     p.add_argument("--verbose", action="store_true",
                    help="Imprime tambien el detalle tecnico (metodo de la zona, columnas "
                         "descartadas, zonas alternativas, diagnostico del ajuste). Todo eso "
-                        "queda igual guardado en serie_temporal.xlsx.")
+                        "queda igual guardado en serie_temporal_<video>.xlsx.")
 
     return p.parse_args()
 
@@ -233,7 +233,7 @@ def main():
         raise SystemExit(
             f"ABORTADO: la ROI varia {q.get('variacion_en_roi_pct')}% de grosor, "
             f"por encima del {args.roi_max_variacion}% admitido. Eso no es una "
-            f"gauge region. Mira 00_roi_profile.png y forza la ROI con "
+            f"gauge region. Mira 00_roi_profile_<video>.png y forza la ROI con "
             f"--x-start/--x-end, o corre sin --exigir-roi si sabes lo que haces.")
 
     out_dir = Path(args.output_dir) if args.output_dir else video_output_dir(args.video)
@@ -251,7 +251,7 @@ def main():
 
     alts = q.get("alternativas") or []
     extra = {"roi_alternativas": pd.DataFrame(alts)} if alts else None
-    saved = save_diagnostics(df, out_dir / "serie_temporal", fmt=args.table_format,
+    saved = save_diagnostics(df, out_dir / f"serie_temporal_{video_name}", fmt=args.table_format,
                              summary=summary, extra_sheets=extra)
     archivos.insert(0, Path(saved).name)
 

@@ -2,7 +2,7 @@
 
 Actualizada el 2026-10-07, después de limpiar la consola (commit `4e4d37e`). Explica **todo lo que puede aparecer en pantalla** al analizar un video, qué es normal, cuándo preocuparse y qué contestar si alguien pregunta. Los ejemplos son salidas reales de Video_476 (caso limpio), Video_613 (no reportable por vibración) y Video_068 (actividad continua).
 
-**Regla general:** lo que no aparece en pantalla igual queda guardado en los Excel (`serie_temporal.xlsx`, `contracciones.xlsx`, `movimiento.xlsx`). Para ver todo el detalle técnico también en pantalla, agregá `--verbose` al final de cualquier comando: esas líneas extra empiezan con `[detalle]`.
+**Regla general:** lo que no aparece en pantalla igual queda guardado en los Excel (`serie_temporal_<video>.xlsx`, `contracciones_<video>.xlsx`, `movimiento_<video>.xlsx`). Para ver todo el detalle técnico también en pantalla, agregá `--verbose` al final de cualquier comando: esas líneas extra empiezan con `[detalle]`.
 
 ---
 
@@ -11,7 +11,7 @@ Actualizada el 2026-10-07, después de limpiar la consola (commit `4e4d37e`). Ex
 Doble clic en **`Analizar.bat`** (en la carpeta del proyecto). Se abre una ventana:
 1. **Video:** botón "Elegir..." o arrastrar el archivo a la ventana. Para arrastrar hay que instalar una vez `pip install tkinterdnd2` con el entorno activado.
 2. **Guardar resultados en:** se completa sola con `data\processed_data\<nombre del video>`; se puede cambiar. El nombre de esa carpeta es el que aparece en los títulos de los gráficos y de las hojas del Excel.
-3. **Qué correr:** los tres pasos de la sección 1, por separado o juntos. Los pasos 2 y 3 usan el `serie_temporal.xlsx` que ya esté en la carpeta, así que se pueden repetir (por ejemplo, con otra frecuencia) sin volver a medir el gel.
+3. **Qué correr:** los tres pasos de la sección 1, por separado o juntos. Los pasos 2 y 3 usan el `serie_temporal_<video>.xlsx` que ya esté en la carpeta, así que se pueden repetir (por ejemplo, con otra frecuencia) sin volver a medir el gel.
 4. **Opciones:** frecuencia del estimulador, "el gel se mueve mucho" (`--half-window 30`) y detalle técnico (`--verbose`).
 5. **Analizar.** Abajo aparece en vivo lo mismo que en la consola: los avisos en rojo y los títulos en azul. "Detener" corta el paso en curso y "Abrir carpeta de resultados" abre la carpeta en el explorador de archivos.
 
@@ -41,7 +41,7 @@ python main.py --video "data\raw_videos\$v.mp4" --output-dir "data\processed_dat
 **Paso 2: buscar las contracciones.** Si saben a qué frecuencia estaba el estimulador (por ejemplo 0.1 Hz):
 
 ```
-python scripts\contraction_report.py --input "data\processed_data\$v\serie_temporal.xlsx" --frecuencia-estimulo 0.1
+python scripts\contraction_report.py --input "data\processed_data\$v\serie_temporal_$v.xlsx" --frecuencia-estimulo 0.1
 ```
 
 Si no lo saben, el mismo comando sin `--frecuencia-estimulo 0.1`. Si hubo dos frecuencias en el mismo video: `--frecuencia-estimulo 0.1 0.2`.
@@ -49,14 +49,14 @@ Si no lo saben, el mismo comando sin `--frecuencia-estimulo 0.1`. Si hubo dos fr
 **Paso 3 (opcional): confirmar el movimiento por otro método.** Mide la imagen entera sin usar los bordes y tarda unos minutos más:
 
 ```
-python scripts\motion_check.py --video "data\raw_videos\$v.mp4" --serie "data\processed_data\$v\serie_temporal.xlsx"
+python scripts\motion_check.py --video "data\raw_videos\$v.mp4" --serie "data\processed_data\$v\serie_temporal_$v.xlsx"
 ```
 
 **Si el paso 1 avisa que hay muchos fotogramas sin borde** (ver 2.4), repetir el paso 1 en otra carpeta con la ventana más grande y seguir desde ahí:
 
 ```
 python main.py --video "data\raw_videos\$v.mp4" --output-dir "data\processed_data\${v}_hw30" --base-tiempo pts --half-window 30
-python scripts\contraction_report.py --input "data\processed_data\${v}_hw30\serie_temporal.xlsx"
+python scripts\contraction_report.py --input "data\processed_data\${v}_hw30\serie_temporal_$v.xlsx"
 ```
 
 Todos los resultados quedan en `data\processed_data\<video>\`.
@@ -75,7 +75,7 @@ Zona analizada del gel: columnas 981 a 1249 (268 px de ancho)
 Fotogramas: 2165 | sin borde (descartados): 0 | dudosos: 0
 Medidas en pixeles (sin calibrar a mm, a proposito: los videos no tienen todos el mismo aumento).
 Archivos en data\processed_data\Video_476:
-  serie_temporal.xlsx
+  serie_temporal_<video>.xlsx
   00_roi_profile_Video_476_EXP5_FAPS5_40V.png
 ```
 
@@ -107,7 +107,7 @@ Siempre aparece. No se convierte a milímetros porque no todos los videos se gra
 
 **`Archivos en ...`**
 Dónde quedó todo:
-- `serie_temporal.xlsx`: la posición de los dos bordes del gel en cada fotograma.
+- `serie_temporal_<video>.xlsx`: la posición de los dos bordes del gel en cada fotograma.
 - `00_roi_profile_...png`: la figura de la zona elegida.
 
 ### Avisos posibles de `main.py` (solo aparecen si hay que hacer algo)
@@ -165,7 +165,7 @@ Video_476   (2165 fotogramas, 73.1 s, 30.00 fps)
     (con menos de 5 fotogramas no se puede dar un valor, solo un maximo: la contraccion es mas rapida que la camara)
 
 Archivos en data\processed_data\Video_476:
-  contracciones.xlsx
+  contracciones_<video>.xlsx
   05_estabilidad_umbral_Video_476.png
   09_contracciones_Video_476.png
   10_ritmo_Video_476.png
@@ -303,8 +303,8 @@ VEREDICTO: ¿el movimiento medido por bordes (center_px) se confirma midiendo
   -> CONFIRMA: los dos metodos ven el mismo movimiento (forma y tamano).
 ==========================================================================
 Archivos en data\processed_data\Video_476:
-  movimiento.xlsx
-  07_movimiento.png
+  movimiento_<video>.xlsx
+  07_movimiento_<video>.png
 ```
 
 Es una segunda opinión: mide el desplazamiento comparando la imagen entera entre fotogramas, sin usar los bordes.

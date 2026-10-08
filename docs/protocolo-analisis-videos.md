@@ -36,12 +36,12 @@ Los comandos (y la ventana `Analizar.bat`, que corre los mismos) están en
 - `--exigir-roi` hace que `main.py` **aborte** en vez de emitir números con una
   zona mala.
 - Opcionales cuando algo huele raro: `motion_check.py --video ... --serie
-  .../serie_temporal.xlsx` (confirma el movimiento por intensidad) y
-  `signal_check.py --input .../serie_temporal.xlsx` (¿hay población de eventos?).
+  .../serie_temporal_<video>.xlsx` (confirma el movimiento por intensidad) y
+  `signal_check.py --input .../serie_temporal_<video>.xlsx` (¿hay población de eventos?).
 
 ## Chequeos de aceptación por video
 
-1. **ROI**: `00_roi_profile.png` y la hoja `resumen`. Variación de grosor
+1. **ROI**: `00_roi_profile_<video>.png` y la hoja `resumen`. Variación de grosor
    dentro de la ROI **< 6 %**. La hoja registra `ROI cumple criterio`
    directamente. Métodos aceptables: `gauge_plana`, `gauge_cintura`,
    `gauge_rescate_plana` o `manual`. Si sale `solo_nitidez`,
@@ -89,7 +89,7 @@ Además: `n_eventos`, `intervalo_mediano_s`, `ruido_canal_px`, `k_usado`,
 `mesetas` y `conteo_reportable`. Desde la Fase 3, `ruido_borde_sup_px`,
 `ruido_borde_inf_px` y `cociente_ruido_bordes`: si un borde es mucho más
 ruidoso que el otro, revisar la ROI y ese borde (H54; todavía sin umbral).
-Todas salen en `contracciones.xlsx`.
+Todas salen en `contracciones_<video>.xlsx`.
 
 **Desde la Fase 2.2 (2026-10-01)** además: `win_s_usado` (ventana del detrend,
 automática), `conteo_por_ventana` (el conteo con 0.75×, 1× y 1.5× esa ventana:

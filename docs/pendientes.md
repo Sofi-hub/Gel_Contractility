@@ -33,7 +33,7 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
    - (b) **Recortar código:** opciones que ya no se usan (`--sep-s`, `--canal thickness_px`, `poblaciones`, adelgazamiento, `fit_method median`, `edge_method sigmoid`), los scripts `medir_*.py` de las fases ya cerradas, los cuadernos viejos y la copia vieja en `.claude/worktrees/`. Revisar uno por uno qué se borra y qué queda como diagnóstico.
 
 ## B2. Próximo paso de código (antes de lo demás)
-1. **Nombres de los Excel con el nombre del video**, como las figuras: `serie_temporal_<video>.xlsx`, `contracciones_<video>.xlsx` y `movimiento_<video>.xlsx`. Los scripts y la ventana tienen que aceptar también el nombre viejo, y hay que actualizar la documentación. No cambia números.
+1. **Hecho (2026-10-08).** **Nombres de los Excel con el nombre del video**, como las figuras: `serie_temporal_<video>.xlsx`, `contracciones_<video>.xlsx` y `movimiento_<video>.xlsx`. Los scripts y la ventana tienen que aceptar también el nombre viejo, y hay que actualizar la documentación. No cambia números.
 
 ## C. Herramientas nuevas (no cambian los números existentes)
 1. **Medida de actividad** para los videos con actividad continua (068, 304, 341), que corre después del reporte y no lo reemplaza. Mediría amplitud, fracción de tiempo activo, frecuencia y regularidad. Requisito: confirmar con un anclaje que lo que se mueve es el tejido y no toda la imagen. Esperar la respuesta de A2.
@@ -44,7 +44,7 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
    - un informe por video
    - un archivo de doble clic o una ventanita
    - un archivo de configuración
-4. Test de regresión automático contra los `contracciones.xlsx` vigentes (hoy se compara a mano).
+4. Test de regresión automático contra los `contracciones_<video>.xlsx` vigentes (hoy se compara a mano).
 5. Intervalos de confianza por bootstrap para las medianas por video.
 6. Versiones fijas en `requirements.txt`.
 

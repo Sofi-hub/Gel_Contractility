@@ -11,11 +11,12 @@ del otro, y muestra en vivo lo que imprimen. Los numeros son identicos a
 correrlos desde la consola.
 
 Pasos (se pueden elegir por separado o todos juntos):
-  1. Medir el gel        -> main.py           -> <carpeta>/serie_temporal.xlsx
-  2. Buscar contracciones-> contraction_report-> <carpeta>/contracciones.xlsx
-  3. Confirmar (2.o metodo) -> motion_check   -> <carpeta>/movimiento.xlsx
-Los pasos 2 y 3 usan el serie_temporal.xlsx de la carpeta de resultados, asi
-que se pueden correr despues sin repetir el paso 1.
+  1. Medir el gel        -> main.py           -> <carpeta>/serie_temporal_<video>.xlsx
+  2. Buscar contracciones-> contraction_report-> <carpeta>/contracciones_<carpeta>.xlsx
+  3. Confirmar (2.o metodo) -> motion_check   -> <carpeta>/movimiento_<video>.xlsx
+Los pasos 2 y 3 usan el serie_temporal de la carpeta de resultados, asi
+que se pueden correr despues sin repetir el paso 1. Tambien aceptan el
+nombre viejo (serie_temporal.xlsx, resultados anteriores al 2026-10-08).
 
 Arrastrar el video a la ventana necesita `pip install tkinterdnd2`. Sin eso,
 todo funciona igual con el boton "Elegir...".
@@ -31,6 +32,8 @@ import threading
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent
+sys.path.insert(0, str(RAIZ))
+from src.output_paths import buscar_serie  # noqa: E402  (solo pathlib)
 
 
 # --------------------------------------------------------------------------
@@ -54,7 +57,10 @@ def armar_comandos(video: str, carpeta: str, paso1: bool, paso2: bool, paso3: bo
         raise ValueError(f"No encuentro el video:\n{video}")
     if carpeta is None:
         raise ValueError("Falta elegir la carpeta de resultados.")
-    serie = carpeta / "serie_temporal.xlsx"
+    if paso1:   # todavia no existe: se sabe como se va a llamar
+        serie = carpeta / f"serie_temporal_{Path(video).stem}.xlsx"
+    else:       # nombre nuevo o, en resultados viejos, serie_temporal.xlsx
+        serie = buscar_serie(carpeta)
     if (paso2 or paso3) and not paso1 and not serie.is_file():
         raise ValueError(f"Para los pasos 2 y 3 sin el paso 1 tiene que existir:\n{serie}\n"
                          f"Corre primero el paso 1, o elegi la carpeta donde ya esta.")

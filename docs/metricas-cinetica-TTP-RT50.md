@@ -25,7 +25,7 @@ relaxation time (RT50) can also be calculated from contraction profiles").
 ## Veredicto
 
 **Factible, y tres de las seis ya las tenemos.** `Peak_Time`,
-`Peak_Amplitude` y `P2P` salen hoy de `contracciones.xlsx`. Faltan onset,
+`Peak_Amplitude` y `P2P` salen hoy de `contracciones_<video>.xlsx`. Faltan onset,
 offset, TTP y RT50, que son ~40 líneas sobre la detección de eventos que ya
 está validada.
 
@@ -132,7 +132,7 @@ Calculando sobre `center_px` el problema desaparece.
 ## Propuesta
 
 1. **Implementar onset/offset, TTP, RT50 y amplitud relativa** sobre nuestra
-   detección de eventos ya validada. Sale en `contracciones.xlsx` junto al
+   detección de eventos ya validada. Sale en `contracciones_<video>.xlsx` junto al
    resto.
 2. **Definir RT50 como manda el paper** (caída al 50 % de la amplitud), no
    como la mitad de la duración. Si el equipo quiere la métrica del script
@@ -221,7 +221,7 @@ eventos de la tabla de arriba (300/167 y 300/200 ms).
 
 **Verificación.**
 - Regresión: en los seis videos, todas las hojas y columnas que ya existían en
-  `contracciones.xlsx` dan exactamente lo mismo; la cinética sólo agrega.
+  `contracciones_<video>.xlsx` dan exactamente lo mismo; la cinética sólo agrega.
 - `tests/test_seleccion_k.py`: 10/10.
 - `tests/test_cinetica.py` (nuevo), con eventos sintéticos de cinética
   conocida muestreados a 30 fps con fase aleatoria y ruido: evento lento (TTP

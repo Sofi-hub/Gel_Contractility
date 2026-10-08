@@ -16,9 +16,16 @@ son píxeles**. Las figuras lo indican con "SIN CALIBRAR" en el título.
 Los resultados vigentes están en `data/processed_data/<video>/`, **sin sufijo**;
 las corridas anteriores (`_v4` a `_v7`) se borraron de la carpeta el 2026-10-08 y siguen en el historial de git (cualquier commit anterior a esa fecha).
 
+**Nombres (desde 2026-10-08):** todos los archivos llevan el nombre del video al final, como las
+figuras. `main.py` y `motion_check.py` lo toman del archivo de video; `contraction_report.py`, del
+nombre de la carpeta (en `Video_068_hw30` queda `serie_temporal_Video_068.xlsx` y
+`contracciones_Video_068_hw30.xlsx`). Los resultados anteriores tienen el nombre sin video
+(`serie_temporal.xlsx`, `contracciones.xlsx`, `movimiento.xlsx`, `07_movimiento.png`): los
+scripts y la ventana aceptan los dos.
+
 ---
 
-## 1. `serie_temporal.xlsx` — la salida principal de `main.py`
+## 1. `serie_temporal_<video>.xlsx` — la salida principal de `main.py`
 
 ### Hoja `diagnostics` — una fila por fotograma
 
@@ -87,7 +94,7 @@ zona con `--x-start/--x-end` si hiciera falta.
 
 ---
 
-## 2. `contracciones.xlsx` — salida de `contraction_report.py`
+## 2. `contracciones_<video>.xlsx` — salida de `contraction_report.py`
 
 **`estab_<serie>`** — el escaneo de estabilidad del umbral:
 
@@ -211,7 +218,7 @@ enganche de fase, no ésta.
 
 ---
 
-## 3. `movimiento.xlsx` — salida de `motion_check.py`
+## 3. `movimiento_<video>.xlsx` — salida de `motion_check.py`
 
 Esta herramienta responde una pregunta distinta: **qué se mueve**, sin usar la
 detección de bordes.
@@ -262,7 +269,7 @@ que alcanzó cada píxel a lo largo del vídeo**. Todo lo que se movió en algú
 momento queda iluminado, y por eso sirve para acotar dónde puede estar el borde
 en cualquier instante.
 
-### `00_roi_profile.png` — dos paneles apilados
+### `00_roi_profile_<video>.png` — dos paneles apilados
 - **Arriba:** `x` = columna de la imagen (px). `y` = **grosor de la franja en
   esa columna** (px), suavizado. La línea punteada horizontal es la **cintura**
   estimada del gel; la banda verde es la ROI elegida; las marcas rojas al pie
@@ -277,7 +284,7 @@ El título dice qué método de ROI ganó. **Aceptables:** `gauge_plana`,
 `gauge_cintura`, `gauge_rescate_plana` o `manual`. Si dice `solo_nitidez`,
 `franja_completa` o `fallback_margin`, la ROI está mal.
 
-### `01_serie_temporal.png`
+### `01_serie_temporal_<video>.png`
 `x` = tiempo (s). `y` = grosor (px). Gris = crudo, rojo = suavizado
 Savitzky-Golay. Sin anotaciones: es la vista honesta de la señal antes de que
 ningún detector la toque.
@@ -299,7 +306,7 @@ Si el rojo acompaña al azul y no hay franja verde, el título dice NO REPORTABL
 > frecuencia). La `05` vieja graficaba el escaneo de ese otro detector y no
 > mostraba los falsos.
 
-### `07_movimiento.png` — cuatro paneles apilados, `x` = tiempo (s)
+### `07_movimiento_<video>.png` — cuatro paneles apilados, `x` = tiempo (s)
 1. **Movimiento total:** rojo = gel, gris = fondo de control.
 2. **Movimiento por tercio axial:** dice si el movimiento es local o del puente.
 3. **Traslación vertical:** `y` = px. Es lo que el grosor **no** ve.

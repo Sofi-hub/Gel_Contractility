@@ -225,7 +225,7 @@ Flujo normal: doble clic en `Analizar.bat` (la ventana corre estos mismos comand
     python main.py --video "<ruta>" --output-dir data/processed_data/<nombre> \
            --base-tiempo pts
     python scripts/contraction_report.py \
-           --input data/processed_data/<nombre>/serie_temporal.xlsx \
+           --input data/processed_data/<nombre>/serie_temporal_<nombre>.xlsx \
            --frecuencia-estimulo 0.1
 
 `--exigir-roi` hace que aborte si la ROI no cumple el criterio de aceptación,
@@ -240,7 +240,7 @@ Los resultados vigentes están en `data/processed_data/<video>/`, **sin sufijo**
 regenerados al cerrar la Fase 4 (2026-10-07; la Fase 4 no cambió ninguna
 medición). Las corridas anteriores están en `data/processed_data/_superadas/`
 (`_v4`, `_v5`, `_v6` y `_v7`, la vigente hasta la Fase 4). **No guardar en
-`processed_data` salidas del cuaderno**: el `contracciones.xlsx` de Video_prueba
+`processed_data` salidas del cuaderno**: el `contracciones.xlsx` (nombre viejo) de Video_prueba
 apareció reescrito con `win_s` fijo de 2 s (28 eventos; probablemente el
 cuaderno) y la regeneración lo devolvió a 29. Línea base: Video_prueba 29 eventos (6 estimulados, T = 10.00043 ±
 0.0023 s); 063: 6; 268: 6; 466: 5 (ROI automática); 583: 6; 491: 2.

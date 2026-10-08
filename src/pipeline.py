@@ -320,7 +320,7 @@ def describe_roi(roi: dict, image_width: int, detallado: bool = False) -> None:
     """Imprime la zona analizada (ROI). Corto por defecto; todo con `detallado`.
 
     Lo que aca no se imprime queda igual en la hoja `resumen` de
-    serie_temporal.xlsx (y la tabla de alternativas en `roi_alternativas`).
+    serie_temporal_<video>.xlsx (y la tabla de alternativas en `roi_alternativas`).
     Los AVISOS salen solo cuando hay que hacer algo.
     """
     q = roi.get("roi_quality", {})

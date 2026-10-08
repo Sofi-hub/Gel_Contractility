@@ -28,21 +28,21 @@ hacia qué lado está la cola pesada. Una población de contracciones da una
 cola larga hacia UN lado (cuál, depende del eje); el ruido es simétrico.
 
 VEREDICTO (Fase 4): compara desp_vert_px (intensidad, sin bordes) con
-center_px de serie_temporal.xlsx (bordes). Si coinciden en forma y magnitud,
+center_px de serie_temporal_<video>.xlsx (bordes). Si coinciden en forma y magnitud,
 la medida principal queda confirmada por un método independiente. Las
 diferencias |I(t)-I(t-1)| son informativas: no deciden nada.
 
 Uso:
     python scripts/motion_check.py --video data/raw_videos/mi_video.mp4 \
-        --serie data/processed_data/mi_video/serie_temporal.xlsx
+        --serie data/processed_data/mi_video/serie_temporal_mi_video.xlsx
 
 Las salidas van a la carpeta de --serie (la del video). Sin --serie ni
 --output-dir, van a qc_output/<nombre del video>/ (antes iban todas a
 qc_output/ y se pisaban entre videos).
 
 Salidas:
-    07_movimiento.png      grafico multipanel de todos los canales
-    movimiento.xlsx        la tabla, para analizar aparte
+    07_movimiento_<video>.png  grafico multipanel de todos los canales
+    movimiento_<video>.xlsx  la tabla, para analizar aparte
 """
 
 from __future__ import annotations
@@ -62,6 +62,7 @@ from scipy.signal import welch
 
 from src import io_utils, preprocessing
 from src.pipeline import describe_roi
+from src.output_paths import buscar_serie
 
 
 # ------------------------------------------------------------------
@@ -172,7 +173,7 @@ def parse_args():
     p.add_argument("--max-frames", type=int, default=None)
     p.add_argument("--verbose", action="store_true",
                    help="Imprime tambien la tabla por canal, la zona y el detalle de |dI|. "
-                        "Todo queda igual en movimiento.xlsx.")
+                        "Todo queda igual en movimiento_<video>.xlsx.")
     return p.parse_args()
 
 
@@ -305,7 +306,7 @@ def main():
     print("=" * 74)
     print("VEREDICTO: ¿el movimiento medido por bordes (center_px) se confirma midiendo")
     print("           la imagen entera por otro metodo (intensidad)?")
-    serie = Path(a.serie) if a.serie else out / "serie_temporal.xlsx"
+    serie = Path(a.serie) if a.serie else buscar_serie(out)
     veredicto = {"serie_comparada": str(serie)}
     if serie.exists():
         st = pd.read_excel(serie, sheet_name="diagnostics")
@@ -383,10 +384,11 @@ def main():
     for axx in axes:
         axx.grid(alpha=0.3)
     fig.tight_layout()
-    png = out / "07_movimiento.png"
+    nombre_video = Path(a.video).stem
+    png = out / f"07_movimiento_{nombre_video}.png"
     fig.savefig(png, dpi=140); plt.close(fig)
 
-    xlsx = out / "movimiento.xlsx"
+    xlsx = out / f"movimiento_{nombre_video}.xlsx"
     with pd.ExcelWriter(xlsx) as w:
         df.to_excel(w, sheet_name="movimiento", index=False)
         resumen.to_excel(w, sheet_name="resumen_canales", index=False)

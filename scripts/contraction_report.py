@@ -40,7 +40,7 @@ Consecuencia practica:
     biomecanicamente interesante; lo que no sirve es usarlo para DETECTAR.
 
 Uso:
-    python scripts/contraction_report.py --input data/processed_data/mi_video/serie_temporal.xlsx
+    python scripts/contraction_report.py --input data/processed_data/mi_video/serie_temporal_mi_video.xlsx
     python scripts/contraction_report.py --input A.xlsx --compare B.xlsx
 """
 
@@ -570,7 +570,7 @@ def _ms(x) -> str:
 def imprimir(nombre: str, a: dict, detallado: bool = False) -> None:
     """Lo que se ve en pantalla. Corto por defecto: resultado, ritmo y cinetica,
     con AVISOS solo cuando hay que hacer algo. `detallado` (--verbose) agrega
-    el detalle tecnico. TODO lo que aca no se imprime esta en contracciones.xlsx
+    el detalle tecnico. TODO lo que aca no se imprime esta en contracciones_<carpeta>.xlsx
     (escaneo en `estab_*`, ruidos y ventanas en `resumen_*`, z/jitter en
     `trenes_*`, cinetica por grupo en `cin_grupos_*`, etc.)."""
     print("=" * 74)
@@ -1043,7 +1043,7 @@ def parse_args():
     p.add_argument("--verbose", action="store_true",
                    help="Imprime tambien el detalle tecnico (escaneo del umbral, ruidos por "
                         "borde, ventanas, z/jitter, grupos, adelgazamiento). Todo eso queda "
-                        "igual guardado en contracciones.xlsx.")
+                        "igual guardado en contracciones_<carpeta>.xlsx.")
     return p.parse_args()
 
 
@@ -1090,7 +1090,8 @@ def main():
     png_cinetica = graficar_cinetica(resultados, out / f"11_cinetica_{nombre_video}.png")
     png_estab = graficar_estabilidad(resultados, out / f"05_estabilidad_umbral_{nombre_video}.png")
 
-    with pd.ExcelWriter(out / "contracciones.xlsx", engine="openpyxl") as w:
+    xlsx_contr = out / f"contracciones_{nombre_video}.xlsx"
+    with pd.ExcelWriter(xlsx_contr, engine="openpyxl") as w:
         for nombre, r in resultados:
             r["estabilidad"].to_excel(w, sheet_name=f"estab_{nombre[:20]}", index=False)
             fila = {kk: vv for kk, vv in r.items()
@@ -1124,7 +1125,7 @@ def main():
 
     print()
     print(f"Archivos en {out}:")
-    for f in ("contracciones.xlsx", png_estab, png_contracciones, png_ritmo, png_cinetica):
+    for f in (xlsx_contr, png_estab, png_contracciones, png_ritmo, png_cinetica):
         if f:
             print(f"  {Path(f).name}")
 

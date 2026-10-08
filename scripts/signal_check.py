@@ -3,7 +3,7 @@ scripts/signal_check.py
 ------------------------
 ¿Hay una población de contracciones en esta serie, sí o no?
 
-Se corre sobre el `serie_temporal.xlsx` que produce main.py y responde
+Se corre sobre el `serie_temporal_<video>.xlsx` que produce main.py y responde
 esa pregunta ANTES de discutir umbrales, k, agudeza o conteos.
 
 POR QUÉ HACE FALTA, además de la curva de estabilidad del umbral
@@ -43,7 +43,7 @@ falsos hacia arriba, y eso destruye justamente la asimetría que se
 quiere medir. Acá la deriva se quita con una MEDIANA móvil.
 
 Uso:
-    python scripts/signal_check.py --input data/processed_data/mi_video/serie_temporal.xlsx
+    python scripts/signal_check.py --input data/processed_data/mi_video/serie_temporal_mi_video.xlsx
     python scripts/signal_check.py --input A.xlsx --compare B.xlsx   (control positivo)
 """
 
@@ -111,7 +111,7 @@ def parse_args():
     p = argparse.ArgumentParser(
         description="Test de asimetria: hay o no una poblacion de contracciones",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    p.add_argument("--input", required=True, help="serie_temporal.xlsx (salida de main.py)")
+    p.add_argument("--input", required=True, help="serie_temporal_<video>.xlsx (salida de main.py; tambien el nombre viejo)")
     p.add_argument("--compare", default=None,
                    help="Segunda serie para comparar (ideal: un video que SI contrae, "
                         "como control positivo).")

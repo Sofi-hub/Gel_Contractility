@@ -37,3 +37,19 @@ def video_output_dir(source: str | Path, root: Path | None = None,
     if create:
         out.mkdir(parents=True, exist_ok=True)
     return out
+
+
+def buscar_serie(carpeta: str | Path) -> Path:
+    """
+    El Excel de la serie temporal dentro de una carpeta de resultados.
+
+    Desde 2026-10-08 se llama `serie_temporal_<video>.xlsx`; antes,
+    `serie_temporal.xlsx`. Se aceptan los dos para no romper resultados
+    viejos: primero el nombre nuevo, y si no hay, el viejo. Si no existe
+    ninguno devuelve la ruta vieja (el que llama decide qué avisar).
+    """
+    carpeta = Path(carpeta)
+    nuevos = sorted(carpeta.glob("serie_temporal_*.xlsx"))
+    if nuevos:
+        return nuevos[0]
+    return carpeta / "serie_temporal.xlsx"

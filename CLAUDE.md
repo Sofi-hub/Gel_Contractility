@@ -144,7 +144,7 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
 ## Stack Tecnológico
 
 `opencv-python` (video e imagen), `numpy`, `scipy` (señal y picos),
-`scikit-learn` (RANSAC), `matplotlib` (QC), `pandas` y `openpyxl` (salidas).
+`scikit-learn` (solo el sorteador de RANSAC; el ajuste es propio desde 2026-10-08), `matplotlib` (QC), `pandas` y `openpyxl` (salidas).
 
 ## Reglas Estrictas para el Código
 
@@ -197,7 +197,7 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
 
     src/preprocessing.py     CLAHE + auto-ROI (gauge region) + rescate por barrido
     src/edge_detection.py    borde subpíxel por columna
-    src/robust_fitting.py    RANSAC grado 2, umbral adaptativo
+    src/robust_fitting.py    RANSAC grado 2 (propio, igual al de sklearn), umbral adaptativo
     src/io_utils.py          lectura de video + timestamps (read_pts_seconds)
     src/pipeline.py          orquestador -> 4 series por fotograma
     src/rhythm_split.py      estimuladas vs espontáneas (enganche de fase)
@@ -215,6 +215,7 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     tests/test_ritmo.py             estimuladas/espontáneas: pulsos que fallan, R5, R6, veredictos
     tests/test_roi.py               elección de ROI: columnas adaptables, piso 40, rescate con cintura
     tests/test_diagnosticos.py      motion_check (corrimiento conocido), signal_check, junto_al_borde
+    tests/test_ransac.py            el RANSAC propio da lo mismo que el de sklearn (grados 1-3)
     interfaz.py + Analizar.bat      ventana para correr los pasos sin consola (no calcula nada propio)
     docs/                           documentación vigente; docs/historia/ = propuestas y diagnósticos de fases cerradas
     docs/pendientes.md              la lista ÚNICA de lo que falta

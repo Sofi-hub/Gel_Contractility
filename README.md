@@ -97,7 +97,7 @@ relativos (porcentaje del grosor, cocientes) o dentro de un mismo aumento.
     src/io_utils.py          lectura del video y de sus timestamps
     src/preprocessing.py     CLAHE + detección automática de la zona útil
     src/edge_detection.py    borde subpíxel por columna
-    src/robust_fitting.py    RANSAC grado 2 con umbral adaptativo
+    src/robust_fitting.py    RANSAC grado 2 (propio) con umbral adaptativo
     src/pipeline.py          orquestador -> 4 series por fotograma
     src/estadistica.py       MAD, mediana móvil y búsqueda de picos (una sola copia, tolera NaN)
     src/rhythm_split.py      estimuladas vs espontáneas por enganche de fase
@@ -109,7 +109,7 @@ relativos (porcentaje del grosor, cocientes) o dentro de un mismo aumento.
     scripts/motion_check.py         paso 3 (opcional): confirma el movimiento por intensidad
     scripts/signal_check.py         diagnóstico: ¿hay población de eventos?
     interfaz.py, Analizar.bat       la ventana
-    tests/test_*.py                 siete pruebas: python tests/test_<nombre>.py
+    tests/test_*.py                 ocho pruebas: python tests/test_<nombre>.py
 
 Resultados vigentes: `data/processed_data/<video>/` (sin sufijo). Las corridas
 anteriores están archivadas en `data/processed_data/_superadas/`.

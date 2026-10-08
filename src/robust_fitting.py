@@ -46,13 +46,66 @@ cada frame, en vez de estar calibrado a un único video de ejemplo.
 from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
-import warnings
-import sklearn
-from sklearn.linear_model import RANSACRegressor
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.pipeline import make_pipeline
 
 from src.estadistica import mad as _mad
+
+
+# --------------------------------------------------------------------------
+# RANSAC PROPIO (2026-10-08). Mismo algoritmo que el RANSACRegressor de
+# sklearn, paso por paso, sin su estructura de objetos (que era casi todo el
+# costo: ~7 ms por ajuste contra ~1.3 ms, y ~4000 ajustes por video):
+#   - 4 columnas al azar por intento (sklearn usa n_variables + 1 = 4 con la
+#     parabola [1, x, x^2]), sorteadas con EL MISMO sorteador y la misma
+#     semilla que sklearn (`sample_without_replacement`, RandomState(0));
+#   - inlier = |residuo| <= umbral; gana el intento con mas inliers y, si
+#     empatan, el de mejor R^2 sobre sus inliers (empate exacto: el ultimo);
+#   - corte dinamico de intentos con probabilidad 0.99, maximo `max_trials`;
+#   - ajuste final por minimos cuadrados con los inliers del mejor intento.
+# Medido en los seis videos validados: las mismas columnas inlier en todos los
+# fotogramas, center_px identico, mismos conteos; las cuentas difieren solo en
+# la cifra 12. Test: tests/test_ransac.py.
+# --------------------------------------------------------------------------
+
+
+def _parabola(xn, y, degree=2):
+    A = np.vander(xn, degree + 1)             # columnas x^d ... x, 1
+    return np.linalg.lstsq(A, y, rcond=None)[0]
+
+
+def _r2(y, yp):
+    ss_tot = float(((y - y.mean()) ** 2).sum())
+    ss_res = float(((y - yp) ** 2).sum())
+    if ss_tot == 0.0:
+        return 1.0 if ss_res == 0.0 else 0.0   # como sklearn.metrics.r2_score
+    return 1.0 - ss_res / ss_tot
+
+
+def _ransac_propio(xn, y, thr, max_trials, degree=2, stop_probability=0.99):
+    from sklearn.utils.random import sample_without_replacement
+    n, m = len(xn), degree + 2          # como sklearn: n_variables + 1
+    rs = np.random.RandomState(0)
+    best_n, best_score, best_mask = 1, -np.inf, None
+    tope, t = max_trials, 0
+    while t < tope:
+        t += 1
+        idx = sample_without_replacement(n, m, random_state=rs)
+        coef = _parabola(xn[idx], y[idx], degree)
+        mask = np.abs(y - np.polyval(coef, xn)) <= thr
+        k = int(mask.sum())
+        if k < best_n:
+            continue
+        score = _r2(y[mask], np.polyval(coef, xn[mask]))
+        if k == best_n and score < best_score:
+            continue
+        best_n, best_score, best_mask = k, score, mask
+        ratio = k / n
+        nom = max(np.spacing(1), 1 - stop_probability)
+        den = max(np.spacing(1), 1 - ratio ** m)
+        dyn = 0 if nom == 1 else (float("inf") if den == 1 else abs(float(np.ceil(np.log(nom) / np.log(den)))))
+        tope = min(tope, dyn)
+    if best_mask is None:
+        raise ValueError("RANSAC propio: ningun intento valido")
+    return best_mask, _parabola(xn[best_mask], y[best_mask], degree)
 
 
 @dataclass
@@ -157,39 +210,16 @@ def fit_edge_ransac(
     else:
         thr = float(residual_threshold)
 
-    model = make_pipeline(
-        PolynomialFeatures(degree=degree),
-        RANSACRegressor(residual_threshold=thr, random_state=0, max_trials=max_trials),
-    )
-    # Con muy pocas columnas validas sklearn avisa "R^2 score is not
-    # well-defined..." en cada fotograma. Ese aviso no cambia el ajuste y tapa
-    # la pantalla: se silencia aca, y main.py da un aviso claro si hay muchos
-    # fotogramas sin borde.
-    #
-    # VELOCIDAD (2026-10-08): sklearn revisa en cada llamada que los datos
-    # sean numeros finitos y que los parametros tengan el tipo correcto. Se
-    # lo llama ~4000 veces por video con datos ya filtrados (sin NaN, linea
-    # `valid` de arriba) y parametros fijos, asi que esos chequeos nunca
-    # encuentran nada. Saltearlos no cambia ninguna cuenta (verificado bit a
-    # bit en Video_prueba) y ahorra ~7 % del tiempo.
-    with warnings.catch_warnings(), sklearn.config_context(
-            assume_finite=True, skip_parameter_validation=True):
-        warnings.filterwarnings("ignore", message=".*R\\^2 score is not well-defined.*")
-        warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
-        model.fit(xn.reshape(-1, 1), y_valid)
+    inlier_mask_valid, coef = _ransac_propio(xn, y_valid, thr, max_trials, degree)
 
-        ransac: RANSACRegressor = model.named_steps["ransacregressor"]
-        inlier_mask_valid = ransac.inlier_mask_
+    # Máscara de inliers en el espacio ORIGINAL de x (las columnas que ya
+    # eran NaN quedan marcadas como outlier)
+    full_inlier_mask = np.zeros_like(x, dtype=bool)
+    full_inlier_mask[valid] = inlier_mask_valid
 
-        # Máscara de inliers en el espacio ORIGINAL de x (las columnas que ya
-        # eran NaN quedan marcadas como outlier)
-        full_inlier_mask = np.zeros_like(x, dtype=bool)
-        full_inlier_mask[valid] = inlier_mask_valid
-
-        xn_all = (x.astype(np.float64) - x0) / scale
-        y_fitted_all = model.predict(xn_all.reshape(-1, 1))
-
-        resid_in = y_valid[inlier_mask_valid] - model.predict(xn[inlier_mask_valid].reshape(-1, 1))
+    xn_all = (x.astype(np.float64) - x0) / scale
+    y_fitted_all = np.polyval(coef, xn_all)
+    resid_in = y_valid[inlier_mask_valid] - np.polyval(coef, xn[inlier_mask_valid])
 
     return RobustEdgeFit(
         x=x,

@@ -52,6 +52,13 @@ Dos advertencias prácticas sobre los timestamps:
 
 ## Fotogramas perdidos por video
 
+> **Valores vigentes (2026-10-08, hoja `resumen` de cada `serie_temporal.xlsx`).** La tabla de abajo es
+> de la primera medición; los conteos vigentes difieren levemente (no quedó anotado por qué). Hoy:
+> Video_prueba 7 huecos / 27 fotogramas (1.33 %), 063 22 / 23 (1.23 %), 268 17 / 41 (1.76 %),
+> **466 24 / 102 (4.68 %)**, 491 6 / 28 (1.49 %), 583 4 / 33 (1.45 %); RARITOS: 476 1.9 %, 613 2.3 %,
+> 068 2.3 %, 304 2.1 %, 341 1.7 %. La conclusión no cambia: con `--base-tiempo pts` no afectan.
+> El período de cada tren, vigente, está en `separacion-estimuladas-espontaneas.md`.
+
 Un hueco es un `dt` que vale un múltiplo entero del `dt` mediano:
 
 | video | huecos | fotogramas perdidos | % |

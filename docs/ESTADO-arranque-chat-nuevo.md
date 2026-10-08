@@ -42,7 +42,7 @@ Actualizado 2026-10-08. Sirve para dos cosas: es el resumen del estado actual, y
 
 ## Dónde está todo
 
-**Resultados vigentes:** `data/processed_data/<video>/`, sin sufijo. Las corridas anteriores están en `data/processed_data/_superadas/` (no usar). `Video_068_hw30` es 068 corrido con `--half-window 30`; esa es la medición buena.
+**Resultados vigentes:** `data/processed_data/<video>/`, sin sufijo. Las corridas anteriores están solo en el historial de git. Mediciones de las fases: `data/_mediciones_fases/`. Los videos crudos (`data/raw_videos/`) no están en git. `Video_068_hw30` es 068 corrido con `--half-window 30`; esa es la medición buena.
 
 | documento (`docs/`) | para qué |
 |---|---|

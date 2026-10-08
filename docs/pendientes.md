@@ -32,6 +32,9 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
    - (a) **Tiempo:** hoy tarda 5–6 min por video. Primero medir dónde se va el tiempo con un perfilador; se sospecha de RANSAC y de que el video se lee 3 veces. Sin cambiar números: leer el video una sola vez y procesar varios videos en paralelo. Cambiando números (con regresión): un RANSAC propio y CLAHE solo sobre la franja.
    - (b) **Recortar código:** opciones que ya no se usan (`--sep-s`, `--canal thickness_px`, `poblaciones`, adelgazamiento, `fit_method median`, `edge_method sigmoid`), los scripts `medir_*.py` de las fases ya cerradas, los cuadernos viejos y la copia vieja en `.claude/worktrees/`. Revisar uno por uno qué se borra y qué queda como diagnóstico.
 
+## B2. Próximo paso de código (antes de lo demás)
+1. **Nombres de los Excel con el nombre del video**, como las figuras: `serie_temporal_<video>.xlsx`, `contracciones_<video>.xlsx` y `movimiento_<video>.xlsx`. Los scripts y la ventana tienen que aceptar también el nombre viejo, y hay que actualizar la documentación. No cambia números.
+
 ## C. Herramientas nuevas (no cambian los números existentes)
 1. **Medida de actividad** para los videos con actividad continua (068, 304, 341), que corre después del reporte y no lo reemplaza. Mediría amplitud, fracción de tiempo activo, frecuencia y regularidad. Requisito: confirmar con un anclaje que lo que se mueve es el tejido y no toda la imagen. Esperar la respuesta de A2.
 2. **Detector de vibración** usando una referencia fija con textura (el anclaje). En 068, 304 y 341 los anillos del anclaje sirvieron; en 583 no había ninguna referencia usable.
@@ -62,11 +65,12 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
 7. 476: oscilación chica (~0.3–0.5 px) después de cada contracción, debajo del umbral. ¿Se repite en otros videos?
 
 ## E. Mantenimiento
-1. Regenerar las figuras de los cuatro NO REPORTABLE (613, 341, 304 y `068_hw30`) con el código nuevo, para que digan NO REPORTABLE en el título. Con la ventana, solo el paso 2, sobre la carpeta existente; no cambia ningún número.
+1. Regenerar las figuras de 341, 304 y `068_hw30` con el código nuevo, para que digan NO REPORTABLE en el título (613 ya está). Con la ventana: solo el paso 2, sobre la carpeta existente y con la frecuencia vacía. No cambia ningún número.
 2. **Hecho (2026-10-08):** documentación ordenada:
    - una sola fuente en `docs/` (con copia de los vigentes en el proyecto);
    - fases cerradas en `docs/historia/`;
    - `CLAUDE.md`, `README.md`, `ESTADO`, protocolo, referencia y `DOCUMENTACION` al día;
    - borrados los duplicados (`gel_fix`, `LEEME`, `LEEME_v3`, `order.txt`, `qc_output/`);
    - borradas las copias viejas de código del proyecto.
-3. Hay dos cuadernos en la raíz: `Analisis_Contractilidad_v4.ipynb` y `Analisis_Contractilidad_v4-1.ipynb`. Decidir cuál queda.
+   - carpeta ordenada: borrados `_superadas/` (sigue en el historial de git), `ordenar_carpeta.py` y la copia vieja en `.claude/worktrees/`; mediciones de fases en `data/_mediciones_fases/`; los videos crudos dejaron de guardarse en git (`.gitignore`). El historial viejo de git todavía los contiene: achicar el repo exigiría reescribirlo (no recomendado).
+3. **Hecho:** queda un solo cuaderno, `Analisis_Contractilidad_v4.ipynb`. `v4-1` era una versión anterior: todavía tenía `SEP_S` y 28 eventos.

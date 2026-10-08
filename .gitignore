@@ -1,3 +1,10 @@
 __pycache__/
 .ipynb_checkpoints/
 .venv/
+
+# salidas viejas y copias locales
+qc_output/
+.claude/
+
+# videos crudos: pesados y no cambian; se guardan fuera de git
+data/raw_videos/

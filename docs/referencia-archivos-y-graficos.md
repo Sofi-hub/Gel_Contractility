@@ -13,10 +13,8 @@ en la pantalla".
 `px_to_mm` vale 1.0 por decisión del proyecto, así que **todo lo que dice "mm"
 son píxeles**. Las figuras lo indican con "SIN CALIBRAR" en el título.
 
-Los resultados vigentes están en `data/processed_data/<video>/`, **sin sufijo**.
-Las corridas anteriores (las primeras, `_v4` y `_v5`) están archivadas en
-`data/processed_data/_superadas/`. Los vigentes se generaron como `<video>_v6`
-y `ordenar_carpeta.py` les quitó el sufijo al archivar el resto.
+Los resultados vigentes están en `data/processed_data/<video>/`, **sin sufijo**;
+las corridas anteriores (`_v4` a `_v7`) se borraron de la carpeta el 2026-10-08 y siguen en el historial de git (cualquier commit anterior a esa fecha).
 
 ---
 

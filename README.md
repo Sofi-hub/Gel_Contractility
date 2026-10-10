@@ -115,7 +115,9 @@ relativos (porcentaje del grosor, cocientes) o dentro de un mismo aumento.
     scripts/contraction_report.py   paso 2: contracciones, ritmo y cinética
     scripts/motion_check.py         paso 3 (opcional): confirma el movimiento por intensidad
     scripts/signal_check.py         diagnóstico: ¿hay población de eventos?
-    scripts/procesar_carpeta.py     una carpeta entera: los pasos 1-2(-3) por video y una tabla resumen
+    scripts/procesar_carpeta.py     una carpeta entera: los pasos por video y una tabla resumen
+    scripts/informe.py              paso 4: un informe HTML de una página por video, para mandar
+    configuracion.ini               con qué arranca la ventana (frecuencia, pasos, carpeta)
     interfaz.py, Analizar.bat       la ventana
     tests/test_*.py                 diez pruebas: python tests/test_<nombre>.py
     tests/test_regresion.py         la regresión de los 11 videos (--completo: desde el video)

@@ -54,5 +54,29 @@ with tempfile.TemporaryDirectory() as tmp:
     (Path(tmp) / "a.mp4").touch(); (Path(tmp) / "b.txt").touch()
     check("listar_videos", [p.name for p in pc.listar_videos(Path(tmp))] == ["a.mp4"])
 
+# configuracion.ini
+with tempfile.TemporaryDirectory() as tmp:
+    ini = Path(tmp) / "c.ini"
+    ini.write_text("[ventana]\nfrecuencia = 0.1 ; comentario\npasos = 2 4\ndetalle = si\n", encoding="utf-8")
+    c = interfaz.leer_configuracion(ini)
+    check("configuracion leida", c["frecuencia"] == "0.1" and c["pasos"] == {2, 4} and c["detalle"])
+    c = interfaz.leer_configuracion(Path(tmp) / "no_existe.ini")
+    check("sin configuracion: valores de siempre", c["pasos"] == {1, 2, 4} and c["frecuencia"] == "")
+    (Path(tmp) / "serie_temporal_x.xlsx").touch()
+    c = interfaz.armar_comandos(str(ini), tmp, False, False, False, paso4=True)
+    check("paso 4 solo arma el informe", len(c) == 1 and c[0][1][2].endswith("informe.py"))
+
+# informe sobre una carpeta vigente (solo lee)
+if (P / "Video_prueba").is_dir():
+    import informe
+    with tempfile.TemporaryDirectory() as tmp:
+        import shutil
+        for f in (P / "Video_prueba").glob("*.xlsx"):
+            shutil.copy(f, tmp)
+        h = informe.generar(Path(tmp)).read_text(encoding="utf-8")
+        check("informe: frase con 29 contracciones y 6 estimuladas",
+              "29 contracciones" in h and "<b>6</b> siguen al estimulador" in h)
+        check("informe: amplitud 2.31 %", "2.31 %" in h)
+
 print("\nTODO OK" if ok else "\nHAY FALLAS")
 sys.exit(0 if ok else 1)

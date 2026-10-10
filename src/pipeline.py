@@ -295,9 +295,13 @@ def process_video(
         faltantes = float((np.round(huecos / dt_med) - 1).sum())
         frac_faltantes = faltantes / max(n_pts + faltantes, 1.0)
         n_huecos = int(len(huecos))
+        # D6/H15: fraccion de intervalos identicos al mediano (+-1 us). En los 11
+        # videos reales es 35-50 %; si el contenedor inventa los tiempos, ~100 %.
+        dt_identicos = float(np.mean(np.abs(dts - dt_med) < 1e-6))
     else:
         dt_med = fps_pts = faltantes = frac_faltantes = float("nan")
         n_huecos = 0
+        dt_identicos = float("nan")
 
     roi = preprocessing.auto_detect_roi(
         max_proj,
@@ -345,6 +349,7 @@ def process_video(
     df.attrs["frac_frames_faltantes"] = frac_faltantes
     df.attrs["fps_segun_pts"] = fps_pts
     df.attrs["n_huecos_pts"] = n_huecos
+    df.attrs["dt_identicos_frac"] = dt_identicos
 
     # ERROR DE MODELO (Fase 4, H24): cuanto se aparta la parabola del borde
     # de forma ESTABLE. Para cada columna, la mediana en el tiempo de su
@@ -372,6 +377,42 @@ def process_video(
 
     df.attrs["roi"] = roi
     return df
+
+
+# D6 (2026-10-10): tres riesgos que antes no avisaban. Umbrales medidos en los 11
+# videos (data/_mediciones_fases/d6_avisos/): ninguno de los 11 los dispara.
+UMBRAL_DT_IDENTICOS = 0.99      # H15: reales 35-50 %
+UMBRAL_NITIDEZ_ROI = 12.0       # H22: mediana en la ROI, reales 18-51 (la ROI exige >= 10)
+
+
+def _racha_max(m) -> int:
+    best = cur = 0
+    for v in m:
+        cur = cur + 1 if v else 0
+        best = max(best, cur)
+    return best
+
+
+def diagnosticos_riesgo(roi: dict, min_gradiente: float = 10.0,
+                        tolerancia: float = 0.05) -> dict:
+    """D6: cintura (H21) y nitidez del borde (H22), sobre lo que ya calculo
+    auto_detect_roi. Solo diagnostico: no cambia la ROI ni ningun numero."""
+    q = roi.get("roi_quality", {}) or {}
+    T = np.asarray(roi.get("thickness_profile", []), float)
+    S = np.asarray(roi.get("sharpness_profile", []), float)
+    V = np.asarray(roi.get("valid_columns", []), bool)
+    w = q.get("cintura_px")
+    out = {"cintura_racha_px": None, "nitidez_roi_mediana": None}
+    if T.size and w:
+        with np.errstate(invalid="ignore"):
+            cerca = V & np.isfinite(S) & (S >= min_gradiente) & np.isfinite(T) & (T <= w * (1 + tolerancia))
+        out["cintura_racha_px"] = _racha_max(cerca)
+    xs, xe = roi.get("x_start"), roi.get("x_end")
+    if S.size and xs is not None:
+        s = S[xs:xe]
+        if np.isfinite(s).any():
+            out["nitidez_roi_mediana"] = float(np.nanmedian(s))
+    return out
 
 
 def describe_roi(roi: dict, image_width: int, detallado: bool = False) -> None:

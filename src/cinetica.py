@@ -231,6 +231,25 @@ def _iqr(x: np.ndarray) -> str | None:
     return f"{q1:.4g}-{q3:.4g}"
 
 
+N_BOOTSTRAP = 2000
+
+
+def ic95_mediana(x, n_boot: int = N_BOOTSTRAP, semilla: int = 0) -> str | None:
+    """C6 (2026-10-10): intervalo de confianza del 95 % de la MEDIANA por bootstrap
+    (remuestreo con reposicion de los eventos, percentiles 2.5 y 97.5). Semilla
+    fija: el mismo video da siempre el mismo intervalo. Con menos de 3 eventos no se
+    da. Con pocos eventos (5-6) el intervalo es grueso y salta entre valores de los
+    propios eventos: es honesto, no un error."""
+    x = np.asarray(x, float)
+    x = x[np.isfinite(x)]
+    if len(x) < 3:
+        return None
+    rng = np.random.default_rng(semilla)
+    med = np.median(rng.choice(x, size=(n_boot, len(x)), replace=True), axis=1)
+    lo, hi = np.percentile(med, [2.5, 97.5])
+    return f"{lo:.4g}-{hi:.4g}"
+
+
 def resumir(ev: pd.DataFrame, conteo_reportable: bool,
             min_frames: int = MIN_FRAMES) -> dict:
     """Resumen de un conjunto de eventos (el video entero o un grupo). El valor
@@ -246,6 +265,7 @@ def resumir(ev: pd.DataFrame, conteo_reportable: bool,
     out["amplitud_relativa_pct"] = (float(np.nanmedian(ar)) if np.isfinite(ar).any()
                                     else float("nan"))
     out["amplitud_relativa_iqr_pct"] = _iqr(ar)
+    out["amplitud_relativa_ic95_pct"] = ic95_mediana(ar)
     # H40 (2026-10-10): la amplitud en px del MISMO grupo que el %. Antes la
     # consola ponia al lado del % (estimulados) la mediana en px de TODOS los
     # eventos (Video_prueba: 2.31 % junto a 2.09 px, que son de las espontaneas).
@@ -273,6 +293,7 @@ def resumir(ev: pd.DataFrame, conteo_reportable: bool,
         val = ev[f"{m}_s"].to_numpy(float)[medible]
         out[f"{m}_s"] = float(np.median(val)) if reportable else float("nan")
         out[f"{m}_iqr_s"] = _iqr(val) if reportable else None
+        out[f"{m}_ic95_s"] = ic95_mediana(val) if reportable else None
         out[f"{m}_cota_inf_s"] = float(np.median(ev[f"{m}_min_s"].to_numpy(float)[ok]))
         out[f"{m}_cota_sup_s"] = float(np.median(ev[f"{m}_max_s"].to_numpy(float)[ok]))
         if not conteo_reportable:

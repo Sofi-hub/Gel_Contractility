@@ -703,8 +703,11 @@ def imprimir_cinetica(a: dict, detallado: bool = False) -> None:
     if np.isfinite(a.get("amplitud_relativa_pct", np.nan)):
         print(f"    amplitud: {a['amplitud_relativa_pct']:.2f} % del grosor en reposo"
               + (f" = {a['amplitud_px']:.2f} px" if np.isfinite(a.get("amplitud_px", np.nan)) else "")
-              + (f"  (rango intercuartil {a['amplitud_relativa_iqr_pct']} %)"
-                 if a.get("amplitud_relativa_iqr_pct") else ""))
+              + (f"  (IC 95 % de la mediana {a['amplitud_relativa_ic95_pct']} %)"
+                 if a.get("amplitud_relativa_ic95_pct") else ""))
+        if detallado and a.get("amplitud_relativa_iqr_pct"):
+            print(f"    [detalle] rango intercuartil de los eventos: "
+                  f"{a['amplitud_relativa_iqr_pct']} %")
     lentas = []
     for m, nom in (("ttp", "TTP (inicio -> pico)"), ("rt50", "RT50 (pico -> 50 % de relajacion)")):
         if not a.get(f"{m}_n_eventos"):
@@ -713,8 +716,13 @@ def imprimir_cinetica(a: dict, detallado: bool = False) -> None:
         hi = 1000 * a[f"{m}_cota_sup_s"]
         if a[f"{m}_reportable"]:
             lo = 1000 * a[f"{m}_cota_inf_s"]
+            ic = a.get(f"{m}_ic95_s")
+            ic_txt = ""
+            if ic:
+                i0, i1 = (float(v) for v in ic.split("-"))
+                ic_txt = f"; IC 95 % {1000 * i0:.0f}-{1000 * i1:.0f} ms"
             print(f"    {nom}: {1000 * a[f'{m}_s']:.0f} ms  (mediana de "
-                  f"{a[f'{m}_n_medibles']} medibles; intervalo [{lo:.0f}, {hi:.0f}] ms)")
+                  f"{a[f'{m}_n_medibles']} medibles; intervalo [{lo:.0f}, {hi:.0f}] ms{ic_txt})")
         else:
             print(f"    {nom}: menos de {hi:.0f} ms  ({a[f'{m}_frames_mediana']:g} fotogramas)")
             lentas.append(m)

@@ -41,7 +41,7 @@ EXTENSIONES = {".mp4", ".avi", ".mov"}
 COLUMNAS = ["video", "estado", "eventos", "reportable", "motivo_no_reportable",
             "tren", "periodo_s", "periodo_err_s", "frecuencia_Hz", "n_estimulados",
             "captura_pct", "amplitud_pct", "amplitud_px", "amplitud_grupo",
-            "roi_cumple", "half_window", "n_avisos", "avisos", "carpeta"]
+            "roi_cumple", "half_window", "n_avisos", "avisos", "informe", "carpeta"]
 
 
 def listar_videos(carpeta: Path, recursivo: bool = False) -> list[Path]:
@@ -143,17 +143,27 @@ def procesar(videos: list[Path], salida: Path, pasos: set[int], frecuencias: str
             _log.append(linea)
             escribir(linea)
         try:
-            cmds = interfaz.armar_comandos(str(video), str(carpeta), 1 in pasos, 2 in pasos,
-                                           3 in pasos, frecuencias, verbose)
-            ok = interfaz.correr(cmds, esc, detener)
+            # el informe (paso 4) se arma DESPUES de guardar la consola: asi incluye los avisos
+            cmds = (interfaz.armar_comandos(str(video), str(carpeta), 1 in pasos, 2 in pasos,
+                                            3 in pasos, frecuencias, verbose)
+                    if pasos & {1, 2, 3} else [])
+            ok = interfaz.correr(cmds, esc, detener) if cmds else True
             fila["estado"] = "OK" if ok else "ERROR"
         except ValueError as e:
             esc(f"\n*** {e} ***\n")
             fila["estado"] = "ERROR: " + str(e).splitlines()[0]
         texto = "".join(log)
         if carpeta.is_dir():
-            (carpeta / f"consola_{video.stem}.txt").write_text(texto, encoding="utf-8")
+            cons = carpeta / f"consola_{video.stem}.txt"
+            if pasos & {1, 2, 3}:          # solo el informe: no pisar la consola guardada
+                cons.write_text(texto, encoding="utf-8")
+            elif cons.is_file():
+                texto = cons.read_text(encoding="utf-8")
             fila.update(leer_fila(carpeta))
+            if 4 in pasos and fila["estado"] == "OK" and buscar_serie(carpeta).is_file():
+                import informe
+                fila["informe"] = str(informe.generar(carpeta))
+                escribir(f"Informe: {fila['informe']}\n")
         av = avisos_de(texto)
         fila["n_avisos"] = len(av)
         fila["avisos"] = " | ".join(av)
@@ -193,11 +203,13 @@ def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--carpeta", required=True, help="Carpeta con los videos (.mp4/.avi/.mov)")
-    p.add_argument("--salida", default=str(RAIZ / "data" / "processed_data"),
+    cfg = interfaz.CONFIG   # configuracion.ini: los mismos valores con que arranca la ventana
+    p.add_argument("--salida", default=str(cfg["carpeta_resultados"]),
                    help="Donde crear una carpeta por video y la tabla (default: data/processed_data)")
-    p.add_argument("--pasos", default="1 2",
-                   help="Que pasos correr: '1 2' (default), '1 2 3', o '2' sobre series ya hechas")
-    p.add_argument("--frecuencia-estimulo", default="",
+    p.add_argument("--pasos", default=" ".join(str(n) for n in sorted(cfg["pasos"])),
+                   help="Que pasos correr: '1 2 4' (default: medir, contracciones e informe), "
+                        "'1 2 3 4', o '2 4' sobre series ya hechas")
+    p.add_argument("--frecuencia-estimulo", default=cfg["frecuencia"],
                    help="Igual que en contraction_report (vacio = no se sabe)")
     p.add_argument("--recursivo", action="store_true", help="Buscar videos tambien en subcarpetas")
     p.add_argument("--verbose", action="store_true")

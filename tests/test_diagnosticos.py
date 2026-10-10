@@ -50,6 +50,18 @@ ev0 = np.median(cociente_por_eventos(t0, c0, dv0, picos0))
 chequear(abs(ev0 - 0.9) < 0.1 and ols0 < 0.8,
          f"D1: por contraccion {ev0:.2f} (verdad 0.90); la pendiente da {ols0:.2f}")
 
+# --- D6: diagnosticos de riesgo (cintura corta, poco contraste) -------------
+from src.pipeline import diagnosticos_riesgo  # noqa: E402
+Tp = np.full(1000, 300.0); Tp[500:580] = 280.0          # cintura de solo 80 px
+Sp = np.full(1000, 30.0); Sp[400:700] = 8.0             # zona con poco contraste
+roi_f = {"thickness_profile": Tp, "sharpness_profile": np.where(Sp < 10, 30.0, Sp),
+         "valid_columns": np.ones(1000, bool), "roi_quality": {"cintura_px": 280.0},
+         "x_start": 450, "x_end": 650}
+dr = diagnosticos_riesgo(roi_f)
+chequear(dr["cintura_racha_px"] == 80, f"D6: cintura corta medida en 80 px (dio {dr['cintura_racha_px']})")
+roi_f["sharpness_profile"] = Sp
+chequear(diagnosticos_riesgo(roi_f)["nitidez_roi_mediana"] == 8.0, "D6: poco contraste en la zona (8)")
+
 # --- 1. corrimiento conocido ------------------------------------------------
 y = np.arange(400, dtype=float)
 perfil = lambda c: 50 + 100 / (1 + np.exp(-(y - c + 140) / 3)) - 100 / (1 + np.exp(-(y - c - 140) / 3))

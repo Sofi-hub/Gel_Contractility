@@ -288,7 +288,32 @@ def main():
         "ROI columnas descartadas por pendiente": q.get("n_desc_por_pendiente"),
     }
 
+    # D6 (2026-10-10): riesgos que antes no avisaban (solo diagnostico)
+    from src.pipeline import diagnosticos_riesgo, UMBRAL_DT_IDENTICOS, UMBRAL_NITIDEZ_ROI
+    riesgo = diagnosticos_riesgo(roi, args.roi_min_gradient, args.roi_tolerance)
+    dt_ident = float(df.attrs.get("dt_identicos_frac", float("nan")))
+    summary["timestamps identicos (%)"] = round(100 * dt_ident, 1) if dt_ident == dt_ident else None
+    summary["cintura: columnas seguidas (px)"] = riesgo["cintura_racha_px"]
+    summary["nitidez del borde en la zona (mediana)"] = (
+        round(riesgo["nitidez_roi_mediana"], 1) if riesgo["nitidez_roi_mediana"] is not None else None)
+
     # ---------------- avisos (solo cuando hay que hacer algo) ----------------
+    if dt_ident == dt_ident and dt_ident >= UMBRAL_DT_IDENTICOS:
+        print(f"  AVISO: los intervalos entre fotogramas son todos iguales "
+              f"({100*dt_ident:.0f}%): es probable que el archivo no traiga los tiempos reales "
+              f"de la camara. Si se perdieron fotogramas, no se puede saber y el eje de "
+              f"tiempo los ignora. Conviene pedir el video original.")
+    min_ancho = q.get("ancho_minimo_exigido_px") or 120
+    if riesgo["cintura_racha_px"] is not None and riesgo["cintura_racha_px"] < min_ancho \
+            and q.get("method") != "manual":
+        print(f"  AVISO: la parte mas angosta del gel abarca solo {riesgo['cintura_racha_px']} px "
+              f"seguidos (menos que el ancho minimo de la zona, {min_ancho} px): la zona no "
+              f"puede ser a la vez plana y ancha. Mira 00_roi_profile_<video>.png.")
+    if riesgo["nitidez_roi_mediana"] is not None and riesgo["nitidez_roi_mediana"] < UMBRAL_NITIDEZ_ROI:
+        print(f"  AVISO: los bordes del gel tienen poco contraste en la zona analizada "
+              f"(nitidez {riesgo['nitidez_roi_mediana']:.0f}; en los videos validados 18-51). "
+              f"La posicion del borde va a ser mas ruidosa: revisar enfoque e iluminacion.")
+
     frac_falt = float(df.attrs.get("frac_frames_faltantes", float("nan")))
     if frac_falt == frac_falt and frac_falt > 0.01:
         if df.attrs.get("base_tiempo") == "pts":

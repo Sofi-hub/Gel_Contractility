@@ -13,7 +13,9 @@ Doble clic en **`Analizar.bat`** (en la carpeta del proyecto). Se abre una venta
 2. **Guardar resultados en:** se completa sola con `data\processed_data\<nombre del video>`; se puede cambiar. El nombre de esa carpeta es el que aparece en los títulos de los gráficos y de las hojas del Excel.
 3. **Qué correr:** los tres pasos de la sección 1, por separado o juntos. Los pasos 2 y 3 usan el `serie_temporal_<video>.xlsx` que ya esté en la carpeta, así que se pueden repetir (por ejemplo, con otra frecuencia) sin volver a medir el gel.
 4. **Opciones:** frecuencia del estimulador y detalle técnico (`--verbose`). La ventana de búsqueda del borde se agranda sola si el gel se mueve mucho (ver 2.4).
-5. **Analizar.** Abajo aparece en vivo lo mismo que en la consola: los avisos en rojo y los títulos en azul. "Detener" corta el paso en curso y "Abrir carpeta de resultados" abre la carpeta en el explorador de archivos.
+5. **Paso 4, informe (2026-10-10):** una página `informe_<carpeta>.html` en la carpeta de resultados, con el resultado en una frase, los números, los avisos y las figuras. Es un solo archivo (las figuras van adentro): se manda por mail tal cual, se abre con doble clic y se puede imprimir a PDF desde el navegador. No calcula nada: resume los Excel. Se puede marcar solo el paso 4 para armar el informe de resultados viejos.
+6. **Valores con que arranca la ventana:** `configuracion.ini`, en la carpeta del proyecto (se edita con el Bloc de notas): frecuencia, pasos marcados, detalle y carpeta de resultados. A propósito no tiene parámetros del análisis.
+7. **Analizar.** Abajo aparece en vivo lo mismo que en la consola: los avisos en rojo y los títulos en azul. "Detener" corta el paso en curso y "Abrir carpeta de resultados" abre la carpeta en el explorador de archivos.
 
 La ventana no calcula nada propio: corre los mismos comandos de la sección 1, así que los números son idénticos. Si un paso falla, muestra el error y no corre los siguientes.
 
@@ -64,7 +66,7 @@ Todos los resultados quedan en `data\processed_data\<video>\`.
 python scripts\procesar_carpeta.py --carpeta "data\raw_videos\RARITOS-20260904T171415Z-1-001\RARITOS"
 ```
 
-Opciones: `--frecuencia-estimulo 0.1` (se pasa a todos los videos: solo si vale para todos), `--pasos "1 2 3"` (también el paso 3), `--pasos 2` (solo el reporte, sobre series ya hechas), `--salida <carpeta>` (por defecto `data\processed_data`), `--recursivo` (busca también en subcarpetas), `--verbose`.
+Opciones: `--frecuencia-estimulo 0.1` (se pasa a todos los videos: solo si vale para todos), `--pasos "1 2 3 4"` (también el paso 3), `--pasos "2 4"` (solo el reporte y el informe, sobre series ya hechas), `--pasos 4` (solo los informes). Por defecto, los de `configuracion.ini` (`1 2 4`), `--salida <carpeta>` (por defecto `data\processed_data`), `--recursivo` (busca también en subcarpetas), `--verbose`.
 
 No calcula nada propio: para cada video corre los pasos de arriba y después **lee** los Excel que quedaron. Además de lo de siempre, en cada carpeta de video queda `consola_<video>.txt` con todo lo que se imprimió. Al final imprime la tabla y la guarda en `resumen_carpeta_<fecha>.xlsx`, una fila por video:
 
@@ -76,6 +78,7 @@ No calcula nada propio: para cada video corre los pasos de arriba y después **l
 | `amplitud_pct`, `amplitud_px`, `amplitud_grupo` | la cifra de `CONTRACTILIDAD` y de qué grupo es (estimulados o todos) |
 | `roi_cumple`, `half_window` | si la zona cumple el criterio y qué ventana de búsqueda se usó (±15 o ±30) |
 | `n_avisos`, `avisos` | los renglones AVISO y NO REPORTABLE que se imprimieron (completos en `consola_<video>.txt`) |
+| `informe` | dónde quedó el informe HTML del video (si se corrió el paso 4) |
 
 ---
 
@@ -138,6 +141,9 @@ Dónde quedó todo:
 | `N% de los fotogramas sin borde o dudosos` o `en el N% de los fotogramas hay bordes pegados al limite` (después de ±30) | el borde sigue sin encontrarse bien | no confiar en los números; mirar la hoja `diagnostics` (`frame_quality`, `n_bordes_en_limite`) |
 | `la camara perdio ... y el eje de tiempo se armo con fotograma / fps` | se corrió sin `--base-tiempo pts` | volver a correr con `--base-tiempo pts` |
 | `el video no trae marcas de tiempo usables` | el archivo no guarda la hora de cada cuadro | los tiempos pueden estar algo comprimidos si se perdieron cuadros; avisarlo |
+| `los intervalos entre fotogramas son todos iguales` (2026-10-10) | el archivo probablemente trae tiempos inventados (todos 1/fps), no los de la cámara: si se perdieron fotogramas, no se puede saber | pedir el video original. En los 11 videos validados solo el 35–50 % de los intervalos son iguales |
+| `la parte mas angosta del gel abarca solo N px seguidos` (2026-10-10) | la cintura es más corta que el ancho mínimo de la zona (120 px): la zona no puede ser plana y ancha a la vez | mirar `00_roi_profile`. En los validados la cintura abarca 150 px o más |
+| `los bordes del gel tienen poco contraste` (2026-10-10) | la nitidez del borde en la zona es menor que 12 (validados: 18–51) | revisar enfoque e iluminación; el resultado va a ser más ruidoso |
 
 ### 2.4 Ejemplo: el gel se mueve mucho (Video_068)
 
@@ -177,7 +183,7 @@ Video_476   (2165 fotogramas, 73.1 s, 30.00 fps)
     estimuladas: 6 | espontaneas: 0
 
   CONTRACTILIDAD (estimulados, 6 eventos)
-    amplitud: 0.64 % del grosor en reposo = 1.69 px  (rango intercuartil 0.634-0.6575 %)
+    amplitud: 0.64 % del grosor en reposo = 1.69 px  (IC 95 % de la mediana 0.6116-0.6614 %)
     TTP (inicio -> pico): menos de 155 ms  (2.5 fotogramas)
     RT50 (pico -> 50 % de relajacion): menos de 167 ms  (2.5 fotogramas)
     (con menos de 5 fotogramas no se puede dar un valor, solo un maximo: la contraccion es mas rapida que la camara)
@@ -247,7 +253,7 @@ El estimulador dispara como un reloj (cada 10 s a 0.1 Hz); las contracciones esp
 ### `CONTRACTILIDAD`: las cifras a informar
 
 Si hay tren, son las de las **estimuladas**; si no, las de todos los eventos.
-- **`amplitud: 0.64 % del grosor en reposo`**: **la cifra principal.** Cuánto se desplaza el gel en cada contracción, como porcentaje de su grosor. Se puede comparar entre videos aunque tengan distinto aumento. Valores medidos: 0.4 % a 2.3 %. Al lado va lo mismo en px, del mismo grupo (solo comparable a igual aumento).
+- **`amplitud: 0.64 % del grosor en reposo`**: **la cifra principal.** Cuánto se desplaza el gel en cada contracción, como porcentaje de su grosor. Se puede comparar entre videos aunque tengan distinto aumento. Valores medidos: 0.4 % a 2.3 %. Al lado va lo mismo en px, del mismo grupo (solo comparable a igual aumento). **IC 95 % de la mediana** (2026-10-10): entre qué valores está la mediana con 95 % de confianza, por bootstrap (se remuestrean los eventos 2000 veces, con semilla fija: siempre da lo mismo). Con 5–6 eventos es grueso; sirve para ver si dos videos se distinguen. TTP y RT50, cuando son medibles, llevan el suyo. El rango intercuartil sigue en el Excel y con `--verbose`.
 - **`TTP (inicio -> pico)`**: cuánto tarda la contracción en llegar al máximo. **`RT50`**: cuánto tarda en relajarse a la mitad.
 - **`menos de 155 ms (2.5 fotogramas)`**: la subida ocurre en 2 o 3 cuadros de cámara, así que el programa **no da un valor inventado**, solo el máximo posible. Para dar un valor hacen falta al menos 5 fotogramas.
 - *Si preguntan "¿por qué no da el TTP?":* "la contracción es más rápida que la cámara (30 cuadros por segundo). Para medirlo habría que grabar a 200–300 cuadros por segundo".
@@ -364,6 +370,8 @@ Lo que aparece del lado contrario son los falsos de control: miden cuánto ruido
 
 **¿Y si la contracción rebota un poco hacia el otro lado?** No se modela aparte, pero no hace falta. Para contar, un pico tiene que superar el umbral, unas 9 veces el ruido. En 476 el rebote mide 0.3–0.5 px y el umbral es de 1.08 px, así que no llega. Si un rebote fuera grande, aparecería como falso de control y el conteo saldría NO REPORTABLE. El error va siempre hacia "no informar", nunca hacia inventar contracciones.
 
+**¿Qué es el IC 95 % por bootstrap?** Se arman 2000 "videos de mentira" eligiendo al azar, con repetición, entre las contracciones medidas, y en cada uno se calcula la mediana. El 95 % del medio de esas 2000 medianas es el intervalo. No supone ninguna forma de la distribución. Si los intervalos de dos videos no se pisan, la diferencia de amplitud es real.
+
 **¿Qué es el rango intercuartil?** Se ordenan los eventos de menor a mayor y se dejan afuera el 25 % más chico y el 25 % más grande. Lo que queda es el intervalo donde cae el 50 % del medio. Si es angosto (476: 0.634–0.658 %), las contracciones son todas parecidas.
 
 **¿Por qué "TTP menos de X ms"?** La cámara mira cada 33 ms, como si parpadeara. En 476 toda la subida ocurre entre 2 o 3 fotos. No sabemos si la contracción arrancó justo después de una foto ni si el máximo verdadero cayó entre dos fotos. Lo único seguro es que la subida duró **como mucho** unos 3 intervalos (100–155 ms). Pudo durar 60 o 120 ms, y con esta cámara no se puede distinguir. Por eso se da el máximo y no un valor. Para dar un valor exigimos al menos 5 fotos en la subida. El RT50 (del máximo a la mitad de la relajación) tiene el mismo problema.
@@ -389,8 +397,8 @@ Hoy hay que copiar comandos y cambiar el nombre del video a mano. Ideas, de meno
 0. **Hecho (2026-10-07): `interfaz.py` + `Analizar.bat`** (sección 0).
 1. **Un solo comando que corra todo** (`analizar.py --video Video_XXX [--frecuencia 0.1]`): hace los pasos 1 y 2, y el 3 si se pide. Busca el video solo en `data\raw_videos\` (sin escribir la ruta). Si detecta muchos fotogramas sin borde, repite solo con `--half-window 30`.
 2. **Hecho (2026-10-10): procesar una carpeta entera** con tabla resumen (secciones 0 y 1b). En la ventana y por consola (`scripts/procesar_carpeta.py`).
-3. **Un informe por video en una página** (HTML o PDF) con el resultado en palabras simples y las figuras principales, para mandar al equipo sin abrir los Excel.
+3. **Hecho (2026-10-10): un informe por video en una página** (paso 4, sección 0).
 4. **Doble clic en vez de consola:** un archivo `.bat` que pregunte el nombre del video y la frecuencia, o una ventanita simple para elegir el video, escribir la frecuencia y apretar "Analizar".
-5. **Configuración en un archivo** (por ejemplo `config.txt` con frecuencia, `half-window`, etc.) para no tocar comandos ni código.
+5. **Hecho (2026-10-10): `configuracion.ini`** con los valores con que arranca la ventana (sin parámetros del análisis).
 
 Ninguna cambia números: solo envuelven los scripts actuales.

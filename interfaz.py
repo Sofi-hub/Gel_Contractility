@@ -14,6 +14,7 @@ Pasos (se pueden elegir por separado o todos juntos):
   1. Medir el gel        -> main.py           -> <carpeta>/serie_temporal_<video>.xlsx
   2. Buscar contracciones-> contraction_report-> <carpeta>/contracciones_<carpeta>.xlsx
   3. Confirmar (2.o metodo) -> motion_check   -> <carpeta>/movimiento_<video>.xlsx
+  4. Informe               -> informe.py      -> <carpeta>/informe_<carpeta>.html
 Los pasos 2 y 3 usan el serie_temporal de la carpeta de resultados, asi
 que se pueden correr despues sin repetir el paso 1. Tambien aceptan el
 nombre viejo (serie_temporal.xlsx, resultados anteriores al 2026-10-08).
@@ -44,17 +45,45 @@ from src.output_paths import buscar_serie  # noqa: E402  (solo pathlib)
 # --------------------------------------------------------------------------
 # Logica (sin ventana): se puede probar sola.
 # --------------------------------------------------------------------------
+def leer_configuracion(ruta: Path | None = None) -> dict:
+    """configuracion.ini (C3): con que arranca la ventana. Si no esta o tiene un
+    error, los valores de siempre. No hay parametros del analisis a proposito."""
+    import configparser
+    cfg = {"frecuencia": "", "pasos": {1, 2, 4}, "detalle": False,
+           "carpeta_resultados": RAIZ / "data" / "processed_data"}
+    ruta = ruta or RAIZ / "configuracion.ini"
+    try:
+        cp = configparser.ConfigParser(inline_comment_prefixes=(";", "#"))
+        cp.read(ruta, encoding="utf-8")
+        s = cp["ventana"] if cp.has_section("ventana") else {}
+        if s.get("frecuencia", "").strip():
+            cfg["frecuencia"] = s.get("frecuencia").strip()
+        if s.get("pasos", "").strip():
+            cfg["pasos"] = {int(x) for x in s.get("pasos").replace(",", " ").split()
+                            if x in {"1", "2", "3", "4"}}
+        cfg["detalle"] = s.get("detalle", "no").strip().lower() in ("si", "sí", "yes", "1", "true")
+        if s.get("carpeta_resultados", "").strip():
+            c = Path(s.get("carpeta_resultados").strip())
+            cfg["carpeta_resultados"] = c if c.is_absolute() else RAIZ / c
+    except Exception as e:   # un ini roto no impide abrir la ventana
+        print(f"AVISO: no pude leer {ruta} ({e}); uso los valores de siempre.")
+    return cfg
+
+
+CONFIG = leer_configuracion()
+
+
 def carpeta_por_defecto(video: str) -> Path:
-    return RAIZ / "data" / "processed_data" / Path(video).stem
+    return Path(CONFIG["carpeta_resultados"]) / Path(video).stem
 
 
 def armar_comandos(video: str, carpeta: str, paso1: bool, paso2: bool, paso3: bool,
                    frecuencias: str = "",
-                   verbose: bool = False) -> list[tuple[str, list[str]]]:
+                   verbose: bool = False, paso4: bool = False) -> list[tuple[str, list[str]]]:
     """Devuelve [(titulo, comando), ...] o levanta ValueError con un mensaje claro."""
     py = sys.executable
     carpeta = Path(carpeta) if carpeta else (carpeta_por_defecto(video) if video else None)
-    if not (paso1 or paso2 or paso3):
+    if not (paso1 or paso2 or paso3 or paso4):
         raise ValueError("Marca al menos un paso.")
     if (paso1 or paso3) and not video:
         raise ValueError("Falta elegir el video.")
@@ -66,8 +95,8 @@ def armar_comandos(video: str, carpeta: str, paso1: bool, paso2: bool, paso3: bo
         serie = carpeta / f"serie_temporal_{Path(video).stem}.xlsx"
     else:       # nombre nuevo o, en resultados viejos, serie_temporal.xlsx
         serie = buscar_serie(carpeta)
-    if (paso2 or paso3) and not paso1 and not serie.is_file():
-        raise ValueError(f"Para los pasos 2 y 3 sin el paso 1 tiene que existir:\n{serie}\n"
+    if (paso2 or paso3 or paso4) and not paso1 and not serie.is_file():
+        raise ValueError(f"Para los pasos 2, 3 y 4 sin el paso 1 tiene que existir:\n{serie}\n"
                          f"Corre primero el paso 1, o elegi la carpeta donde ya esta.")
     freqs = frecuencias.replace(",", " ").split()
     for f in freqs:
@@ -91,15 +120,18 @@ def armar_comandos(video: str, carpeta: str, paso1: bool, paso2: bool, paso3: bo
         c = [py, "-u", str(RAIZ / "scripts" / "motion_check.py"), "--video", str(video),
              "--serie", str(serie)]
         cmds.append(("Paso 3: confirmar con el segundo metodo", c + extra))
+    if paso4:
+        c = [py, "-u", str(RAIZ / "scripts" / "informe.py"), "--carpeta", str(carpeta)]
+        cmds.append(("Paso 4: armar el informe", c))
     return cmds
 
 
 def armar_comando_carpeta(carpeta_videos: str, salida: str, paso1: bool, paso2: bool,
                           paso3: bool, frecuencias: str = "",
-                          verbose: bool = False) -> list[tuple[str, list[str]]]:
+                          verbose: bool = False, paso4: bool = False) -> list[tuple[str, list[str]]]:
     """Una CARPETA entera: corre scripts/procesar_carpeta.py, que para cada video
     usa armar_comandos/correr (lo mismo de arriba) y arma la tabla resumen."""
-    if not (paso1 or paso2 or paso3):
+    if not (paso1 or paso2 or paso3 or paso4):
         raise ValueError("Marca al menos un paso.")
     if not carpeta_videos or not Path(carpeta_videos).is_dir():
         raise ValueError(f"No encuentro la carpeta de videos:\n{carpeta_videos}")
@@ -108,7 +140,7 @@ def armar_comando_carpeta(carpeta_videos: str, salida: str, paso1: bool, paso2: 
             float(f)
         except ValueError:
             raise ValueError(f"Frecuencia no valida: '{f}'. Ejemplo: 0.1  (o 0.1 0.2)")
-    pasos = " ".join(str(n) for n, v in ((1, paso1), (2, paso2), (3, paso3)) if v)
+    pasos = " ".join(str(n) for n, v in ((1, paso1), (2, paso2), (3, paso3), (4, paso4)) if v)
     c = [sys.executable, "-u", str(RAIZ / "scripts" / "procesar_carpeta.py"),
          "--carpeta", str(carpeta_videos), "--pasos", pasos]
     if salida:
@@ -165,10 +197,10 @@ def main():
 
     v_video = tk.StringVar()
     v_carpeta = tk.StringVar()
-    v_freq = tk.StringVar()
+    v_freq = tk.StringVar(value=CONFIG["frecuencia"])
     v_lote = tk.StringVar()
-    v_p1, v_p2, v_p3 = tk.BooleanVar(value=True), tk.BooleanVar(value=True), tk.BooleanVar(value=False)
-    v_verbose = tk.BooleanVar(value=False)
+    v_p1, v_p2, v_p3, v_p4 = (tk.BooleanVar(value=n in CONFIG["pasos"]) for n in (1, 2, 3, 4))
+    v_verbose = tk.BooleanVar(value=CONFIG["detalle"])
     carpeta_tocada = {"si": False}
 
     def poner_video(ruta: str):
@@ -190,11 +222,11 @@ def main():
         if r:
             v_lote.set(r)
             if not carpeta_tocada["si"]:
-                v_carpeta.set(str(RAIZ / "data" / "processed_data"))
+                v_carpeta.set(str(CONFIG["carpeta_resultados"]))
 
     def elegir_carpeta():
         r = filedialog.askdirectory(title="Carpeta de resultados",
-                                    initialdir=str(RAIZ / "data" / "processed_data"))
+                                    initialdir=str(CONFIG["carpeta_resultados"]))
         if r:
             carpeta_tocada["si"] = True
             v_carpeta.set(r)
@@ -238,6 +270,9 @@ def main():
                     ).pack(anchor="w")
     ttk.Checkbutton(pasos, variable=v_p3,
                     text="3. Confirmar con el segundo metodo (opcional; tarda unos minutos)"
+                    ).pack(anchor="w")
+    ttk.Checkbutton(pasos, variable=v_p4,
+                    text="4. Armar el informe (una pagina HTML para mandar; segundos)"
                     ).pack(anchor="w")
 
     opc = ttk.LabelFrame(root, text="Opciones")
@@ -304,16 +339,16 @@ def main():
             if lote:
                 cmds = armar_comando_carpeta(lote, v_carpeta.get().strip(), v_p1.get(),
                                              v_p2.get(), v_p3.get(), v_freq.get(),
-                                             v_verbose.get())
+                                             v_verbose.get(), v_p4.get())
             else:
                 cmds = armar_comandos(v_video.get().strip().strip('"'), v_carpeta.get().strip(),
                                       v_p1.get(), v_p2.get(), v_p3.get(), v_freq.get(),
-                                      v_verbose.get())
+                                      v_verbose.get(), v_p4.get())
         except ValueError as e:
             messagebox.showwarning("Falta algo", str(e))
             return
         if lote and not v_carpeta.get().strip():
-            v_carpeta.set(str(RAIZ / "data" / "processed_data"))
+            v_carpeta.set(str(CONFIG["carpeta_resultados"]))
         elif not v_carpeta.get().strip():
             v_carpeta.set(str(carpeta_por_defecto(v_video.get())))
         salida.delete("1.0", "end")

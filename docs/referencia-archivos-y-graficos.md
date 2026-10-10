@@ -72,6 +72,10 @@ Desde 2026-10-10 (H32) también `roi_tolerance`, `roi_min_gradient`, `roi_max_sl
 `procesos`, el **`commit`** de git con que se corrió (con "+cambios sin commitear" si
 había código modificado; "desconocido" sin git) y las versiones de `python`, numpy,
 scipy, opencv, pandas y scikit-learn. Las series anteriores no tienen estas filas.
+Desde 2026-10-10 (D6), tres diagnósticos sin efecto en los números, cada uno con su
+aviso: `timestamps identicos (%)` (aviso si ≥ 99 %; reales 35–50 %), `cintura:
+columnas seguidas (px)` (aviso si es menor que el ancho mínimo de la zona; reales
+≥ 150) y `nitidez del borde en la zona (mediana)` (aviso si < 12; reales 18–51).
 
 **Campos agregados en la v4:**
 
@@ -204,10 +208,11 @@ Todo sobre el canal de detección sin deriva, con el reposo en 0 y la amplitud
 | `rt50_*` | ídem para RT50: del pico al cruce del 50 % de `A` en la bajada. **No** es la mitad de la duración de la relajación |
 | `offset_s`, `duracion_s` | cruce del 10 % después del pico; duración onset→offset |
 
-Campos nuevos en **`resumen_<serie>`**: `amplitud_relativa_pct` (mediana) y
-`amplitud_relativa_iqr_pct`; para `ttp` y `rt50`: `_n_eventos`,
+Campos nuevos en **`resumen_<serie>`**: `amplitud_relativa_pct` (mediana),
+`amplitud_relativa_iqr_pct` y `amplitud_relativa_ic95_pct` (IC 95 % de la mediana
+por bootstrap, 2000 remuestreos, semilla fija; desde 2026-10-10, C6); para `ttp` y `rt50`: `_n_eventos`,
 `_frames_mediana`, `_n_medibles`, **`_reportable`**, `_s` (mediana de los eventos
-**medibles**, **NaN si no es reportable**), `_iqr_s`, `_cota_inf_s`, `_cota_sup_s`;
+**medibles**, **NaN si no es reportable**), `_iqr_s`, `_ic95_s` (solo si es reportable), `_cota_inf_s`, `_cota_sup_s`;
 más `cinetica_min_frames`, `cinetica_motivo`, `n_eventos_cinetica` y
 **`cinetica_grupo_principal`**. Si `ttp_reportable` es `False`, lo único que se
 reporta es "TTP < `ttp_cota_sup_s`".
@@ -268,6 +273,18 @@ regla "interior ≈ fondo ⇒ cambio de grosor" era falsa (un gel sin textura qu
 traslada también mueve solo sus bordes).
 
 ---
+
+## 3b. `informe_<carpeta>.html` — salida de `scripts/informe.py` (paso 4)
+
+Una página, un solo archivo con las figuras adentro, para mandar al equipo. Tiene el
+resultado en una frase (verde si es reportable, rojo si no), una tabla con
+contracciones, tren, amplitud con su IC 95 %, TTP/RT50 (valor o cota), la
+confirmación del paso 3 si se corrió, la zona; los avisos (de `consola_<video>.txt`
+si es de la misma corrida, si no armados con los Excel) y las figuras 09, 10, 11, 00,
+05 y 07 con una línea de explicación. No calcula nada.
+
+`resumen_carpeta_<fecha>.xlsx` (de `procesar_carpeta.py`) tiene una columna `informe`
+con la ruta de cada uno.
 
 ## 4. Las figuras, eje por eje
 

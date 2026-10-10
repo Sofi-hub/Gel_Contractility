@@ -66,9 +66,9 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
 3. **Interfaz más amigable**. La ventana ya está hecha (`interfaz.py`, `Analizar.bat`). Quedan, de la sección 6 de la guía:
    - un solo comando que corra todo
    - **hecho (2026-10-10): procesar una carpeta entera con tabla resumen**, desde la ventana ("o una carpeta entera") y por consola (`scripts/procesar_carpeta.py`). Reusa `interfaz.armar_comandos`/`correr` (los mismos pasos) y después solo lee los Excel: una fila por video con estado, eventos, reportable, tren (período ± error, captura), amplitud % y px (y de qué grupo), ROI, ventana de búsqueda y avisos; la consola de cada video queda en `consola_<video>.txt`. Verificado: Video_prueba procesado como carpeta da la huella idéntica a la referencia (`center_px` incluido); test `tests/test_lote.py`.
-   - un informe por video
-   - un archivo de doble clic o una ventanita
-   - un archivo de configuración
+   - **hecho (2026-10-10): un informe por video** (`scripts/informe.py`, paso 4 en la ventana y en `procesar_carpeta`): `informe_<carpeta>.html`, un solo archivo con las figuras adentro; resultado en una frase, números (con IC 95 %), avisos y figuras. Solo lee los Excel. Sirve para resultados viejos (marcar solo el paso 4). Test en `test_lote.py`.
+   - un archivo de doble clic o una ventanita (hecho: `Analizar.bat`)
+   - **hecho (2026-10-10): `configuracion.ini`** con los valores con que arranca la ventana y `procesar_carpeta` (frecuencia, pasos, detalle, carpeta). Sin parámetros del análisis, a propósito.
    - **Ventana más linda y con visor de resultados** (pedido por Franco, 2026-10-08):
      - pestañas (correr / resultados / opciones), con mejor aspecto;
      - abrir los gráficos del video que se acaba de correr, o de cualquier carpeta de
@@ -84,7 +84,7 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
 4. **Hecho (2026-10-08). Sacar el grosor (línea roja) del gráfico de contracciones** (`09_contracciones_*`) y dejarlo solo con `--verbose`: el adelgazamiento es diagnóstico y no se informa (CLAUDE.md, hallazgo 1), y en el gráfico invita a interpretarlo. No cambia ningún número. (Pedido por Franco, 2026-10-08.)
 5. **Hecho (2026-10-08):** test de regresión automático (`tests/test_regresion.py`, referencia congelada en `tests/referencia_regresion.json`; `scripts/regenerar_todo.py` para regenerar).
 8. **A futuro: visualizador en vivo** (pedido por Franco, 2026-10-10): que mientras se graba el video se vaya analizando y mostrando algo (por ejemplo, la posición de la franja y los eventos a medida que aparecen). Requiere leer de la cámara o de un archivo que crece, una versión del análisis que funcione por tramos (hoy la ROI y el umbral k se eligen mirando el video entero) y decidir qué se puede mostrar "en vivo" sin que sea un número final. No cambia los números del análisis completo, que se sigue haciendo al terminar.
-6. Intervalos de confianza por bootstrap para las medianas por video.
+6. **Hecho (2026-10-10): IC 95 % por bootstrap** de la mediana de la amplitud relativa (y de TTP/RT50 cuando son reportables): 2000 remuestreos de los eventos, semilla fija, desde 3 eventos (`cinetica.ic95_mediana`). Columnas nuevas `*_ic95_*` en el resumen y en la consola (la línea de amplitud muestra el IC en vez del rango intercuartil, que sigue en el Excel y con `--verbose`). Ningún número existente cambia (regresión idéntica). Ejemplo, 466: amplitud 2.16 % (IC 1.93–2.32), TTP 255 ms (IC 215–292).
 7. **Hecho (2026-10-10): versiones fijas en `requirements.txt`**, las del `.venv` (numpy 2.5.3, scipy 1.18.1, pandas 3.0.6, scikit-learn 1.9.1, opencv-python-headless 5.0.0.93, matplotlib 3.11.2, openpyxl 3.1.5; tkinterdnd2 0.6.3, opcional). Instaladas de cero en un entorno limpio: tests, regresión de los 11 y `--completo` idénticos.
 
 ## D. Dudas abiertas para revisar con más videos
@@ -98,10 +98,10 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
    - ventana de búsqueda automática: pasa a ±30 si > 20 % de los fotogramas tiene bordes en el límite (B1; 3 casos: 068, 341 y 466)
    - error de modelo y `outlier_frac` sin umbral (medidos en 2 videos)
 5. `signal_check` nunca se probó con un video real sin contracciones (lo resolvería el video de control de iluminación).
-6. Riesgos que todavía no avisan:
-   - timestamps inventados por el contenedor (H15)
-   - poco contraste (H22)
-   - cintura corta (H21)
+6. **Hecho (2026-10-10): tres avisos nuevos en `main.py`**, con umbrales medidos en los 11 videos (ninguno los dispara; `data/_mediciones_fases/d6_avisos/`). Solo diagnóstico, quedan en el `resumen`:
+   - timestamps inventados (H15): aviso si ≥ 99 % de los intervalos son idénticos (reales: 35–50 %).
+   - cintura corta (H21): aviso si la zona cerca de la cintura abarca menos que el ancho mínimo, 120 px (reales: 150–1062; el menor, 466).
+   - poco contraste (H22): aviso si la nitidez mediana del borde en la zona es < 12 (reales: 18–51; la elección de zona exige ≥ 10). Los umbrales de H21 y H22 salen de pocos casos (D4).
 7. **Medido (2026-10-10): es propia de 476.** Promediando alineado al final de cada evento: en 476 queda una oscilación de ~2.4 Hz y ±0.2–0.3 px durante ~2.5 s, en los 6 eventos (2.2 veces el tramo quieto, evento a evento). En 063, 268, 466 y 583 no hay oscilación, solo una vuelta lenta a la línea base (0.1–0.2 px en 268 y 466); 491 tiene solo 2 eventos. No genera eventos ni cambia números. Si interesa: ¿rebote mecánico o actividad? (pregunta para Cami). Detalle: `data/_mediciones_fases/d7_oscilacion_post/`.
 
 ## E. Mantenimiento
@@ -126,7 +126,7 @@ La revisión (H1–H55) estaba en `docs/historia/hallazgos-revision-codigo.md`, 
 - **H16: medido y cerrado (2026-10-10), sin cambios de código.** La mediana de la deriva cuenta fotogramas; con fotogramas perdidos, entre el 4 y el 24 % de las ventanas cubren más tiempo que el nominal (466: 24 %, hasta +0.6 s). Rehecha con la ventana medida en segundos (timestamps reales), en los 11 videos: mismos eventos, instantes, k, meseta y TTP/RT50 en todos los reportables; el ruido cambia ≤ 2.3 % y el período en la 5.ª decimal (476: 10.00051 → 10.00104 s). Solo 341 (NO REPORTABLE) pasa de 22 a 23 candidatos. No vale la pena cambiarlo. Detalle: `data/_mediciones_fases/h16_ventana_tiempo/`.
 - **H13. El control con la señal invertida supone ruido simétrico.** Un evento con rebote cuenta como falso; un ruido asimétrico puede no aparecer del lado invertido. Pregunta abierta, sin caso real comprobado.
 
-**2. Riesgos que no avisan** (H15, H21 y H22 están en D6)
+**2. Riesgos que no avisan** (H15, H21 y H22: hechos, ver D6)
 - **H18: hecho (2026-10-10).** La zona elegida a mano (`--x-start/--x-end`) se mantiene "por si acaso", pero ahora recibe el mismo veredicto que la automática (variación ≤ 6 %): `--exigir-roi` la frena y el `resumen` dice si cumple. Además avisa siempre que es manual, y si es más angosta que el mínimo (120 px) o no contiene la cintura. La automática no cambia (tests y regresión iguales).
 - **H23: medido (2026-10-10), propuesta: no cambiar ahora.** La ventana sí importa (×0.5 o ×2 cambia la ROI en 9 de 11 videos), pero escalarla con el grosor del gel, reprocesando los 11 desde el video: 7 idénticos bit a bit; 466 y 476 con los mismos eventos, k, período, amplitud y TTP (solo el ruido en la 3.ª cifra); cambia la zona de 068 y 341, que siguen NO REPORTABLES. Hoy todos los videos son de 1920 px, así que no gana nada medible y rompe la regresión exacta. Anotado para cuando llegue un video de otra resolución o aumento. **Decidido (Franco, 2026-10-10): se deja como está**; revisar si llega un video de otra resolución o aumento. Detalle: `data/_mediciones_fases/h23_ventanas_roi/`.
 - **H30: medido y cerrado (2026-10-10), sin cambios.** En los 11 videos: 1000 intentos en vez de 200 da idéntico bit a bit (el corte dinámico al 99 % termina antes: `max_trials` nunca limita). Umbral 2 × MAD: peor (descarta el doble de columnas, el ruido sube en 10 de 11 y 063 pierde un evento, 6 → 5). Umbral 4 × MAD: mixto (mismos conteos en los reportables y menos ruido en Video_prueba, 063 y 583, pero más en 466 y cambian instantes en 466 y 476). 3 × MAD se queda. Detalle: `data/_mediciones_fases/h30_ransac/`.

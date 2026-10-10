@@ -84,7 +84,6 @@ def parse_args():
     g.add_argument("--min-gradient", type=float, default=5.0,
                    help="Gradiente minimo para aceptar un borde. Se mide sobre la imagen ya "
                         "pasada por CLAHE, asi que su valor cambia si usas --no-clahe.")
-    g.add_argument("--edge-method", choices=["parabolic", "sigmoid"], default="parabolic")
 
     g = p.add_argument_group("ajuste robusto (RANSAC)")
     g.add_argument("--ransac-degree", type=int, default=2,
@@ -129,7 +128,6 @@ def parse_args():
                    help="Desactiva CLAHE. RECOMENDADO PROBARLO en videos con burbujas moviles: "
                         "CLAHE remapea el contraste por tiles, y una burbuja entrando a un tile "
                         "corre la posicion subpixel de todo el borde de ese tile.")
-    g.add_argument("--denoise", action="store_true", help="Activa non-local-means (lento).")
     g.add_argument("--savgol-window", type=int, default=11, help="Ventana del suavizado temporal (impar).")
     g.add_argument("--low-quality-frac", type=float, default=0.30,
                    help="Fraccion de columnas descartadas (sobre 2N) para marcar LOW_QUALITY.")
@@ -149,7 +147,6 @@ def main():
         n_columns=args.n_columns,
         half_window=args.half_window or HW_NORMAL,
         min_gradient=args.min_gradient,
-        edge_method=args.edge_method,
         ransac_degree=args.ransac_degree,
         ransac_residual_threshold=args.ransac_residual_threshold,
         ransac_residual_k=args.ransac_residual_k,
@@ -166,7 +163,6 @@ def main():
         base_tiempo=args.base_tiempo,
         px_to_mm=args.px_to_mm,
         use_clahe=not args.no_clahe,
-        use_denoise=args.denoise,
         savgol_window=args.savgol_window,
         low_quality_frac=args.low_quality_frac,
     )
@@ -226,7 +222,7 @@ def main():
         "half_window eleccion": hw_motivo,
         "fotogramas con bordes en el limite (%)": round(100 * lim, 2),
         "min_gradient": args.min_gradient,
-        "edge_method": args.edge_method,
+        "edge_method": "parabolic",   # unica opcion desde 2026-10-10 (se borro "sigmoid")
         "fit_method": "ransac",   # unica opcion desde 2026-10-08 (se borro "median")
         "ransac_degree": args.ransac_degree,
         "ransac_residual_threshold": args.ransac_residual_threshold or "adaptativo",

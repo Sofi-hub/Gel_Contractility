@@ -1030,7 +1030,7 @@ def main():
             if not rit.get("hay_estimulacion"):
                 continue
             fc = min(a.frecuencia_estimulo, key=lambda x: abs(rit["frecuencia_Hz"] - x))
-            c = rs.comparar_con_equipo(rit, fc, fps_nominal=r.get("fps_medido"))
+            c = rs.comparar_con_equipo(rit, fc)
             print()
             print(f"  ESTIMULADOR ({nombre}): configurado {fc:g} Hz, medido "
                   f"{rit['frecuencia_Hz']:.5f} +- {rit['frecuencia_err_Hz']:.6f} Hz "

@@ -589,8 +589,7 @@ def separar(tiempos, amplitudes=None, duracion_s=None, periodo_min=0.3,
             periodo_max=None, min_eventos=4, min_captura=0.75, jitter_k=4.0,
             rescate_frac=0.10, resolucion_s=None, tol_s=None,
             n_simulaciones=N_SIMULACIONES, alfa=0.01, semilla=0,
-            frecuencia_configurada_Hz=None, ventana_frac=VENTANA_DIRIGIDA,
-            tol_frac=None, tol_min_s=None) -> dict:
+            frecuencia_configurada_Hz=None, ventana_frac=VENTANA_DIRIGIDA) -> dict:
     """
     Separa los eventos en estimulados (enganchados en fase) y espontaneos.
 
@@ -621,7 +620,6 @@ def separar(tiempos, amplitudes=None, duracion_s=None, periodo_min=0.3,
     Monte Carlo desde 4 eventos con 1000 simulaciones sobre el z de la
     busqueda; R5 (un estimulado sale solo si falla en tiempo Y amplitud); R6
     (dudosos solo dentro del tren y con amplitud compatible).
-    `tol_frac` y `tol_min_s` se aceptan por compatibilidad y no se usan.
     """
     t = np.asarray(tiempos, float)
     orden = np.argsort(t)
@@ -793,24 +791,18 @@ def separar(tiempos, amplitudes=None, duracion_s=None, periodo_min=0.3,
 
 
 def comparar_con_equipo(res: dict, frecuencia_configurada_Hz: float,
-                        fps_nominal: float | None = None,
                         tol_pct: float = 5.0) -> dict:
     """Contrasta la frecuencia medida contra la configurada en el estimulador.
 
     Devuelve la diferencia en Hz, en % y en unidades del error estandar.
 
-    OJO CON UNA DIFERENCIA CHICA PERO SIGNIFICATIVA. El estimulador es un
-    reloj de cuarzo: su frecuencia es mucho mas confiable que el `fps` que
-    declara el archivo de video, que suele venir redondeado o directamente
-    mal. Como TODOS los tiempos del analisis salen de dividir el numero de
-    fotograma por ese fps, un fps equivocado escala toda la base de tiempo y
-    aparece como un desvio sistematico del mismo signo en cada video.
-
-    Por eso, si la diferencia es significativa pero menor que `tol_pct`, lo
-    mas probable no es que falle el equipo sino la base de tiempo del video, y
-    esta funcion devuelve el `fps` corregido. Usar el estimulador para
-    calibrar el fps es legitimo y de hecho es el patron mas preciso que hay a
-    mano en el montaje.
+    Una diferencia chica (< `tol_pct`) pero muy significativa apunta a la base
+    de tiempo del video, no al equipo: el estimulador es un reloj de cuarzo.
+    Con `--base-tiempo pts` (el eje sale de los timestamps del contenedor) los
+    cinco videos con tren dan una frecuencia indistinguible de la configurada.
+    Antes esta funcion devolvia un `fps_corregido` para reprocesar con el eje
+    `fotograma / fps`; con el eje por timestamps no tiene sentido y se borro
+    (H39, 2026-10-10).
     """
     if not res.get("hay_estimulacion"):
         return {"comparable": False,
@@ -834,18 +826,8 @@ def comparar_con_equipo(res: dict, frecuencia_configurada_Hz: float,
         out["veredicto"] = "indistinguible de lo configurado"
     elif abs(pct) <= tol_pct:
         out["veredicto"] = (f"desvio sistematico de {pct:+.2f} %. Es chico y muy significativo: "
-                            f"lo mas probable es que el fps del video este mal, no el equipo")
-        if fps_nominal:
-            out["fps_declarado"] = fps_nominal
-            # fps_real = fotogramas_por_periodo / periodo_verdadero, y
-            # fotogramas_por_periodo = T_medido * fps_declarado. O sea que el
-            # factor DIVIDE, no multiplica: si la frecuencia medida salio baja,
-            # es porque el video corre mas rapido de lo que declara.
-            out["fps_corregido"] = round(fps_nominal / (1 + pct / 100), 4)
-            out["fotogramas_por_periodo"] = round(res["periodo_s"] * fps_nominal, 2)
-            out["nota_fps"] = ("Reprocesar con este fps alinea toda la base de tiempo. "
-                               "Verificarlo con un segundo video estimulado a otra "
-                               "frecuencia: si el factor de correccion es el mismo, es el fps.")
+                            f"lo mas probable es la base de tiempo del video, no el equipo "
+                            f"(se corrio main.py con --base-tiempo pts?)")
     else:
         out["veredicto"] = (f"difiere {pct:+.1f} % de lo configurado, demasiado para ser la base "
                             f"de tiempo: revisar el equipo o la deteccion de eventos")

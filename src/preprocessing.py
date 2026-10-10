@@ -73,20 +73,13 @@ def apply_clahe(frame: np.ndarray, clip_limit: float = 2.0, tile_grid: int = 8) 
     return clahe.apply(frame)
 
 
-def denoise(frame: np.ndarray, h: float = 7.0) -> np.ndarray:
-    """
-    Suavizado non-local-means: reduce ruido de sensor sin destruir la
-    nitidez del borde (a diferencia de un blur gaussiano grande, que
-    "corre" artificialmente la posición del borde).
-    """
-    return cv2.fastNlMeansDenoising(frame, None, h=h, templateWindowSize=7, searchWindowSize=21)
+def preprocess_frame(frame: np.ndarray, use_clahe: bool = True) -> np.ndarray:
+    """Pipeline de preprocesamiento por frame.
 
-
-def preprocess_frame(frame: np.ndarray, use_clahe: bool = True, use_denoise: bool = False) -> np.ndarray:
-    """Pipeline de preprocesamiento por frame."""
+    Habia un `use_denoise` (non-local-means, `--denoise`). Medido en
+    Video_prueba y Video_063 (B4/H28, 2026-10-10): mismos eventos, sin
+    ganancia de ruido y ~30 veces mas lento. Se borro."""
     out = frame.copy()
-    if use_denoise:
-        out = denoise(out)
     if use_clahe:
         out = apply_clahe(out)
     return out
@@ -320,7 +313,6 @@ def auto_detect_roi(
     min_column_spacing_px: float = 3.0,
     min_columns: int = 40,
     max_variacion_pct: float = 6.0,
-    min_roi_width_frac: float = 0.35,
     fallback_margin_x_frac: float = 0.05,
     x_start: int | None = None,
     x_end: int | None = None,
@@ -349,8 +341,6 @@ def auto_detect_roi(
         (3 px) y piso de columnas (40). El ancho minimo de la ROI es su
         producto (120 px) y la cantidad usada sale en
         `roi_quality["n_columnas_usadas"]`. Ver el comentario ANCHO MINIMO.
-    min_roi_width_frac : SIN USO (queda por compatibilidad). Era el viejo
-        ancho minimo como fraccion del gel; ver el comentario ANCHO MINIMO.
     x_start, x_end : override MANUAL. Si se pasan, se usan tal cual y se
         saltea toda la selección automática (método = "manual"). Útil
         cuando ya mirás el perfil de grosor y sabés dónde querés medir.

@@ -1,0 +1,8 @@
+Video_prueba base     ev=29 k=9.415 ruido=0.0854 meseta=5.315-15.163 amp_px=6.807450000000017 ruido_fot=0.0290px outl=0.0333 |dif|med=0.000px amp%=2.314266731457109
+Video_prueba sigmoid  ev=29 k=10.357 ruido=0.0752 meseta=6.431-16.68 amp_px=6.819400000000002 ruido_fot=0.0232px outl=0.0333 |dif|med=0.274px amp%=2.309328075605576
+Video_prueba denoise  ev=29 k=9.415 ruido=0.0841 meseta=5.846-13.785 amp_px=6.720799999999969 ruido_fot=0.0283px outl=0.0333 |dif|med=0.028px amp%=2.284734361202735
+
+Video_063    base     ev=6 k=11.392 ruido=0.0242 meseta=9.415-13.785 amp_px=1.591499999999996 ruido_fot=0.0014px outl=0.0648 |dif|med=0.000px amp%=0.5638313916458226
+Video_063    sigmoid  ev=6 k=11.392 ruido=0.0222 meseta=9.415-15.163 amp_px=1.6601 ruido_fot=0.0028px outl=0.0370 |dif|med=0.035px amp%=0.5879239115282933
+Video_063    denoise  ev=6 k=12.532 ruido=0.0227 meseta=11.392-15.163 amp_px=1.611899999999991 ruido_fot=0.0014px outl=0.0741 |dif|med=0.020px amp%=0.5710520620724067
+

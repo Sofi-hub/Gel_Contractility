@@ -52,7 +52,6 @@ class PipelineConfig:
                                   # la imagen YA pasada por CLAHE, así que
                                   # su valor no es portable entre videos
                                   # si cambiás use_clahe.
-    edge_method: str = "parabolic"   # "parabolic" o "sigmoid"
 
     # --- ajuste robusto ---
     ransac_degree: int = 2
@@ -89,7 +88,6 @@ class PipelineConfig:
     # --- calibración y preproceso ---
     px_to_mm: float = 1.0        # mm por píxel. Calibrar con retícula.
     use_clahe: bool = True
-    use_denoise: bool = False
 
     # --- suavizado temporal final ---
     savgol_window: int = 11      # debe ser impar
@@ -120,12 +118,12 @@ def process_frame(
 ) -> dict:
     """Procesa UN frame y devuelve grosor + métricas de calidad."""
     frame_p = preprocessing.preprocess_frame(
-        frame, use_clahe=config.use_clahe, use_denoise=config.use_denoise
+        frame, use_clahe=config.use_clahe
     )
 
-    x, y_top, y_bot, quality = edge_detection.extract_edges_for_frame(
+    x, y_top, y_bot, _calidad = edge_detection.extract_edges_for_frame(  # la calidad solo la usa el QC
         frame_p, x_positions, top_guess, bottom_guess,
-        half_window=config.half_window, method=config.edge_method,
+        half_window=config.half_window,
         min_gradient=config.min_gradient,
     )
 

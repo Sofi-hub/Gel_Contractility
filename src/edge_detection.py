@@ -4,21 +4,19 @@ edge_detection.py
 Núcleo matemático del pipeline: localización subpíxel del borde
 superior e inferior del gel, columna por columna.
 
-Dos métodos disponibles:
-    1. subpixel_edge_parabolic  -> rápido, interpolación parabólica
-                                    del gradiente (~microsegundos/columna)
-    2. subpixel_edge_sigmoid    -> más lento, ajuste no-lineal, más
-                                    robusto si el borde es muy ruidoso
-                                    o la rampa es muy ancha/asimétrica
+Un solo método: subpixel_edge_parabolic, interpolación parabólica del
+gradiente (~microsegundos por columna).
 
-Por defecto usamos el método 1 para todo el pipeline y podés activar
-el 2 puntualmente para validar.
+Había un segundo método, ajuste de sigmoide (`--edge-method sigmoid`). Se
+midió contra éste en Video_prueba y Video_063 (B4/H28, 2026-10-10): mismos
+eventos, ruido 8-12 % menor pero amplitud distinta (063: +4 %), 2-3 veces
+más lento y con avisos de no convergencia. No era mejor y se borró (queda en
+el historial de git; medición en data/_mediciones_fases/b4_sigmoid_denoise/).
 """
 
 from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
-from scipy.optimize import curve_fit
 
 
 @dataclass
@@ -103,73 +101,15 @@ def subpixel_edge_parabolic(
     if abs(denom) < 1e-9:
         delta = 0.0
     else:
+        # No hace falta acotar delta: como g0 es el MAXIMO de la ventana,
+        # con a = g0 - g_minus1 >= 0 y b = g0 - g_plus1 >= 0 queda
+        # delta = 0.5 * (a - b) / (a + b), siempre entre -0.5 y 0.5. El
+        # viejo np.clip(delta, -1, 1) nunca actuaba (H28, borrado 2026-10-10).
         delta = 0.5 * (g_minus1 - g_plus1) / denom
-        # Salvaguarda: si la parábola sale rara (denom casi 0, curva
-        # casi plana) delta puede explotar. Lo acotamos a [-1, 1] ya
-        # que un corrimiento subpíxel mayor a 1 píxel no tiene sentido
-        # físico (ahí el máximo entero ya estaría mal ubicado).
-        delta = float(np.clip(delta, -1.0, 1.0))
 
     y_subpixel = search_start + idx_max + delta
 
     return EdgePoint(y=y_subpixel, quality=float(peak_val), valid=True)
-
-
-# ---------------------------------------------------------------------
-# Método 2: ajuste de sigmoide (más robusto a ruido, más lento)
-# ---------------------------------------------------------------------
-
-def _sigmoid(y, a, b, y0, s):
-    """I(y) = a + b / (1 + exp(-(y - y0) / s))
-    a: nivel de fondo, b: amplitud del salto, y0: centro (= borde),
-    s: "suavidad" de la rampa (relacionado al desenfoque óptico)."""
-    return a + b / (1 + np.exp(-(y - y0) / s))
-
-
-def subpixel_edge_sigmoid(
-    profile: np.ndarray,
-    search_start: int,
-    search_end: int,
-    polarity: int = 1,
-) -> EdgePoint:
-    """
-    Alternativa más robusta: ajusta una sigmoide a TODO el perfil de
-    la ventana (no solo 3 puntos), y el punto de inflexión (y0) es la
-    posición subpíxel del borde. Más costoso (usa optimización
-    no-lineal iterativa) pero menos sensible al ruido punto-a-punto
-    porque usa toda la información de la rampa.
-
-    Usalo para validar el método parabólico en una submuestra, o si
-    el video tiene mucho ruido de cámara.
-    """
-    window = profile[search_start:search_end].astype(np.float64)
-    y_axis = np.arange(len(window), dtype=np.float64)
-
-    if polarity < 0:
-        window = window[::-1]  # normalizamos siempre a "rampa ascendente"
-
-    a0 = float(np.min(window))
-    b0 = float(np.max(window) - np.min(window))
-    y0_0 = float(len(window) / 2)
-    s0 = 1.5
-
-    try:
-        popt, _ = curve_fit(
-            _sigmoid, y_axis, window,
-            p0=[a0, b0, y0_0, s0],
-            maxfev=2000,
-        )
-        _, _, y0, s = popt
-        quality = abs(b0) / (abs(s) + 1e-6)  # salto grande + rampa angosta = alta calidad
-    except RuntimeError:
-        return EdgePoint(y=np.nan, quality=0.0, valid=False)
-
-    if polarity < 0:
-        y0 = (len(window) - 1) - y0  # deshacer el flip
-
-    y_subpixel = search_start + y0
-    valid = 0 <= y0 <= len(window)
-    return EdgePoint(y=float(y_subpixel), quality=float(quality), valid=bool(valid))
 
 
 # ---------------------------------------------------------------------
@@ -182,7 +122,6 @@ def extract_edges_for_frame(
     top_guess: np.ndarray,
     bottom_guess: np.ndarray,
     half_window: int = 15,
-    method: str = "parabolic",
     min_gradient: float = 5.0,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
@@ -206,8 +145,6 @@ def extract_edges_for_frame(
     frame_f = frame.astype(np.float64)
     h = frame.shape[0]
 
-    edge_fn = subpixel_edge_parabolic if method == "parabolic" else subpixel_edge_sigmoid
-
     y_top = np.full(len(x_positions), np.nan)
     y_bottom = np.full(len(x_positions), np.nan)
     quality = np.full(len(x_positions), 0.0)
@@ -225,12 +162,10 @@ def extract_edges_for_frame(
 
         # Borde superior: fondo oscuro -> gel claro (polarity +1)
         # Borde inferior: gel claro -> fondo oscuro (polarity -1)
-        if method == "parabolic":
-            top_pt = edge_fn(col_profile, top_start, top_end, polarity=1, min_gradient=min_gradient)
-            bot_pt = edge_fn(col_profile, bot_start, bot_end, polarity=-1, min_gradient=min_gradient)
-        else:
-            top_pt = edge_fn(col_profile, top_start, top_end, polarity=1)
-            bot_pt = edge_fn(col_profile, bot_start, bot_end, polarity=-1)
+        top_pt = subpixel_edge_parabolic(col_profile, top_start, top_end, polarity=1,
+                                         min_gradient=min_gradient)
+        bot_pt = subpixel_edge_parabolic(col_profile, bot_start, bot_end, polarity=-1,
+                                         min_gradient=min_gradient)
 
         if top_pt.valid:
             y_top[i] = top_pt.y

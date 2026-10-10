@@ -54,7 +54,7 @@ def run_frame_diagnostics(
     """
     x, y_top, y_bot, quality = edge_detection.extract_edges_for_frame(
         frame_gray, x_positions, top_guess, bottom_guess,
-        half_window=config.half_window, method=config.edge_method,
+        half_window=config.half_window,
         min_gradient=config.min_gradient,
     )
 

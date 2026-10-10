@@ -1,0 +1,6 @@
+Video_prueba base 48 s
+Video_prueba sigmoid 160 s
+Video_prueba denoise 1693 s
+Video_063 base 41 s
+Video_063 sigmoid 97 s
+Video_063 denoise 1420 s

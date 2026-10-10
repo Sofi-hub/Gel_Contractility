@@ -197,6 +197,18 @@ class PestanaResultados:
         self.sel: int | None = None
         self.oscuro = oscuro
 
+        k = float(getattr(self.raiz, "_factor_ui", 1.0))   # escala de pantalla x tamano_letra
+        px = lambda n: int(round(n * k))
+        # filas de las tablas a la altura de la letra (si no, con letra grande se cortan)
+        import tkinter.font as tkfont
+        lh = 0
+        for nf in ("SunValleyBodyFont", "TkDefaultFont"):
+            try:
+                lh = max(lh, tkfont.nametofont(nf, self.raiz).metrics("linespace"))
+            except Exception:
+                pass
+        if lh:
+            ttk.Style(self.raiz).configure("Treeview", rowheight=lh + 8)
         frm = ttk.Frame(padre)
         frm.pack(fill="both", expand=True)
         pan = ttk.PanedWindow(frm, orient="horizontal")
@@ -213,8 +225,8 @@ class PestanaResultados:
                                   selectmode="browse")
         self.lista.heading("#0", text="Resultado")
         self.lista.heading("ev", text="Contr.")
-        self.lista.column("#0", width=270, stretch=True)
-        self.lista.column("ev", width=55, anchor="center", stretch=False)
+        self.lista.column("#0", width=px(270), stretch=True)
+        self.lista.column("ev", width=px(55), anchor="center", stretch=False)
         self.lista.pack(fill="both", expand=True)
         self.lista.tag_configure("si", foreground="#2e7d4f")
         self.lista.tag_configure("no", foreground="#b03a2e")
@@ -237,13 +249,16 @@ class PestanaResultados:
         fila = ttk.Frame(der)
         fila.pack(fill="x")
         self.numeros = ttk.Treeview(fila, columns=("v",), show="tree", height=7)
-        self.numeros.column("#0", width=190, stretch=False)
-        self.numeros.column("v", width=360)
-        self.numeros.pack(side="left", fill="x", expand=True)
+        self.numeros.column("#0", width=px(190), stretch=False)
+        self.numeros.column("v", width=px(330))
+        self.numeros.pack(side="left", fill="y")
         self.ficha = ttk.LabelFrame(fila, text="Contracción elegida (clic en el gráfico)", padding=6)
-        self.ficha.pack(side="left", fill="both", padx=(8, 0))
-        self.ficha_txt = ttk.Label(self.ficha, text="—", justify="left", width=52, wraplength=440)
+        self.ficha.pack(side="left", fill="both", expand=True, padx=(8, 0))
+        self.ficha_txt = ttk.Label(self.ficha, text="—", justify="left", wraplength=px(520))
         self.ficha_txt.pack(anchor="nw")
+        # el texto de la ficha se acomoda al ancho que quede libre
+        self.ficha.bind("<Configure>",
+                        lambda e: self.ficha_txt.config(wraplength=max(150, e.width - 24)))
 
         barra = ttk.Frame(der)
         barra.pack(fill="x", pady=(6, 2))
@@ -261,7 +276,10 @@ class PestanaResultados:
         # con la nitidez de Windows activada, los px son reales: la figura usa la
         # densidad de la pantalla para que el texto no quede diminuto
         try:
-            dpi = max(80.0, min(200.0, float(self.raiz.winfo_fpixels("1i"))))
+            # 85 % de la densidad: con 100 % los textos del grafico quedan mas
+            # grandes que los de la ventana
+            dpi = max(80.0, min(200.0, 0.85 * float(self.raiz.winfo_fpixels("1i")) * float(
+                getattr(self.raiz, "_factor_ui", 1.0)) / max(float(self.raiz.winfo_fpixels("1i")) / 96.0, 1e-6)))
         except Exception:
             dpi = 100.0
         self.fig = Figure(figsize=(9, 4.2), dpi=dpi)
@@ -275,7 +293,7 @@ class PestanaResultados:
         self.estado.pack(anchor="w")
 
         # ancho inicial de la lista (si no, el panel puede arrancar cerrado)
-        self.raiz.after(100, lambda: pan.sashpos(0, 330))
+        self.raiz.after(100, lambda: pan.sashpos(0, px(340)))
         self._carpetas: list[Path] = []
         self._info: dict[str, tuple] = {}
         self.refrescar()

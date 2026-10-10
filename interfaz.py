@@ -49,7 +49,7 @@ def leer_configuracion(ruta: Path | None = None) -> dict:
     """configuracion.ini (C3): con que arranca la ventana. Si no esta o tiene un
     error, los valores de siempre. No hay parametros del analisis a proposito."""
     import configparser
-    cfg = {"frecuencia": "", "pasos": {1, 2, 4}, "detalle": False, "tema": "claro",
+    cfg = {"frecuencia": "", "pasos": {1, 2, 4}, "detalle": False, "tema": "claro", "zoom": 1.0,
            "carpeta_resultados": RAIZ / "data" / "processed_data"}
     ruta = ruta or RAIZ / "configuracion.ini"
     try:
@@ -62,6 +62,11 @@ def leer_configuracion(ruta: Path | None = None) -> dict:
             cfg["pasos"] = {int(x) for x in s.get("pasos").replace(",", " ").split()
                             if x in {"1", "2", "3", "4"}}
         cfg["detalle"] = s.get("detalle", "no").strip().lower() in ("si", "sí", "yes", "1", "true")
+        try:
+            z = float(s.get("tamano_letra", "1").replace(",", ".") or 1)
+            cfg["zoom"] = min(2.5, max(0.6, z))
+        except ValueError:
+            pass
         if s.get("tema", "").strip().lower() in ("claro", "oscuro"):
             cfg["tema"] = s.get("tema").strip().lower()
         if s.get("carpeta_resultados", "").strip():
@@ -214,6 +219,33 @@ def activar_nitidez_windows():
         pass
 
 
+_TAMANOS_ORIGINALES: dict = {}
+
+
+def escalar_letras(root, zoom: float = 1.0) -> float:
+    """Con la nitidez activada, las letras definidas en PIXELES (las del tema
+    sv-ttk) quedan chicas en pantallas con escala 125-150 %. Se agrandan segun la
+    densidad real de la pantalla (96 = 100 %) y el `zoom` de configuracion.ini.
+    Las definidas en puntos ya escalan solas; a esas solo se les aplica el zoom.
+    Se guarda el tamano original para no agrandar dos veces."""
+    import tkinter.font as tkfont
+    try:
+        escala = float(root.winfo_fpixels("1i")) / 96.0
+    except Exception:
+        escala = 1.0
+    for nombre in tkfont.names(root):
+        try:
+            f = tkfont.nametofont(nombre, root)
+        except Exception:
+            continue
+        orig = _TAMANOS_ORIGINALES.setdefault(nombre, int(f.cget("size")))
+        if orig < 0:      # pixeles
+            f.configure(size=-max(1, round(-orig * escala * zoom)))
+        elif orig > 0:    # puntos
+            f.configure(size=max(1, round(orig * zoom)))
+    return escala
+
+
 def main():
     activar_nitidez_windows()
     import tkinter as tk
@@ -235,16 +267,18 @@ def main():
     root.minsize(int(sw * 0.5), int(sh * 0.55))
     tema = {"oscuro": CONFIG.get("tema") == "oscuro"}
     hay_tema = aplicar_tema(root, tema["oscuro"])
+    root._factor_ui = escalar_letras(root, CONFIG.get("zoom", 1.0)) * CONFIG.get("zoom", 1.0)
 
     fuente = "Segoe UI" if sys.platform.startswith("win") else "TkDefaultFont"
 
     def estilos():
         # se vuelven a aplicar al cambiar de tema (el tema nuevo los borra)
         st = ttk.Style(root)
-        st.configure("Titulo.TLabel", font=(fuente, 17, "bold"))
-        st.configure("Sub.TLabel", font=(fuente, 10), foreground="#7a8490")
-        st.configure("Seccion.TLabel", font=(fuente, 11, "bold"))
-        st.configure("Ayuda.TLabel", font=(fuente, 9), foreground="#7a8490")
+        z = CONFIG.get("zoom", 1.0)
+        st.configure("Titulo.TLabel", font=(fuente, round(17 * z), "bold"))
+        st.configure("Sub.TLabel", font=(fuente, round(10 * z)), foreground="#7a8490")
+        st.configure("Seccion.TLabel", font=(fuente, round(11 * z), "bold"))
+        st.configure("Ayuda.TLabel", font=(fuente, round(9 * z)), foreground="#7a8490")
     estilos()
 
     cab = ttk.Frame(root, padding=(18, 12, 18, 6))
@@ -396,13 +430,14 @@ def main():
         def cambiar_tema():
             tema["oscuro"] = not tema["oscuro"]
             aplicar_tema(root, tema["oscuro"])
+            escalar_letras(root, CONFIG.get("zoom", 1.0))
             estilos()
             colores_salida()
         ttk.Button(botones, text="Claro / oscuro", command=cambiar_tema).pack(side="right")
     ultimo = {"carpeta": None}
 
     ttk.Label(tab1, text="Salida", style="Seccion.TLabel").pack(anchor="w", pady=(0, 4))
-    salida = ScrolledText(tab1, font=("Consolas", 10), wrap="word", relief="flat",
+    salida = ScrolledText(tab1, font=("Consolas", round(10 * CONFIG.get("zoom", 1.0))), wrap="word", relief="flat",
                           borderwidth=0, padx=10, pady=8)
     salida.pack(fill="both", expand=True)
 

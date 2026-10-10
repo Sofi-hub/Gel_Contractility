@@ -42,11 +42,11 @@ Los comandos (y la ventana `Analizar.bat`, que corre los mismos) están en
 ## Chequeos de aceptación por video
 
 1. **ROI**: `00_roi_profile_<video>.png` y la hoja `resumen`. Variación de grosor
-   dentro de la ROI **< 6 %**. La hoja registra `ROI cumple criterio`
-   directamente. Métodos aceptables: `gauge_plana`, `gauge_cintura`,
-   `gauge_rescate_plana` o `manual`. Si sale `solo_nitidez`,
-   `franja_completa` o `fallback_margin`, mirar el perfil y forzar con
-   `--x-start/--x-end`. La hoja trae también `n_columnas usadas`
+   dentro de la ROI **≤ 6 %**. La hoja registra
+   `ROI cumple criterio` directamente: **ése es el criterio**, sea cual sea el
+   método que eligió la zona (el método solo dice por qué se eligió; una zona
+   `manual` también tiene que cumplirlo, H18). Si no cumple, mirar el perfil y,
+   si hace falta, forzar con `--x-start/--x-end`. La hoja trae también `n_columnas usadas`
    (60, o menos en una ROI angosta, nunca menos de 40) y `ROI contiene cintura`
    (tiene que ser 1). Ningún video (validados ni RARITOS) necesitó ROI manual.
    `main.py` avisa en pantalla solo si la variación supera el 6 % o la zona no

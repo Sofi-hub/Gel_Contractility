@@ -245,7 +245,11 @@ Por cada contracción (`src/cinetica.py`):
 - **TTP**: del inicio (cruce del 10 % de la amplitud) al pico.
 - **RT50**: del pico hasta caer al 50 % de la amplitud.
 - **Amplitud relativa**: amplitud / grosor en reposo, en %. No depende del
-  aumento, así que sí se puede comparar entre videos.
+  aumento, así que sí se puede comparar entre videos. **Es una normalización,
+  no una deformación del gel:** la amplitud es cuánto se *traslada* la franja,
+  y dividirla por el grosor solo la lleva a una escala común. No dice cuánto se
+  acortó o estiró el material (eso sería una deformación, y el adelgazamiento,
+  que sería lo más cercano, no se reporta: §3.5).
 
 **Límite de fondo:** la cámara toma una imagen cada 33 ms. En las muestras
 rápidas la subida entera ocupa 1–2 fotogramas, y ahí no hay TTP que medir:

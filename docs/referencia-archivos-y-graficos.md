@@ -283,9 +283,10 @@ en cualquier instante.
   inferior. Mínimo, no máximo: los dos bordes tienen que ser nítidos para que
   la columna sirva.
 
-El título dice qué método de ROI ganó. **Aceptables:** `gauge_plana`,
-`gauge_cintura`, `gauge_rescate_plana` o `manual`. Si dice `solo_nitidez`,
-`franja_completa` o `fallback_margin`, la ROI está mal.
+El título dice qué método de ROI ganó; eso explica por qué se eligió la zona,
+pero no si sirve. **El criterio es uno solo:** variación de grosor ≤ 6 % dentro
+de la zona, y está en la hoja `resumen` como `ROI cumple criterio` (también para
+una zona `manual`). Al lado, `ROI contiene cintura` tiene que ser 1.
 
 ### `01_serie_temporal_<video>.png`
 `x` = tiempo (s). `y` = grosor (px). Gris = crudo, rojo = suavizado

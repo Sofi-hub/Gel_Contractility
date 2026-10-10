@@ -75,13 +75,20 @@ def leer_configuracion(ruta: Path | None = None) -> dict:
 CONFIG = leer_configuracion()
 
 
+TEMA_ERROR = {"txt": ""}
+
+
 def aplicar_tema(root, oscuro: bool = False) -> bool:
-    """Tema moderno (sv-ttk, opcional: pip install sv-ttk). Sin el, el de siempre."""
+    """Tema moderno (sv-ttk, opcional: pip install sv-ttk). Sin el, el de siempre.
+    Si falla, el motivo queda en TEMA_ERROR y la ventana lo muestra (antes se
+    callaba y no se sabia por que se veia igual)."""
     try:
         import sv_ttk
         sv_ttk.set_theme("dark" if oscuro else "light", root)
+        TEMA_ERROR["txt"] = ""
         return True
-    except Exception:
+    except Exception as e:
+        TEMA_ERROR["txt"] = f"{type(e).__name__}: {e} (python: {sys.executable})"
         return False
 
 
@@ -191,7 +198,24 @@ def correr(cmds, escribir, detener=lambda: False) -> bool:
 # --------------------------------------------------------------------------
 # Ventana
 # --------------------------------------------------------------------------
+def activar_nitidez_windows():
+    """Sin esto, Windows agranda la ventana como una imagen en pantallas con
+    escala (125 %, 150 %...) y todo se ve borroso. Con esto Tk dibuja a la
+    resolucion real. En otros sistemas no hace nada."""
+    if not sys.platform.startswith("win"):
+        return
+    try:
+        import ctypes
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)   # por monitor
+        except Exception:
+            ctypes.windll.user32.SetProcessDPIAware()
+    except Exception:
+        pass
+
+
 def main():
+    activar_nitidez_windows()
     import tkinter as tk
     from tkinter import ttk, filedialog, messagebox
     from tkinter.scrolledtext import ScrolledText
@@ -205,14 +229,42 @@ def main():
         hay_dnd = False
 
     root.title("Contractilidad de geles")
-    root.geometry("1280x860")
-    root.minsize(980, 640)
+    # tamano segun la pantalla (con la nitidez activada, los px son reales)
+    sw, sh = root.winfo_screenwidth(), root.winfo_screenheight()
+    root.geometry(f"{int(sw * 0.72)}x{int(sh * 0.82)}+{int(sw * 0.14)}+{int(sh * 0.05)}")
+    root.minsize(int(sw * 0.5), int(sh * 0.55))
     tema = {"oscuro": CONFIG.get("tema") == "oscuro"}
     hay_tema = aplicar_tema(root, tema["oscuro"])
 
+    fuente = "Segoe UI" if sys.platform.startswith("win") else "TkDefaultFont"
+
+    def estilos():
+        # se vuelven a aplicar al cambiar de tema (el tema nuevo los borra)
+        st = ttk.Style(root)
+        st.configure("Titulo.TLabel", font=(fuente, 17, "bold"))
+        st.configure("Sub.TLabel", font=(fuente, 10), foreground="#7a8490")
+        st.configure("Seccion.TLabel", font=(fuente, 11, "bold"))
+        st.configure("Ayuda.TLabel", font=(fuente, 9), foreground="#7a8490")
+    estilos()
+
+    cab = ttk.Frame(root, padding=(18, 12, 18, 6))
+    cab.pack(fill="x")
+    ttk.Label(cab, text="Contractilidad de geles", style="Titulo.TLabel").pack(side="left")
+    sub = ttk.Label(cab, text="", style="Sub.TLabel")
+    sub.pack(side="left", padx=(14, 0), pady=(6, 0))
+
+    def actualizar_sub():
+        try:
+            import visor
+            n = len(visor.listar_carpetas(CONFIG["carpeta_resultados"]))
+            sub.config(text=f"{n} resultados guardados  ·  medición por bordes del gel")
+        except Exception:
+            sub.config(text="medición por bordes del gel")
+    actualizar_sub()
+
     nb = ttk.Notebook(root)
-    nb.pack(fill="both", expand=True)
-    tab1 = ttk.Frame(nb, padding=6)
+    nb.pack(fill="both", expand=True, padx=12, pady=(0, 10))
+    tab1 = ttk.Frame(nb, padding=14)
     tab2 = ttk.Frame(nb)
     nb.add(tab1, text="  Analizar  ")
     nb.add(tab2, text="  Resultados  ")
@@ -266,62 +318,71 @@ def main():
             v_carpeta.set(r)
 
     pad = {"padx": 6, "pady": 4}
-    frm = ttk.Frame(tab1)
-    frm.pack(fill="x", **pad)
+
+    def tarjeta(padre, titulo):
+        f = ttk.Frame(padre)
+        f.pack(fill="x", pady=(0, 12))
+        ttk.Label(f, text=titulo, style="Seccion.TLabel").pack(anchor="w", pady=(0, 4))
+        c = ttk.Frame(f, padding=12, relief="solid", borderwidth=1) if not hay_tema \
+            else ttk.LabelFrame(f, padding=12, text="")
+        c.pack(fill="x")
+        return c
+
+    # --- 1. que analizar ---
+    frm = tarjeta(tab1, "Qué analizar")
     frm.columnconfigure(1, weight=1)
-
-    ttk.Label(frm, text="Video:").grid(row=0, column=0, sticky="w")
+    ttk.Label(frm, text="Video").grid(row=0, column=0, sticky="w", padx=(0, 10))
     e_video = ttk.Entry(frm, textvariable=v_video)
-    e_video.grid(row=0, column=1, sticky="ew", **pad)
-    ttk.Button(frm, text="Elegir...", command=elegir_video).grid(row=0, column=2, **pad)
-    ttk.Label(frm, foreground="gray",
-              text=("(o arrastra el video a esta ventana)" if hay_dnd else
-                    "(para arrastrar el archivo: pip install tkinterdnd2)")
-              ).grid(row=1, column=1, sticky="w")
-
-    ttk.Label(frm, text="o una carpeta entera:").grid(row=2, column=0, sticky="w")
+    e_video.grid(row=0, column=1, sticky="ew", pady=3)
+    ttk.Button(frm, text="Elegir…", command=elegir_video).grid(row=0, column=2, padx=(8, 0))
+    ttk.Label(frm, style="Ayuda.TLabel",
+              text=("o arrastrá el video a la ventana" if hay_dnd else
+                    "para arrastrar el archivo: pip install tkinterdnd2")
+              ).grid(row=1, column=1, sticky="w", pady=(0, 6))
+    ttk.Label(frm, text="o una carpeta").grid(row=2, column=0, sticky="w", padx=(0, 10))
     e_lote = ttk.Entry(frm, textvariable=v_lote)
-    e_lote.grid(row=2, column=1, sticky="ew", **pad)
-    ttk.Button(frm, text="Elegir...", command=elegir_lote).grid(row=2, column=2, **pad)
-    ttk.Label(frm, foreground="gray",
-              text=("(si hay una carpeta, se procesan TODOS sus videos y se arma una tabla "
-                    "resumen; los resultados van a una subcarpeta por video)")
-              ).grid(row=3, column=1, sticky="w")
-
-    ttk.Label(frm, text="Guardar resultados en:").grid(row=4, column=0, sticky="w")
+    e_lote.grid(row=2, column=1, sticky="ew", pady=3)
+    ttk.Button(frm, text="Elegir…", command=elegir_lote).grid(row=2, column=2, padx=(8, 0))
+    ttk.Label(frm, style="Ayuda.TLabel",
+              text="se procesan todos sus videos, una subcarpeta por video, y una tabla resumen"
+              ).grid(row=3, column=1, sticky="w", pady=(0, 6))
+    ttk.Label(frm, text="Guardar en").grid(row=4, column=0, sticky="w", padx=(0, 10))
     e_carp = ttk.Entry(frm, textvariable=v_carpeta)
-    e_carp.grid(row=4, column=1, sticky="ew", **pad)
+    e_carp.grid(row=4, column=1, sticky="ew", pady=3)
     e_carp.bind("<Key>", lambda _e: carpeta_tocada.update(si=True))
-    ttk.Button(frm, text="Elegir...", command=elegir_carpeta).grid(row=4, column=2, **pad)
+    ttk.Button(frm, text="Elegir…", command=elegir_carpeta).grid(row=4, column=2, padx=(8, 0))
 
-    pasos = ttk.LabelFrame(tab1, text="Que correr (por separado o todo junto)")
-    pasos.pack(fill="x", **pad)
-    ttk.Checkbutton(pasos, variable=v_p1,
-                    text="1. Medir el gel en cada fotograma (serie temporal; tarda unos minutos)"
-                    ).pack(anchor="w")
-    ttk.Checkbutton(pasos, variable=v_p2,
-                    text="2. Buscar contracciones (segundos; usa la serie de la carpeta de resultados)"
-                    ).pack(anchor="w")
-    ttk.Checkbutton(pasos, variable=v_p3,
-                    text="3. Confirmar con el segundo metodo (opcional; tarda unos minutos)"
-                    ).pack(anchor="w")
-    ttk.Checkbutton(pasos, variable=v_p4,
-                    text="4. Armar el informe (una pagina HTML para mandar; segundos)"
-                    ).pack(anchor="w")
-
-    opc = ttk.LabelFrame(tab1, text="Opciones")
-    opc.pack(fill="x", **pad)
+    # --- 2. pasos y opciones, lado a lado ---
+    medio = ttk.Frame(tab1)
+    medio.pack(fill="x")
+    col1 = ttk.Frame(medio)
+    col1.pack(side="left", fill="both", expand=True, padx=(0, 6))
+    col2 = ttk.Frame(medio)
+    col2.pack(side="left", fill="both", expand=True, padx=(6, 0))
+    pasos = tarjeta(col1, "Pasos")
+    for var, txt, ayuda in (
+            (v_p1, "1 · Medir el gel en cada fotograma", "unos minutos"),
+            (v_p2, "2 · Buscar contracciones", "segundos"),
+            (v_p3, "3 · Confirmar con un segundo método", "opcional, unos minutos"),
+            (v_p4, "4 · Armar el informe", "una página HTML para mandar")):
+        f = ttk.Frame(pasos)
+        f.pack(fill="x", pady=2)
+        ttk.Checkbutton(f, variable=var, text=txt).pack(side="left")
+        ttk.Label(f, text=ayuda, style="Ayuda.TLabel").pack(side="left", padx=8)
+    opc = tarjeta(col2, "Opciones")
     fila = ttk.Frame(opc)
-    fila.pack(anchor="w")
-    ttk.Label(fila, text="Frecuencia del estimulador (Hz, vacio = no se):").pack(side="left")
-    ttk.Entry(fila, textvariable=v_freq, width=12).pack(side="left", padx=6)
-    ttk.Label(fila, foreground="gray", text="ej: 0.1   o   0.1 0.2").pack(side="left")
+    fila.pack(fill="x", pady=2)
+    ttk.Label(fila, text="Frecuencia del estimulador (Hz)").pack(side="left")
+    ttk.Entry(fila, textvariable=v_freq, width=10).pack(side="left", padx=8)
+    ttk.Label(opc, text="vacío = no se sabe   ·   ej: 0.1   o   0.1 0.2",
+              style="Ayuda.TLabel").pack(anchor="w", pady=(0, 6))
     ttk.Checkbutton(opc, variable=v_verbose,
-                    text="Mostrar detalle tecnico (--verbose)").pack(anchor="w")
+                    text="Mostrar detalle técnico (--verbose)").pack(anchor="w", pady=2)
 
     botones = ttk.Frame(tab1)
-    botones.pack(fill="x", **pad)
-    b_correr = ttk.Button(botones, text="Analizar")
+    botones.pack(fill="x", pady=(2, 10))
+    b_correr = ttk.Button(botones, text="  Analizar  ",
+                          style="Accent.TButton" if hay_tema else "TButton")
     b_correr.pack(side="left")
     b_parar = ttk.Button(botones, text="Detener", state="disabled")
     b_parar.pack(side="left", padx=6)
@@ -335,12 +396,15 @@ def main():
         def cambiar_tema():
             tema["oscuro"] = not tema["oscuro"]
             aplicar_tema(root, tema["oscuro"])
+            estilos()
             colores_salida()
         ttk.Button(botones, text="Claro / oscuro", command=cambiar_tema).pack(side="right")
     ultimo = {"carpeta": None}
 
-    salida = ScrolledText(tab1, font=("Consolas", 9), wrap="word")
-    salida.pack(fill="both", expand=True, **pad)
+    ttk.Label(tab1, text="Salida", style="Seccion.TLabel").pack(anchor="w", pady=(0, 4))
+    salida = ScrolledText(tab1, font=("Consolas", 10), wrap="word", relief="flat",
+                          borderwidth=0, padx=10, pady=8)
+    salida.pack(fill="both", expand=True)
 
     def colores_salida():
         if tema["oscuro"] and hay_tema:
@@ -348,6 +412,9 @@ def main():
         else:
             salida.configure(background="#ffffff", foreground="#1b1f24", insertbackground="#1b1f24")
     colores_salida()
+    if not hay_tema:
+        salida.insert("end", "(Tema moderno no activo: " + (TEMA_ERROR["txt"] or "?")
+                      + ". La ventana funciona igual.)\n")
     salida.tag_config("aviso", foreground="#b03a2e")
     salida.tag_config("titulo", foreground="#1f4e8c", font=("Consolas", 9, "bold"))
 
@@ -382,6 +449,7 @@ def main():
         b_correr.config(state="normal")
         b_parar.config(state="disabled")
         estado.config(text="Terminado")
+        actualizar_sub()
         if ultimo["carpeta"] is not None:
             b_ver.config(state="normal")
             if "v" in visor_ref:          # que la lista de Resultados incluya lo nuevo

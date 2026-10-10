@@ -227,7 +227,7 @@ class PestanaResultados:
         # ---- derecha ----
         der = ttk.Frame(pan, padding=(8, 6))
         pan.add(der, weight=4)
-        self.titulo = ttk.Label(der, text="Elegí un resultado de la lista", font=("Segoe UI", 13, "bold"))
+        self.titulo = ttk.Label(der, text="Elegí un resultado de la lista", style="Seccion.TLabel")
         self.titulo.pack(anchor="w")
         self.frase = tk.Text(der, height=3, wrap="word", relief="flat", borderwidth=0,
                              font=("Segoe UI", 10))
@@ -258,7 +258,13 @@ class PestanaResultados:
                    command=lambda: self.r and abrir_en_sistema(self.r.carpeta)).pack(side="right", padx=4)
         ttk.Button(barra, text="Guardar gráfico...", command=self._guardar_png).pack(side="right")
 
-        self.fig = Figure(figsize=(9, 4.2), dpi=100)
+        # con la nitidez de Windows activada, los px son reales: la figura usa la
+        # densidad de la pantalla para que el texto no quede diminuto
+        try:
+            dpi = max(80.0, min(200.0, float(self.raiz.winfo_fpixels("1i"))))
+        except Exception:
+            dpi = 100.0
+        self.fig = Figure(figsize=(9, 4.2), dpi=dpi)
         self.canvas = FigureCanvasTkAgg(self.fig, master=der)
         tb = NavigationToolbar2Tk(self.canvas, der, pack_toolbar=False)
         tb.update()

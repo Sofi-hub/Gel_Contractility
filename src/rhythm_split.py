@@ -91,10 +91,9 @@ N_SIMULACIONES = 1000        # Monte Carlo: con 200 el p minimo es 0.005
 # Velocidad (2026-10-10). El Monte Carlo es lo que mas tarda del reporte y
 # crece con los eventos (medido, 1000 simulaciones sin frecuencia dada: 5
 # eventos 0.8 s, 12 -> 3 s, 30 -> 15 s, 60 -> 49 s). Con PROCESOS_MC > 1 las
-# simulaciones se reparten entre procesos (el resultado no cambia). Lo fija
+# simulaciones se reparten entre hilos (el resultado no cambia). Lo fija
 # `contraction_report.py --procesos`; 1 = en serie (lo que usan los tests).
-# Por debajo de MIN_EVENTOS_PARALELO arrancar los procesos cuesta mas que lo
-# que se gana.
+# Por debajo de MIN_EVENTOS_PARALELO repartir cuesta mas que lo que se gana.
 PROCESOS_MC = 1
 MIN_EVENTOS_PARALELO = 8
 
@@ -396,11 +395,15 @@ def _z_nulo(tiempos: np.ndarray, duracion_s: float, n_sim: int, rng, **kw) -> np
                 break
         sims.append(t_sim)
     if PROCESOS_MC > 1 and n >= MIN_EVENTOS_PARALELO and n_sim >= 100:
-        import multiprocessing as mp
+        # Hilos, no procesos (2026-10-10): numpy suelta el GIL en las cuentas,
+        # asi que los hilos rinden parecido, y no hay que arrancar procesos
+        # nuevos. En Windows cada proceso volvia a cargar todas las librerias
+        # (~6 s en la notebook de Franco) y se comia la ganancia; ademas, si uno
+        # fallaba al arrancar, el reporte quedaba colgado sin error.
+        from concurrent.futures import ThreadPoolExecutor
         from functools import partial
-        with mp.get_context("spawn").Pool(PROCESOS_MC) as pool:
-            zs = pool.map(partial(_z_de_grilla, duracion_s=duracion_s, kw=kw), sims,
-                          chunksize=max(1, n_sim // (4 * PROCESOS_MC)))
+        with ThreadPoolExecutor(PROCESOS_MC) as ex:
+            zs = list(ex.map(partial(_z_de_grilla, duracion_s=duracion_s, kw=kw), sims))
     else:
         zs = [_z_de_grilla(ts, duracion_s, kw) for ts in sims]
     return np.asarray(zs)

@@ -1,0 +1,22 @@
+cargar librerias: 1.3 s   (Video_613)
+
+--procesos 1: total 15.6 s
+   leer el Excel                       0.4 s
+     dentro: Monte Carlo del tren     14.0 s
+   analisis (total)                   14.1 s
+   graficos                            1.0 s
+   escribir el Excel                   0.1 s
+
+--procesos 2: total 10.6 s
+   leer el Excel                       0.3 s
+     dentro: Monte Carlo del tren      9.1 s
+   analisis (total)                    9.2 s
+   graficos                            1.0 s
+   escribir el Excel                   0.1 s
+
+--procesos 4: total 12.5 s
+   leer el Excel                       0.3 s
+     dentro: Monte Carlo del tren     11.2 s
+   analisis (total)                   11.3 s
+   graficos                            0.9 s
+   escribir el Excel                   0.1 s

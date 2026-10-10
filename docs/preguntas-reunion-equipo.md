@@ -43,3 +43,17 @@ E. ¿Qué entregaba MuscleMotion que usaban (número de picos, amplitud, tiempos
 ## Sobre qué necesitan
 11. ¿Qué números usan del análisis (amplitud, frecuencia, TTP/RT50, espontáneas)? ¿En qué formato?
 12. ¿Qué significa "OK" para ellos? ¿Hay un criterio escrito?
+
+## Sobre la cinética: qué es "el pico" (agregado 2026-10-10, H41)
+13. **En las contracciones lentas (466, 583) el gel se queda arriba unos 5 fotogramas (~150 ms) antes de relajarse: el máximo es una meseta, no un punto.** TTP (inicio → pico) y RT50 (pico → 50 % de relajación) dependen de qué instante de esa meseta se toma como "pico". Mediana de los eventos estimulados:
+
+    | se toma como pico | 466 TTP | 466 RT50 | 583 TTP | 583 RT50 |
+    |---|---|---|---|---|
+    | el fotograma más alto (lo que hace hoy el programa) | 255 ms | 158 ms | 258 ms | 181 ms |
+    | el comienzo de la meseta | 183 ms | 223 ms | 189 ms | 252 ms |
+    | el centro de la meseta | 249 ms | 156 ms | 239 ms | 198 ms |
+    | el final de la meseta (comienzo de la relajación) | 315 ms | 96 ms | 292 ms | 146 ms |
+
+    Según la definición, TTP cambia ~±25 % y RT50 hasta ×2. Hoy se usa "el fotograma más alto", que dentro de la meseta lo decide el ruido.
+    - ¿Qué definición usan ustedes o la bibliografía que siguen (MuscleMotion, el paper de eLife)?
+    - Alternativa que no depende de la meseta: **tiempo de subida 10–90 %** y **bajada 90–50 %**. Medido: 466 161 ms / 82 ms; 583 146 ms / 110 ms. Pero a 30 fps son 3–5 fotogramas: quedarían en el límite de lo medible (pregunta 7, grabar a 200–300 fps).

@@ -1,0 +1,12 @@
+video,fotogramas,center_px,y_top_px,y_bottom_px,thickness_px,reporte,llamadas,rechazo_min_gradient,pico_p01,pico_min_muestra,segundos,half_window,faltantes,faltantes_%
+Video_prueba,2007,identico,identico,identico,dif max 1.02e-12,IGUAL,240840,0,34.0,27.5,44,15,24,1.18
+Video_063_CTRL1_5V,1848,identico,identico,identico,dif max 9.09e-13,IGUAL,199584,0,49.95,38.0,39,15,12,0.65
+Video_268_EXP3_FAPS2_40V,2283,identico,identico,identico,dif max 1.19e-12,IGUAL,273960,0,26.0,22.0,42,15,35,1.51
+Video_466_EXP5_FAPS4_40V,2076,identico,identico,identico,dif max 1.11e-12,IGUAL,207600,0,20.5,14.5,41,15,93,4.29
+Video_583_EXP6_CTRL4_40V,2236,identico,identico,identico,dif max 9.95e-13,IGUAL,268320,0,19.0,17.0,41,15,33,1.45
+Video_491_EXP5_CTRL1_36HZ,1846,identico,identico,identico,dif max 1.19e-12,IGUAL,221520,0,17.5,14.0,33,15,27,1.44
+Video_476,2165,identico,identico,identico,dif max 1.53e-12,IGUAL,259800,0,11.5,9.0,38,15,37,1.68
+Video_613,2179,identico,identico,identico,dif max 1.02e-12,IGUAL,261480,0,28.0,24.0,39,15,42,1.89
+Video_068_hw30,1843,identico,identico,identico,dif max 1.19e-12,IGUAL,368600,9134,5.5,2.0,88,30,43,2.28
+Video_304,2233,identico,identico,identico,dif max 1.08e-12,IGUAL,267960,0,21.5,17.0,45,15,42,1.85
+Video_341,1833,identico,identico,identico,dif max 1.11e-12,IGUAL,439920,0,17.5,15.0,73,30,23,1.24

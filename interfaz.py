@@ -49,7 +49,7 @@ def leer_configuracion(ruta: Path | None = None) -> dict:
     """configuracion.ini (C3): con que arranca la ventana. Si no esta o tiene un
     error, los valores de siempre. No hay parametros del analisis a proposito."""
     import configparser
-    cfg = {"frecuencia": "", "pasos": {1, 2, 4}, "detalle": False,
+    cfg = {"frecuencia": "", "pasos": {1, 2, 4}, "detalle": False, "tema": "claro",
            "carpeta_resultados": RAIZ / "data" / "processed_data"}
     ruta = ruta or RAIZ / "configuracion.ini"
     try:
@@ -62,6 +62,8 @@ def leer_configuracion(ruta: Path | None = None) -> dict:
             cfg["pasos"] = {int(x) for x in s.get("pasos").replace(",", " ").split()
                             if x in {"1", "2", "3", "4"}}
         cfg["detalle"] = s.get("detalle", "no").strip().lower() in ("si", "sí", "yes", "1", "true")
+        if s.get("tema", "").strip().lower() in ("claro", "oscuro"):
+            cfg["tema"] = s.get("tema").strip().lower()
         if s.get("carpeta_resultados", "").strip():
             c = Path(s.get("carpeta_resultados").strip())
             cfg["carpeta_resultados"] = c if c.is_absolute() else RAIZ / c
@@ -71,6 +73,16 @@ def leer_configuracion(ruta: Path | None = None) -> dict:
 
 
 CONFIG = leer_configuracion()
+
+
+def aplicar_tema(root, oscuro: bool = False) -> bool:
+    """Tema moderno (sv-ttk, opcional: pip install sv-ttk). Sin el, el de siempre."""
+    try:
+        import sv_ttk
+        sv_ttk.set_theme("dark" if oscuro else "light", root)
+        return True
+    except Exception:
+        return False
 
 
 def carpeta_por_defecto(video: str) -> Path:
@@ -192,8 +204,30 @@ def main():
         root = tk.Tk()
         hay_dnd = False
 
-    root.title("Contractilidad de geles - analisis")
-    root.geometry("980x720")
+    root.title("Contractilidad de geles")
+    root.geometry("1280x860")
+    root.minsize(980, 640)
+    tema = {"oscuro": CONFIG.get("tema") == "oscuro"}
+    hay_tema = aplicar_tema(root, tema["oscuro"])
+
+    nb = ttk.Notebook(root)
+    nb.pack(fill="both", expand=True)
+    tab1 = ttk.Frame(nb, padding=6)
+    tab2 = ttk.Frame(nb)
+    nb.add(tab1, text="  Analizar  ")
+    nb.add(tab2, text="  Resultados  ")
+    visor_ref: dict = {}
+
+    def pestana_resultados():
+        # se arma la primera vez que se abre: asi la ventana arranca rapido
+        if "v" not in visor_ref:
+            import visor
+            visor_ref["v"] = visor.PestanaResultados(tab2, CONFIG["carpeta_resultados"],
+                                                     oscuro=tema["oscuro"])
+        return visor_ref["v"]
+
+    nb.bind("<<NotebookTabChanged>>",
+            lambda _e: pestana_resultados() if nb.index("current") == 1 else None)
 
     v_video = tk.StringVar()
     v_carpeta = tk.StringVar()
@@ -232,7 +266,7 @@ def main():
             v_carpeta.set(r)
 
     pad = {"padx": 6, "pady": 4}
-    frm = ttk.Frame(root)
+    frm = ttk.Frame(tab1)
     frm.pack(fill="x", **pad)
     frm.columnconfigure(1, weight=1)
 
@@ -245,22 +279,22 @@ def main():
                     "(para arrastrar el archivo: pip install tkinterdnd2)")
               ).grid(row=1, column=1, sticky="w")
 
-    ttk.Label(frm, text="o una carpeta entera:").grid(row=3, column=0, sticky="w")
+    ttk.Label(frm, text="o una carpeta entera:").grid(row=2, column=0, sticky="w")
     e_lote = ttk.Entry(frm, textvariable=v_lote)
-    e_lote.grid(row=3, column=1, sticky="ew", **pad)
-    ttk.Button(frm, text="Elegir...", command=elegir_lote).grid(row=3, column=2, **pad)
+    e_lote.grid(row=2, column=1, sticky="ew", **pad)
+    ttk.Button(frm, text="Elegir...", command=elegir_lote).grid(row=2, column=2, **pad)
     ttk.Label(frm, foreground="gray",
               text=("(si hay una carpeta, se procesan TODOS sus videos y se arma una tabla "
                     "resumen; los resultados van a una subcarpeta por video)")
-              ).grid(row=4, column=1, sticky="w")
+              ).grid(row=3, column=1, sticky="w")
 
-    ttk.Label(frm, text="Guardar resultados en:").grid(row=2, column=0, sticky="w")
+    ttk.Label(frm, text="Guardar resultados en:").grid(row=4, column=0, sticky="w")
     e_carp = ttk.Entry(frm, textvariable=v_carpeta)
-    e_carp.grid(row=2, column=1, sticky="ew", **pad)
+    e_carp.grid(row=4, column=1, sticky="ew", **pad)
     e_carp.bind("<Key>", lambda _e: carpeta_tocada.update(si=True))
-    ttk.Button(frm, text="Elegir...", command=elegir_carpeta).grid(row=2, column=2, **pad)
+    ttk.Button(frm, text="Elegir...", command=elegir_carpeta).grid(row=4, column=2, **pad)
 
-    pasos = ttk.LabelFrame(root, text="Que correr (por separado o todo junto)")
+    pasos = ttk.LabelFrame(tab1, text="Que correr (por separado o todo junto)")
     pasos.pack(fill="x", **pad)
     ttk.Checkbutton(pasos, variable=v_p1,
                     text="1. Medir el gel en cada fotograma (serie temporal; tarda unos minutos)"
@@ -275,7 +309,7 @@ def main():
                     text="4. Armar el informe (una pagina HTML para mandar; segundos)"
                     ).pack(anchor="w")
 
-    opc = ttk.LabelFrame(root, text="Opciones")
+    opc = ttk.LabelFrame(tab1, text="Opciones")
     opc.pack(fill="x", **pad)
     fila = ttk.Frame(opc)
     fila.pack(anchor="w")
@@ -285,7 +319,7 @@ def main():
     ttk.Checkbutton(opc, variable=v_verbose,
                     text="Mostrar detalle tecnico (--verbose)").pack(anchor="w")
 
-    botones = ttk.Frame(root)
+    botones = ttk.Frame(tab1)
     botones.pack(fill="x", **pad)
     b_correr = ttk.Button(botones, text="Analizar")
     b_correr.pack(side="left")
@@ -293,11 +327,27 @@ def main():
     b_parar.pack(side="left", padx=6)
     b_abrir = ttk.Button(botones, text="Abrir carpeta de resultados")
     b_abrir.pack(side="left", padx=6)
+    b_ver = ttk.Button(botones, text="Ver resultados", state="disabled")
+    b_ver.pack(side="left", padx=6)
     estado = ttk.Label(botones, text="")
     estado.pack(side="left", padx=12)
+    if hay_tema:
+        def cambiar_tema():
+            tema["oscuro"] = not tema["oscuro"]
+            aplicar_tema(root, tema["oscuro"])
+            colores_salida()
+        ttk.Button(botones, text="Claro / oscuro", command=cambiar_tema).pack(side="right")
+    ultimo = {"carpeta": None}
 
-    salida = ScrolledText(root, font=("Consolas", 9), wrap="word")
+    salida = ScrolledText(tab1, font=("Consolas", 9), wrap="word")
     salida.pack(fill="both", expand=True, **pad)
+
+    def colores_salida():
+        if tema["oscuro"] and hay_tema:
+            salida.configure(background="#1c1c1c", foreground="#e6e6e6", insertbackground="#e6e6e6")
+        else:
+            salida.configure(background="#ffffff", foreground="#1b1f24", insertbackground="#1b1f24")
+    colores_salida()
     salida.tag_config("aviso", foreground="#b03a2e")
     salida.tag_config("titulo", foreground="#1f4e8c", font=("Consolas", 9, "bold"))
 
@@ -332,6 +382,20 @@ def main():
         b_correr.config(state="normal")
         b_parar.config(state="disabled")
         estado.config(text="Terminado")
+        if ultimo["carpeta"] is not None:
+            b_ver.config(state="normal")
+            if "v" in visor_ref:          # que la lista de Resultados incluya lo nuevo
+                visor_ref["v"].refrescar()
+
+    def ver_resultados():
+        nb.select(1)
+        v = pestana_resultados()
+        c = ultimo["carpeta"]
+        if c is not None:
+            if Path(c).parent.resolve() != v.base.resolve() and Path(c).is_dir():
+                v.base = Path(c).parent
+            v.refrescar(elegir=Path(c).name)
+    b_ver.config(command=ver_resultados)
 
     def analizar():
         lote = v_lote.get().strip().strip('"')
@@ -351,6 +415,15 @@ def main():
             v_carpeta.set(str(CONFIG["carpeta_resultados"]))
         elif not v_carpeta.get().strip():
             v_carpeta.set(str(carpeta_por_defecto(v_video.get())))
+        # que abrir "Ver resultados" al terminar: el video, o la primera carpeta del lote
+        if lote:
+            vids = sorted(q for q in Path(lote).iterdir()
+                          if q.suffix.lower() in (".mp4", ".avi", ".mov"))
+            base = Path(v_carpeta.get().strip())
+            ultimo["carpeta"] = base / vids[0].stem if vids else None
+        else:
+            ultimo["carpeta"] = Path(v_carpeta.get().strip())
+        b_ver.config(state="disabled")
         salida.delete("1.0", "end")
         b_correr.config(state="disabled")
         b_parar.config(state="normal")

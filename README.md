@@ -117,9 +117,10 @@ relativos (porcentaje del grosor, cocientes) o dentro de un mismo aumento.
     scripts/signal_check.py         diagnóstico: ¿hay población de eventos?
     scripts/procesar_carpeta.py     una carpeta entera: los pasos por video y una tabla resumen
     scripts/informe.py              paso 4: un informe HTML de una página por video, para mandar
-    configuracion.ini               con qué arranca la ventana (frecuencia, pasos, carpeta)
+    configuracion.ini               con qué arranca la ventana (frecuencia, pasos, carpeta, tema)
+    visor.py                        la pestaña Resultados: gráfico interactivo, clic en una contracción = su ficha
     interfaz.py, Analizar.bat       la ventana
-    tests/test_*.py                 diez pruebas: python tests/test_<nombre>.py
+    tests/test_*.py                 once pruebas: python tests/test_<nombre>.py
     tests/test_regresion.py         la regresión de los 11 videos (--completo: desde el video)
     scripts/regenerar_todo.py       regenera todos los resultados vigentes
 

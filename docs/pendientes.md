@@ -69,7 +69,11 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
    - **hecho (2026-10-10): un informe por video** (`scripts/informe.py`, paso 4 en la ventana y en `procesar_carpeta`): `informe_<carpeta>.html`, un solo archivo con las figuras adentro; resultado en una frase, números (con IC 95 %), avisos y figuras. Solo lee los Excel. Sirve para resultados viejos (marcar solo el paso 4). Test en `test_lote.py`.
    - un archivo de doble clic o una ventanita (hecho: `Analizar.bat`)
    - **hecho (2026-10-10): `configuracion.ini`** con los valores con que arranca la ventana y `procesar_carpeta` (frecuencia, pasos, detalle, carpeta). Sin parámetros del análisis, a propósito.
-   - **Ventana más linda y con visor de resultados** (pedido por Franco, 2026-10-08):
+   - **Ventana más linda y con visor de resultados: etapa 1 hecha (2026-10-10).** Pestañas Analizar / Resultados, tema moderno claro y oscuro (`sv-ttk`, opcional), lista de resultados con buscador y color por reportable, números y avisos (los mismos del informe), gráfico interactivo con zoom y clic en una contracción → ficha (de la hoja `cinetica`) y su forma ampliada; vistas de grosor y de las figuras guardadas; guardar gráfico, abrir carpeta e informe; "Ver resultados" al terminar un análisis. Código en `visor.py` (solo lee); test `tests/test_visor.py`. Probado en Linux con pantalla virtual; falta que Franco la pruebe en Windows. Siguen:
+     - **etapa 2, Comparar:** elegir 2 o más resultados (nuevos o viejos): tabla lado a lado, contracción promedio superpuesta en % del grosor, amplitud de cada uno con su IC 95 %.
+     - **etapa 3, detalles:** recordar la última carpeta y la pestaña, atajos de teclado, exportar la ficha.
+     - **ideas para más adelante (a Franco le gustan):** marcar a mano una contracción como "dudosa" y guardarlo aparte, sin tocar los números; ver el fotograma del video en el instante del clic con los bordes dibujados (necesita el video, más lento); amplitud de cada contracción contra el tiempo (¿se cansa el gel?).
+     - Pedido original (2026-10-08):
      - pestañas (correr / resultados / opciones), con mejor aspecto;
      - abrir los gráficos del video que se acaba de correr, o de cualquier carpeta de
        `processed_data`, dentro de la ventana;

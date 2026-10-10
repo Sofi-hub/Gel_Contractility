@@ -8,5 +8,6 @@ pandas==3.0.6
 scikit-learn==1.9.1
 matplotlib==3.11.2
 openpyxl==3.1.5
-# Opcional: arrastrar el video a la ventana (interfaz.py).
+# Opcionales de la ventana (interfaz.py): arrastrar el video, y el tema moderno.
 tkinterdnd2==0.6.3
+sv-ttk==2.6.1

@@ -227,6 +227,8 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     scripts/regenerar_todo.py       regenera los 11 y compara viejo contra nuevo antes de borrar
     interfaz.py + Analizar.bat      ventana para correr los pasos sin consola (no calcula nada propio)
     scripts/procesar_carpeta.py     una CARPETA entera (ventana o consola): mismos pasos por video + tabla resumen
+    visor.py                        pestaña Resultados de la ventana: lista, numeros y grafico interactivo (solo LEE)
+    tests/test_visor.py             la pestaña Resultados muestra lo de los Excel (ficha de cada contraccion)
     scripts/informe.py              paso 4: informe_<carpeta>.html de una pagina; solo LEE los Excel y figuras
     configuracion.ini               valores con que arranca la ventana (sin parametros del analisis, a proposito)
     tests/test_lote.py              la tabla de procesar_carpeta lee bien los Excel (no recalcula)

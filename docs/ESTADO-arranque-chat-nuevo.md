@@ -59,7 +59,7 @@ Actualizado 2026-10-08 (tarde). Sirve para dos cosas: es el resumen del estado a
 | `comparacion-musclemotion.md` | nuestros números contra MuscleMotion |
 | `contexto-tecnun-y-musclemotion.md` | para quién es el trabajo y qué es la carpeta `OK` |
 | `revision-script-matlab.md` | los errores del script del equipo, para conversarlo con ellos |
-| `historia/` | cómo se llegó a cada decisión: propuestas de cada fase, diagnósticos viejos y la revisión de código (hallazgos H1–H55) |
+| `historia/` | cómo se llegó a cada decisión: propuestas de cada fase, diagnósticos viejos (la revisión de código H1–H55 se borró el 2026-10-10: lo abierto está en `pendientes.md`, sección F; el detalle, en el historial de git) |
 
 ## Resultados de referencia (los seis validados)
 
@@ -98,7 +98,7 @@ Actualizado 2026-10-08 (tarde). Sirve para dos cosas: es el resumen del estado a
 ## Historia en una línea por fase
 
 - **v4 (septiembre):** detección sobre `center_px`, ROI automática, eje por timestamps.
-- **Revisión de código** (H1–H55, `historia/hallazgos-revision-codigo.md`).
+- **Revisión de código** (H1–H55; lo que sigue abierto, en `pendientes.md` F).
 - **Fase 2.2:** qué es un evento (altura y prominencia, ventana automática).
 - **Fase 3:**
   - ritmo y cinética: tren dirigido e instante = inicio;

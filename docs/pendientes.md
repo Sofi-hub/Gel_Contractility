@@ -108,3 +108,32 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
    - borradas las copias viejas de código del proyecto.
    - carpeta ordenada: borrados `_superadas/` (sigue en el historial de git), `ordenar_carpeta.py` y la copia vieja en `.claude/worktrees/`; mediciones de fases en `data/_mediciones_fases/`; los videos crudos dejaron de guardarse en git (`.gitignore`). El historial viejo de git todavía los contiene: achicar el repo exigiría reescribirlo (no recomendado).
 3. **Hecho:** queda un solo cuaderno, `Analisis_Contractilidad_v4.ipynb`. `v4-1` era una versión anterior: todavía tenía `SEP_S` y 28 eventos.
+
+## F. Hallazgos de la revisión de código que siguen abiertos (revisados contra el código el 2026-10-10)
+
+La revisión (H1–H55) estaba en `docs/historia/hallazgos-revision-codigo.md`, que se borró el 2026-10-10: el detalle de cada uno queda en el historial de git. Acá va solo lo que sigue sin resolver. Los demás se comprobaron resueltos o sin objeto: H1, H4, H5, H8, H9, H11, H19, H20, H24, H26, H27, H29, H31, H33, H34, H36 (Video_prueba ya da 6 estimulados y T = 10.00043 s), H37 (el rescate ya es solo dentro del tren y con amplitud compatible), H43 (los tests ya tienen eventos con meseta), H49–H51, H53–H55 (H55: prominencia en vez de `sep_s`; caso "lentos" en `test_deteccion.py`). H2, H6 y H44–H48 eran del motor `event_detection.py`, borrado. H17 (detalles de lectura) quedó resuelto o es inalcanzable.
+
+**1. Pueden cambiar o confundir un número que se informa**
+- **H40 (resto). La amplitud en px y en % describen grupos distintos.** El % sale de los estimulados si hay tren (Fase 3), pero "amplitud mediana: X px" (y `amplitud_traslacion_px`) es la mediana de TODOS los eventos. Video_prueba: 2.31 % (estimulados, ~6.8 px) al lado de 2.09 px (casi todas espontáneas). La tabla de ESTADO los pone juntos como si fueran lo mismo. Arreglo probable: dar los px del mismo grupo que el %. No cambia ningún conteo.
+- **H41 (resto).** La mediana ya usa solo los eventos medibles (Fase 3). Falta decidir qué es "el pico" cuando el máximo es una meseta (466, 583): según inicio, centro o fin de la meseta, el TTP cambia ~±25 % y el RT50 hasta +40 %. Es una definición para acordar con el equipo y documentar.
+- **H38 (resto).** El p-valor del tren supone espontáneas al azar: con espontáneas agrupadas o regulares (intervalos barajados de Video_prueba) el 28 % sale "estimulado". Hoy lo protege la búsqueda dirigida (`--frecuencia-estimulo`) y exigir ≥ 4 latidos con captura ≥ 75 %; sin frecuencia, el riesgo existe. (Ya resuelto: 1000 simulaciones y prueba desde 4 eventos.)
+- **H16. Ventanas contadas en fotogramas, no en segundos.** La mediana de la deriva y el "≥ 5 fotogramas" de la cinética cuentan muestras; con fotogramas perdidos una ventana de "2 s" cubre hasta 2.6 s (466: 23 % de las ventanas > 2.1 s). Medir si cambia algún resultado.
+- **H13. El control con la señal invertida supone ruido simétrico.** Un evento con rebote cuenta como falso; un ruido asimétrico puede no aparecer del lado invertido. Pregunta abierta, sin caso real comprobado.
+
+**2. Riesgos que no avisan** (H15, H21 y H22 están en D6)
+- **H18. Una ROI manual (`--x-start/--x-end`) no recibe veredicto de aceptación**, y `--exigir-roi` no la frena (el código lo confirma: la rama manual no calcula `cumple_criterio_aceptacion`). Hoy ningún video usa ROI manual.
+- **H23.** Las ventanas de suavizado de la ROI escalan con el ancho de la imagen (`w // 60`, `w // 50`), no con el gel. Sin efecto medido.
+- **H30.** El umbral de RANSAC (3 × MAD, ~2.5 px) es grande: una burbuja que corre el borde 2 px no se descarta. `max_trials = 200` y 3 puntos por intento sin justificación. Sin efecto medido.
+
+**3. Trazabilidad y limpieza (no cambian números)**
+- **H14.** `frames faltantes (%)` está inflado por el jitter de los timestamps (063: 24 contados contra 12 reales). No toca el eje de tiempo.
+- **H32.** La hoja `resumen` no guarda varios parámetros (`roi_tolerance`, `roi_min_gradient`, `roi_max_slope`, `ransac_residual_k/floor`, `denoise`, `low_quality_frac`…), ni el commit ni las versiones; "fps usado" muestra el fps declarado aunque el eje salga de los timestamps; `thickness_mm` = `thickness_px`.
+- **H35 (resto).** En el promedio alineado se excluyen eventos a < 1.5 s de los extremos (063: "promedio de 5" con 6 eventos); revisar que la hoja de eventos marque NO REPORTABLE.
+- **H25 / H12.** `min_roi_width_frac` sigue en la firma de `auto_detect_roi` (documentado "sin uso"); borrarlo. Las listas de "métodos de ROI aceptables" de los documentos sobran: el criterio es la variación ≤ 6 %.
+- **H28.** En B4 (sigmoid, denoise, `min_gradient` que nunca actúa, `clip` muerto, `quality` sin uso).
+- **H39 (resto).** `tol_frac`/`tol_min_s` se aceptan "por compatibilidad" sin usarse; `comparar_con_equipo` calcula un `fps_corregido` que con eje por timestamps no tiene sentido.
+- **H3 / H10 (resto). Cuaderno:** la celda que llama a `main.py` todavía pasa `--sep-s` si `SEP_S` tiene valor (la opción ya no existe: fallaría); dice "diez escaneos" del test; calcula la duración con el fps declarado.
+- **H42 (resto).** Escribir en `DOCUMENTACION.md` que la amplitud relativa es una normalización para comparar videos, no una deformación del gel.
+
+**4. Observación para la comparación con MuscleMotion**
+- **H52.** Las diferencias de intensidad entre fotogramas tienen un "peine" cada 10 fotogramas (compresión del video, probablemente) que las series de bordes no tienen. Un método por intensidad, como MuscleMotion, lo arrastra. Falta verlo en los videos de `OK` (relacionado con D2).

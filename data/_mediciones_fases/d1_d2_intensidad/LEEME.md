@@ -23,6 +23,6 @@
 3. Sigue sin saberse cuál de los dos está más cerca de la verdad en esos tres. Una explicación posible del lado de la intensidad: la correlación de perfiles mide el corrimiento de TODA la franja vertical (bordes + textura interior); si el interior se mueve menos que los bordes (deformación no rígida), la intensidad da menos. No hay medición que lo decida todavía.
 4. Ojo con 063 y 466: con la ROI y el código de hoy, `ols` da 0.94 y 0.85 (CLAUDE.md dice 0.99 y 0.88, medidos en la Fase 4 con otra ROI de 063).
 
-**Propuesta chica (no cambia ningún número informado):** que el veredicto de `motion_check` muestre también el cociente por eventos, que no se achica con el ruido. Cambia solo un texto de diagnóstico; queda para tu visto bueno porque cambia la cifra que imprime `motion_check` (476: 0.82 → 0.99).
+**Implementado (aprobado, 2026-10-10):** el veredicto de `motion_check` juzga el tamaño contracción por contracción cuando hay contracciones reportables (476: 0.82 → 0.99).
 
 Tabla: `tabla_d1.csv`.

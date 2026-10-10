@@ -317,7 +317,7 @@ Listo: 2165 fotogramas a 30.00 fps
 ==========================================================================
 VEREDICTO: ¿el movimiento medido por bordes (center_px) se confirma midiendo
            la imagen entera por otro metodo (intensidad)?
-  tamano: 0.82 veces (1 = igual) | forma: correlacion 0.91 (1 = identica)
+  tamano: 0.99 veces por contraccion (mediana de 6; 1 = igual) | forma: correlacion 0.91 (1 = identica)
   -> CONFIRMA: los dos metodos ven el mismo movimiento (forma y tamano).
 ==========================================================================
 Archivos en data\processed_data\Video_476:
@@ -326,14 +326,14 @@ Archivos en data\processed_data\Video_476:
 ```
 
 Es una segunda opinión: mide el desplazamiento comparando la imagen entera entre fotogramas, sin usar los bordes.
-- **`tamano`**: cuánto mide este método respecto del principal. Cerca de 1 es bueno; se acepta entre 0.8 y 1.2.
+- **`tamano`**: cuánto mide este método respecto del principal, contracción por contracción (mediana), si el paso 2 ya encontró contracciones reportables. Si no, sobre toda la serie (dice "pendiente sobre toda la serie"; esa cifra sale algo más chica cuando los bordes son ruidosos). Cerca de 1 es bueno; se acepta entre 0.8 y 1.2.
 - **`correlacion`**: si los dos ven la misma forma en el tiempo. 0.9 o más es bueno.
 - **Tres veredictos posibles:**
   - **CONFIRMA**: los dos métodos coinciden.
   - **Coinciden en forma pero no en tamaño**: revisar.
   - **AVISO: NO confirma**: mirar el video (vibración, desenfoque, borde mal medido).
 - `AVISO: la medida ... solo funciona en el X% de los fotogramas`: al gel le falta textura para este método; ese canal no sirve en ese video.
-- *Valores medidos:* 0.82–0.99 de tamaño en todos los videos probados.
+- *Valores medidos (por contracción, 2026-10-10):* 0.86–0.99 en los siete videos reportables. Conviene correr el paso 3 después del paso 2.
 
 ---
 

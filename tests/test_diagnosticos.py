@@ -21,7 +21,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ))
 sys.path.insert(0, str(RAIZ / "scripts"))
 
-from motion_check import _subpixel_shift  # noqa: E402
+from motion_check import _subpixel_shift, cociente_por_eventos  # noqa: E402
 import signal_check as sc  # noqa: E402
 import contraction_report as cr  # noqa: E402
 
@@ -33,6 +33,22 @@ def chequear(cond, texto):
     if not cond:
         fallas.append(texto)
 
+
+# --- 0. D1: tamano por contraccion no se achica con el ruido de los bordes ---
+rng = np.random.default_rng(0)
+t0 = np.arange(1800) / 30.0
+sen = np.zeros_like(t0)
+picos0 = []
+for k in range(6):
+    i = 150 + 300 * k
+    sen[i:i + 6] += np.array([0.5, 1.0, 1.0, 0.7, 0.4, 0.2]) * 1.5
+    picos0.append(i + 1)
+c0 = sen + rng.normal(0, 0.12, sen.size)          # bordes ruidosos
+dv0 = 0.9 * sen + rng.normal(0, 0.02, sen.size)   # intensidad: 0.9 del tamano
+ols0 = np.dot(c0, dv0) / np.dot(c0, c0)
+ev0 = np.median(cociente_por_eventos(t0, c0, dv0, picos0))
+chequear(abs(ev0 - 0.9) < 0.1 and ols0 < 0.8,
+         f"D1: por contraccion {ev0:.2f} (verdad 0.90); la pendiente da {ols0:.2f}")
 
 # --- 1. corrimiento conocido ------------------------------------------------
 y = np.arange(400, dtype=float)

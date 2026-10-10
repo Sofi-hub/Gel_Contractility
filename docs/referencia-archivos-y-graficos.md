@@ -250,7 +250,13 @@ detección de bordes.
 (tamaño del movimiento por intensidad respecto del de los bordes; 1 = igual),
 `correlacion` (misma forma en el tiempo; 1 = idéntica) y el texto del veredicto:
 CONFIRMA (correlación ≥ 0.9 y tamaño entre 0.8 y 1.2), coinciden solo en forma, o
-NO confirma. Medido: 0.96 / 0.99 / 0.88 / 0.82 en prueba / 063 / 466 / 476.
+NO confirma. **Desde 2026-10-10 (D1)**, si en la carpeta hay un `contracciones_*.xlsx`
+reportable, el tamaño se juzga **contracción por contracción**
+(`tamano_por_contraccion_mediana`, con `n_contracciones_comparadas`): la pendiente
+sobre toda la serie se achica cuando `center_px` tiene ruido propio (476: pendiente
+0.82, por contracción 0.99). Sin contracciones reportables se usa la pendiente, como
+antes. Medido por contracción: prueba 0.96, 063 0.99, 268 0.88, 466 0.86, 476 0.99,
+491 0.86, 583 0.99.
 
 **Hoja `resumen_canales`** — por canal: `rms_sin_deriva`, `ruido_MAD`, `skew`,
 `frac_bajo_-4sigma_pct`, `frec_dominante_Hz`, `pico_sobre_fondo`.

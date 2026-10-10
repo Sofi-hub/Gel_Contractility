@@ -144,6 +144,41 @@ def _describe_channel(name, v, fps, unidad="px"):
     }
 
 
+def cociente_por_eventos(t, c, dv, i_picos, signo=1.0) -> list[float]:
+    """D1 (2026-10-10): tamano intensidad/bordes contraccion por contraccion.
+
+    Para cada pico (indice en t): maximo en +-3 fotogramas menos la mediana de
+    [-1.0, -0.3] s antes, en las dos series (sin deriva). A diferencia de la
+    pendiente de minimos cuadrados, no se achica cuando center_px tiene ruido
+    propio (476: pendiente 0.82, por eventos 0.99)."""
+    out = []
+    for i in i_picos:
+        if i <= 0 or i >= len(t):
+            continue
+        pre = (t >= t[i] - 1.0) & (t <= t[i] - 0.3)
+        if pre.sum() < 3:
+            continue
+        w = slice(max(0, i - 3), i + 4)
+        sc = np.sign(np.nanmedian(c[w]) - np.nanmedian(c[pre])) or 1.0
+        pc = np.nanmax(sc * (c[w] - np.nanmedian(c[pre])))
+        pv = np.nanmax(signo * sc * (dv[w] - np.nanmedian(dv[pre])))
+        if pc > 0:
+            out.append(float(pv / pc))
+    return out
+
+
+def _picos_del_reporte(carpeta: Path):
+    """Fotogramas pico de contracciones_*.xlsx, si existe y el conteo es reportable."""
+    for f in sorted(Path(carpeta).glob("contracciones_*.xlsx")):
+        h = pd.read_excel(f, sheet_name=None)
+        res = next((v for k, v in h.items() if k.startswith("resumen")), None)
+        cin = next((v for k, v in h.items() if k.startswith("cinetica")), None)
+        if res is None or cin is None or res.empty or not bool(res.iloc[0].get("conteo_reportable")):
+            return None
+        return cin["frame_pico"].to_numpy(int)
+    return None
+
+
 def parse_args():
     p = argparse.ArgumentParser(
         description="Diagnostico: que se mueve en el video (grosor / traslacion / axial)",
@@ -300,6 +335,7 @@ def main():
     print("=" * 74)
     print("VEREDICTO: ¿el movimiento medido por bordes (center_px) se confirma midiendo")
     print("           la imagen entera por otro metodo (intensidad)?")
+    detallado_vb = a.verbose
     serie = Path(a.serie) if a.serie else buscar_serie(out)
     veredicto = {"serie_comparada": str(serie)}
     if serie.exists():
@@ -311,19 +347,40 @@ def main():
         if ok.sum() > 30:
             pend = float(np.dot(c[ok], dv[ok]) / np.dot(c[ok], c[ok]))
             rho = float(np.corrcoef(c[ok], dv[ok])[0, 1])
-            print(f"  tamano: {abs(pend):.2f} veces (1 = igual) | forma: correlacion "
-                  f"{abs(rho):.2f} (1 = identica)")
-            if abs(rho) >= 0.9 and 0.8 <= abs(pend) <= 1.2:
+            # D1 (2026-10-10): la pendiente se achica si center_px es ruidoso. Si hay
+            # contracciones reportables, el tamano se juzga contraccion por contraccion.
+            picos = _picos_del_reporte(serie.parent)
+            ev = []
+            if picos is not None:
+                fr = d2["frame"].to_numpy()
+                tt = df.set_index("frame").loc[fr, "time_s"].to_numpy(float)
+                idx = [int(np.searchsorted(fr, p)) for p in picos]
+                ev = cociente_por_eventos(tt, c, dv, idx, np.sign(pend) or 1.0)
+            ev_med = float(np.median(ev)) if ev else None
+            tam = ev_med if ev_med is not None else abs(pend)
+            if ev_med is not None:
+                print(f"  tamano: {ev_med:.2f} veces por contraccion (mediana de {len(ev)}; "
+                      f"1 = igual) | forma: correlacion {abs(rho):.2f} (1 = identica)")
+                if detallado_vb:
+                    print(f"  [detalle] pendiente sobre toda la serie: {abs(pend):.2f} "
+                          f"(se achica con el ruido de los bordes)")
+            else:
+                print(f"  tamano: {abs(pend):.2f} veces (1 = igual; sin contracciones "
+                      f"reportables, pendiente sobre toda la serie) | forma: correlacion "
+                      f"{abs(rho):.2f} (1 = identica)")
+            if abs(rho) >= 0.9 and 0.8 <= tam <= 1.2:
                 txt = "CONFIRMA: los dos metodos ven el mismo movimiento (forma y tamano)."
                 print(f"  -> {txt}")
             elif abs(rho) >= 0.9:
-                txt = ("Coinciden en forma pero no en tamano: revisar (en 466 da 0.88; no se "
-                       "sabe cual de los dos esta mas cerca de la verdad).")
+                txt = ("Coinciden en forma pero no en tamano: revisar (no se sabe cual de los "
+                       "dos esta mas cerca de la verdad).")
                 print(f"  -> {txt}")
             else:
                 txt = ("NO confirma: el movimiento por intensidad no sigue a los bordes. Mirar "
                        "el video: puede haber vibracion, desenfoque o un borde mal medido.")
                 print(f"  -> AVISO: {txt}")
+            veredicto.update({"tamano_por_contraccion_mediana": ev_med,
+                              "n_contracciones_comparadas": len(ev)})
             veredicto.update({"pendiente_desp_vert_sobre_center_px": pend,
                               "correlacion": rho, "veredicto": txt})
     else:

@@ -48,7 +48,8 @@ evento.
 > 466 y 0.82 en 476 (las dos últimas, de la tanda EXP5, sin explicar).
 > **2026-10-10 (D1):** medido evento por evento (la pendiente de `motion_check` se
 > achica con el ruido), 476 da 0.99; 268, 466 y 491 dan 0.86–0.88 y el resto
-> 0.96–0.99. No es cosa de EXP5. Detalle en `docs/pendientes.md` D1.
+> 0.96–0.99. No es cosa de EXP5. Desde entonces `motion_check` juzga el tamaño
+> contracción por contracción. Detalle en `docs/pendientes.md` D1.
 
 > **Fase 3 (2026-10-08): una sola métrica de contractilidad, la traslación.** Se
 > reporta la amplitud de `center_px` como **% del grosor en reposo** (cifra

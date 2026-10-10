@@ -469,11 +469,22 @@ def auto_detect_roi(
         xe = int(x_end) if x_end is not None else w
         xs, xe = max(0, min(xs, w - 2)), min(w, max(xe, xs + 2))
         seg = T[xs:xe]
+        # H18 (2026-10-10): la zona manual recibe el MISMO veredicto que la
+        # automatica (variacion <= max_variacion_pct), asi `--exigir-roi` la
+        # puede frenar y el resumen dice si cumple. Ancho minimo y cintura se
+        # calculan igual que mas abajo, solo para avisar.
+        var_m = round(100 * (np.nanmax(seg) - np.nanmin(seg)) / max(np.nanmin(seg), 1e-9), 2)
+        min_w = max(40, int(np.ceil(min_columns * min_column_spacing_px)))
+        cerca_cintura = np.isfinite(T) & (T <= waist * (1 + thickness_tolerance))
         return {
             "x_start": xs, "x_end": xe,
             "top_guess": top_guess, "bottom_guess": bottom_guess,
             "roi_quality": {
                 "method": "manual",
+                "cumple_criterio_aceptacion": bool(var_m <= max_variacion_pct),
+                "max_variacion_admitida_pct": float(max_variacion_pct),
+                "ancho_minimo_exigido_px": int(min_w),
+                "roi_contiene_cintura": bool(cerca_cintura[xs:xe].any()),
                 "n_columnas_usadas": _n_columnas(xs, xe, n_columns, min_columns, min_column_spacing_px),
                 "criterio": "rango forzado por el usuario (--x-start/--x-end)",
                 "cintura_px": round(waist, 2),

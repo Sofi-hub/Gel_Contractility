@@ -110,6 +110,7 @@ Dónde quedó todo:
 | aviso | qué significa | qué hacer |
 |---|---|---|
 | `el grosor varia X% dentro de la zona (mas del 6% aceptable). Puede que incluya el ensanchamiento cerca de un anclaje` | la zona elegida no es uniforme | mirar `00_roi_profile`; si hace falta, elegir la zona a mano agregando `--x-start A --x-end B` |
+| `zona elegida a mano (--x-start/--x-end)` | se forzó la zona a mano | usarla solo si la automática falla, y anotarlo al informar. Si además dice que es más angosta que el mínimo o que varía más del 6 %, elegir otra; con `--exigir-roi` el análisis se corta |
 | `la zona no incluye la parte mas angosta del gel (la cintura)` | se eligió un tramo raro | mirar `00_roi_profile` |
 | `no se encontro una zona plana del gel con el criterio normal; se uso uno mas flojo` | el gel no tiene un tramo uniforme claro (desenfoque, forma rara) | no confiar en los números sin mirar la figura |
 | `nota: el borde se sale de la ventana de +-15 px ... Se vuelve a procesar con +-30 px` | el gel se mueve mucho (ver 2.4) | nada: el programa ya lo resolvió |

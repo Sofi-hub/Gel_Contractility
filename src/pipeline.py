@@ -413,10 +413,18 @@ def describe_roi(roi: dict, image_width: int, detallado: bool = False) -> None:
     # Avisos: solo cuando hay que actuar. El umbral es el MISMO del criterio de
     # aceptacion (antes saltaba a 3 % y afirmaba "anclaje" sin comprobarlo: fue
     # falso en 613, 304 y 341).
+    if q.get("method") == "manual":
+        print("  AVISO: zona elegida a mano (--x-start/--x-end), no por el metodo automatico. "
+              "Usarla solo si la automatica falla, y anotarlo al informar.")
+        if q.get("ancho_minimo_exigido_px") and xe - xs < q["ancho_minimo_exigido_px"]:
+            print(f"  AVISO: la zona mide {xe - xs} px, menos que el minimo de "
+                  f"{q['ancho_minimo_exigido_px']} px (pocas columnas: mas ruido y posibles "
+                  f"eventos falsos).")
     if var is not None and var > lim:
         print(f"  AVISO: el grosor varia {var}% dentro de la zona (mas del {lim:g}% aceptable). "
               f"Puede que incluya el ensanchamiento cerca de un anclaje. Mira "
-              f"00_roi_profile y, si hace falta, elegi la zona a mano con --x-start/--x-end.")
+              f"00_roi_profile" + (" y elegi otra zona." if q.get("method") == "manual" else
+                                    " y, si hace falta, elegi la zona a mano con --x-start/--x-end."))
     if q.get("roi_contiene_cintura") is False:
         print("  AVISO: la zona no incluye la parte mas angosta del gel (la cintura). "
               "Mira 00_roi_profile.")

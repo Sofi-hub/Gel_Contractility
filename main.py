@@ -269,8 +269,10 @@ def main():
         raise SystemExit(
             f"ABORTADO: la ROI varia {q.get('variacion_en_roi_pct')}% de grosor, "
             f"por encima del {args.roi_max_variacion}% admitido. Eso no es una "
-            f"gauge region. Mira 00_roi_profile_<video>.png y forza la ROI con "
-            f"--x-start/--x-end, o corre sin --exigir-roi si sabes lo que haces.")
+            f"gauge region. Mira 00_roi_profile_<video>.png y "
+            + ("elegi otra zona" if q.get("method") == "manual"
+               else "forza la ROI con --x-start/--x-end")
+            + ", o corre sin --exigir-roi si sabes lo que haces.")
 
     out_dir = Path(args.output_dir) if args.output_dir else video_output_dir(args.video)
     out_dir.mkdir(parents=True, exist_ok=True)

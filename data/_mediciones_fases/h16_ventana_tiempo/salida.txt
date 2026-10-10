@@ -1,0 +1,45 @@
+ventanas de 'win_s' con fotogramas perdidos adentro y cuanto se estiran:
+
+Video_prueba: 4.7% de las ventanas cubren mas tiempo que el nominal (max +0.43 s)
+   ruido: 0.0853977600000538 -> 0.08510123999995968
+
+Video_063_CTRL1_5V: 4.6% de las ventanas cubren mas tiempo que el nominal (max +0.40 s)
+   ruido: 0.024166380000001618 -> 0.024314639999964402
+   T: 9.99812 -> 9.99813
+
+Video_268_EXP3_FAPS2_40V: 4.1% de las ventanas cubren mas tiempo que el nominal (max +0.67 s)
+   ruido: 0.04937057999999555 -> 0.049815359999968174
+   T: 10.00132 -> 10.00133
+
+Video_466_EXP5_FAPS4_40V: 23.6% de las ventanas cubren mas tiempo que el nominal (max +0.60 s)
+   ruido: 0.18243393000000935 -> 0.18665933999996
+   T: 10.00184 -> 10.00183
+
+Video_583_EXP6_CTRL4_40V: 7.6% de las ventanas cubren mas tiempo que el nominal (max +0.67 s)
+   ruido: 0.07249914000000485 -> 0.07131306000004975
+
+Video_491_EXP5_CTRL1_36HZ: 10.8% de las ventanas cubren mas tiempo que el nominal (max +0.38 s)
+   ruido: 0.06797720999996008 -> 0.06760656000005312
+
+Video_476: 11.4% de las ventanas cubren mas tiempo que el nominal (max +0.40 s)
+   ruido: 0.11490150000014832 -> 0.11445672000009141
+   pct: 0.6441694421001469 -> 0.643814352979458
+   px: 1.690849999999955 -> 1.6905499999999734
+   T: 10.00051 -> 10.00104
+
+Video_613: 11.7% de las ventanas cubren mas tiempo que el nominal (max +0.43 s)
+   sin cambios
+
+Video_068_hw30: 21.0% de las ventanas cubren mas tiempo que el nominal (max +0.31 s)
+   ruido: 3.6692867399999867 -> 3.6709175999999983
+
+Video_304: 17.1% de las ventanas cubren mas tiempo que el nominal (max +0.31 s)
+   ruido: 0.41497973999999677 -> 0.4159434299999234
+
+Video_341: 10.4% de las ventanas cubren mas tiempo que el nominal (max +0.27 s)
+   n: 22 -> 23
+   ruido: 0.1025959199999505 -> 0.10215113999997788
+   t: [0.573, 0.875, 1.407, 1.71, 2.285, 2.807, 3.373, 3.64, 4.173, 4.44, 4.973, 5.773, 7.307, 7.815, 36.012, 36.348, 38.347, 39.013, 40.64, 41.273, 43.55, 46.678] -> [0.573, 0.875, 1.407, 1.71, 2.285, 2.807, 3.373, 3.64, 4.173, 4.44, 4.973, 5.25, 5.773, 7.307, 7.815, 36.012, 36.348, 38.347, 39.013, 40.64, 41.273, 43.55, 46.678]
+   pct: 0.3941682449860312 -> 0.3906957293656677
+   px: 0.9956000000000245 -> 0.9867000000000417
+   T: 0.8084 -> 0.80831

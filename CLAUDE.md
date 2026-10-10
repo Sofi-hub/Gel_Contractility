@@ -46,6 +46,9 @@ evento.
 > medida por correlación de intensidad (sin bordes, `motion_check` arreglado)
 > coincide con `center_px` en magnitud: 0.96 en Video_prueba, 0.99 en 063, 0.88 en
 > 466 y 0.82 en 476 (las dos últimas, de la tanda EXP5, sin explicar).
+> **2026-10-10 (D1):** medido evento por evento (la pendiente de `motion_check` se
+> achica con el ruido), 476 da 0.99; 268, 466 y 491 dan 0.86–0.88 y el resto
+> 0.96–0.99. No es cosa de EXP5. Detalle en `docs/pendientes.md` D1.
 
 > **Fase 3 (2026-10-08): una sola métrica de contractilidad, la traslación.** Se
 > reporta la amplitud de `center_px` como **% del grosor en reposo** (cifra
@@ -222,16 +225,22 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     tests/generar_referencia.py     congela la referencia; solo con --aprobar "motivo"
     scripts/regenerar_todo.py       regenera los 11 y compara viejo contra nuevo antes de borrar
     interfaz.py + Analizar.bat      ventana para correr los pasos sin consola (no calcula nada propio)
+    scripts/procesar_carpeta.py     una CARPETA entera (ventana o consola): mismos pasos por video + tabla resumen
+    tests/test_lote.py              la tabla de procesar_carpeta lee bien los Excel (no recalcula)
     docs/                           documentación vigente; docs/historia/ = propuestas y diagnósticos de fases cerradas
     docs/pendientes.md              la lista ÚNICA de lo que falta
 
-Flujo normal: doble clic en `Analizar.bat` (la ventana corre estos mismos comandos), o:
+Flujo normal: doble clic en `Analizar.bat` (la ventana corre estos mismos comandos; también una carpeta entera), o:
 
     python main.py --video "<ruta>" --output-dir data/processed_data/<nombre> \
            --base-tiempo pts
     python scripts/contraction_report.py \
            --input data/processed_data/<nombre>/serie_temporal_<nombre>.xlsx \
            --frecuencia-estimulo 0.1
+
+Una carpeta entera: `python scripts/procesar_carpeta.py --carpeta "<videos>"` (tabla
+`resumen_carpeta_<fecha>.xlsx` en `data/processed_data`). Versiones fijas en
+`requirements.txt` (las del `.venv`; con ellas la regresión da idéntico).
 
 `--procesos N` (en `main.py`) reparte los fotogramas entre N núcleos; por
 defecto 2 (en la notebook de Franco, 4 núcleos, más procesos no ganan nada y 7

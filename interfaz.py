@@ -18,6 +18,11 @@ Los pasos 2 y 3 usan el serie_temporal de la carpeta de resultados, asi
 que se pueden correr despues sin repetir el paso 1. Tambien aceptan el
 nombre viejo (serie_temporal.xlsx, resultados anteriores al 2026-10-08).
 
+Carpeta entera: si se elige "o una carpeta entera", se corren los pasos marcados
+sobre TODOS sus videos (scripts/procesar_carpeta.py, que usa estas mismas
+funciones) y se arma una tabla resumen, una fila por video. "Guardar resultados
+en" es entonces la carpeta madre (una subcarpeta por video).
+
 Arrastrar el video a la ventana necesita `pip install tkinterdnd2`. Sin eso,
 todo funciona igual con el boton "Elegir...".
 """
@@ -89,6 +94,32 @@ def armar_comandos(video: str, carpeta: str, paso1: bool, paso2: bool, paso3: bo
     return cmds
 
 
+def armar_comando_carpeta(carpeta_videos: str, salida: str, paso1: bool, paso2: bool,
+                          paso3: bool, frecuencias: str = "",
+                          verbose: bool = False) -> list[tuple[str, list[str]]]:
+    """Una CARPETA entera: corre scripts/procesar_carpeta.py, que para cada video
+    usa armar_comandos/correr (lo mismo de arriba) y arma la tabla resumen."""
+    if not (paso1 or paso2 or paso3):
+        raise ValueError("Marca al menos un paso.")
+    if not carpeta_videos or not Path(carpeta_videos).is_dir():
+        raise ValueError(f"No encuentro la carpeta de videos:\n{carpeta_videos}")
+    for f in frecuencias.replace(",", " ").split():
+        try:
+            float(f)
+        except ValueError:
+            raise ValueError(f"Frecuencia no valida: '{f}'. Ejemplo: 0.1  (o 0.1 0.2)")
+    pasos = " ".join(str(n) for n, v in ((1, paso1), (2, paso2), (3, paso3)) if v)
+    c = [sys.executable, "-u", str(RAIZ / "scripts" / "procesar_carpeta.py"),
+         "--carpeta", str(carpeta_videos), "--pasos", pasos]
+    if salida:
+        c += ["--salida", str(salida)]
+    if frecuencias.strip():
+        c += ["--frecuencia-estimulo", frecuencias.strip()]
+    if verbose:
+        c.append("--verbose")
+    return [("Carpeta entera: todos los videos y una tabla resumen", c)]
+
+
 def correr(cmds, escribir, detener=lambda: False) -> bool:
     """Corre los comandos en orden y pasa cada linea a `escribir`. Para si uno falla."""
     env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUNBUFFERED="1",
@@ -135,6 +166,7 @@ def main():
     v_video = tk.StringVar()
     v_carpeta = tk.StringVar()
     v_freq = tk.StringVar()
+    v_lote = tk.StringVar()
     v_p1, v_p2, v_p3 = tk.BooleanVar(value=True), tk.BooleanVar(value=True), tk.BooleanVar(value=False)
     v_verbose = tk.BooleanVar(value=False)
     carpeta_tocada = {"si": False}
@@ -151,6 +183,14 @@ def main():
             filetypes=[("Videos", "*.mp4 *.avi *.mov"), ("Todos", "*.*")])
         if r:
             poner_video(r)
+
+    def elegir_lote():
+        r = filedialog.askdirectory(title="Carpeta con videos",
+                                    initialdir=str(RAIZ / "data" / "raw_videos"))
+        if r:
+            v_lote.set(r)
+            if not carpeta_tocada["si"]:
+                v_carpeta.set(str(RAIZ / "data" / "processed_data"))
 
     def elegir_carpeta():
         r = filedialog.askdirectory(title="Carpeta de resultados",
@@ -172,6 +212,15 @@ def main():
               text=("(o arrastra el video a esta ventana)" if hay_dnd else
                     "(para arrastrar el archivo: pip install tkinterdnd2)")
               ).grid(row=1, column=1, sticky="w")
+
+    ttk.Label(frm, text="o una carpeta entera:").grid(row=3, column=0, sticky="w")
+    e_lote = ttk.Entry(frm, textvariable=v_lote)
+    e_lote.grid(row=3, column=1, sticky="ew", **pad)
+    ttk.Button(frm, text="Elegir...", command=elegir_lote).grid(row=3, column=2, **pad)
+    ttk.Label(frm, foreground="gray",
+              text=("(si hay una carpeta, se procesan TODOS sus videos y se arma una tabla "
+                    "resumen; los resultados van a una subcarpeta por video)")
+              ).grid(row=4, column=1, sticky="w")
 
     ttk.Label(frm, text="Guardar resultados en:").grid(row=2, column=0, sticky="w")
     e_carp = ttk.Entry(frm, textvariable=v_carpeta)
@@ -250,14 +299,22 @@ def main():
         estado.config(text="Terminado")
 
     def analizar():
+        lote = v_lote.get().strip().strip('"')
         try:
-            cmds = armar_comandos(v_video.get().strip().strip('"'), v_carpeta.get().strip(),
-                                  v_p1.get(), v_p2.get(), v_p3.get(), v_freq.get(),
-                                  v_verbose.get())
+            if lote:
+                cmds = armar_comando_carpeta(lote, v_carpeta.get().strip(), v_p1.get(),
+                                             v_p2.get(), v_p3.get(), v_freq.get(),
+                                             v_verbose.get())
+            else:
+                cmds = armar_comandos(v_video.get().strip().strip('"'), v_carpeta.get().strip(),
+                                      v_p1.get(), v_p2.get(), v_p3.get(), v_freq.get(),
+                                      v_verbose.get())
         except ValueError as e:
             messagebox.showwarning("Falta algo", str(e))
             return
-        if not v_carpeta.get().strip():
+        if lote and not v_carpeta.get().strip():
+            v_carpeta.set(str(RAIZ / "data" / "processed_data"))
+        elif not v_carpeta.get().strip():
             v_carpeta.set(str(carpeta_por_defecto(v_video.get())))
         salida.delete("1.0", "end")
         b_correr.config(state="disabled")

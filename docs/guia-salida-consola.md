@@ -17,6 +17,8 @@ Doble clic en **`Analizar.bat`** (en la carpeta del proyecto). Se abre una venta
 
 La ventana no calcula nada propio: corre los mismos comandos de la sección 1, así que los números son idénticos. Si un paso falla, muestra el error y no corre los siguientes.
 
+**Una carpeta entera de videos (2026-10-10).** En "o una carpeta entera" se elige una carpeta en vez de un video: se corren los pasos marcados sobre **todos** sus videos (`.mp4`, `.avi`, `.mov`), uno detrás del otro, con los mismos comandos de siempre. "Guardar resultados en" pasa a ser la carpeta madre (por defecto `data\processed_data`): adentro queda una subcarpeta por video, como siempre, más una tabla `resumen_carpeta_<fecha>.xlsx` (y `.csv`). Si un video falla, queda anotado en la tabla y se sigue con el siguiente. Ver 1b.
+
 ## 1. Comandos (copiar y pegar)
 
 Abrir PowerShell en la carpeta del proyecto y activar el entorno:
@@ -55,6 +57,25 @@ python scripts\motion_check.py --video "data\raw_videos\$v.mp4" --serie "data\pr
 Si el gel se mueve mucho, el paso 1 lo detecta y se agranda la ventana solo (ver 2.4): no hay que repetir nada.
 
 Todos los resultados quedan en `data\processed_data\<video>\`.
+
+## 1b. Una carpeta entera (tabla resumen)
+
+```
+python scripts\procesar_carpeta.py --carpeta "data\raw_videos\RARITOS-20260904T171415Z-1-001\RARITOS"
+```
+
+Opciones: `--frecuencia-estimulo 0.1` (se pasa a todos los videos: solo si vale para todos), `--pasos "1 2 3"` (también el paso 3), `--pasos 2` (solo el reporte, sobre series ya hechas), `--salida <carpeta>` (por defecto `data\processed_data`), `--recursivo` (busca también en subcarpetas), `--verbose`.
+
+No calcula nada propio: para cada video corre los pasos de arriba y después **lee** los Excel que quedaron. Además de lo de siempre, en cada carpeta de video queda `consola_<video>.txt` con todo lo que se imprimió. Al final imprime la tabla y la guarda en `resumen_carpeta_<fecha>.xlsx`, una fila por video:
+
+| columna | qué es |
+|---|---|
+| `estado` | OK, o ERROR y por qué (si falló un paso, se sigue con el próximo video) |
+| `eventos`, `reportable`, `motivo_no_reportable` | lo del renglón `RESULTADO` |
+| `tren`, `periodo_s`, `periodo_err_s`, `frecuencia_Hz`, `n_estimulados`, `captura_pct` | el tren de estímulo, si hay (hoja `trenes`) |
+| `amplitud_pct`, `amplitud_px`, `amplitud_grupo` | la cifra de `CONTRACTILIDAD` y de qué grupo es (estimulados o todos) |
+| `roi_cumple`, `half_window` | si la zona cumple el criterio y qué ventana de búsqueda se usó (±15 o ±30) |
+| `n_avisos`, `avisos` | los renglones AVISO y NO REPORTABLE que se imprimieron (completos en `consola_<video>.txt`) |
 
 ---
 
@@ -367,7 +388,7 @@ Hoy hay que copiar comandos y cambiar el nombre del video a mano. Ideas, de meno
 
 0. **Hecho (2026-10-07): `interfaz.py` + `Analizar.bat`** (sección 0).
 1. **Un solo comando que corra todo** (`analizar.py --video Video_XXX [--frecuencia 0.1]`): hace los pasos 1 y 2, y el 3 si se pide. Busca el video solo en `data\raw_videos\` (sin escribir la ruta). Si detecta muchos fotogramas sin borde, repite solo con `--half-window 30`.
-2. **Procesar una carpeta entera** y armar una tabla resumen con una fila por video: conteo, reportable sí/no, frecuencia, amplitud %, TTP/RT50. Ya estaba en la lista como "script por lotes".
+2. **Hecho (2026-10-10): procesar una carpeta entera** con tabla resumen (secciones 0 y 1b). En la ventana y por consola (`scripts/procesar_carpeta.py`).
 3. **Un informe por video en una página** (HTML o PDF) con el resultado en palabras simples y las figuras principales, para mandar al equipo sin abrir los Excel.
 4. **Doble clic en vez de consola:** un archivo `.bat` que pregunte el nombre del video y la frecuencia, o una ventanita simple para elegir el video, escribir la frecuencia y apretar "Analizar".
 5. **Configuración en un archivo** (por ejemplo `config.txt` con frecuencia, `half-window`, etc.) para no tocar comandos ni código.

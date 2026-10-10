@@ -14,12 +14,19 @@ estimuladas y espontáneas.
 pip install -r requirements.txt
 ```
 
+Las versiones están fijas (las del `.venv` con que se validó todo, 2026-10-10): con
+otras, el resultado puede no ser idéntico bit a bit y `tests/test_regresion.py` lo
+diría.
+
 ## Uso
 
 **La forma fácil:** doble clic en `Analizar.bat`. Se abre una ventana donde se
 elige el video (o se lo arrastra; para eso, una vez, `pip install tkinterdnd2`)
 y la carpeta de resultados, se marcan los pasos a correr y se ve la salida en
 vivo. La ventana corre los mismos comandos de abajo: los números son idénticos.
+También se puede elegir una **carpeta entera**: corre todos sus videos y arma una
+tabla resumen (una fila por video). Por consola: `python scripts/procesar_carpeta.py
+--carpeta "<carpeta con videos>"` (detalle en `docs/guia-salida-consola.md`, 1b).
 
 **Por consola:**
 
@@ -108,8 +115,9 @@ relativos (porcentaje del grosor, cocientes) o dentro de un mismo aumento.
     scripts/contraction_report.py   paso 2: contracciones, ritmo y cinética
     scripts/motion_check.py         paso 3 (opcional): confirma el movimiento por intensidad
     scripts/signal_check.py         diagnóstico: ¿hay población de eventos?
+    scripts/procesar_carpeta.py     una carpeta entera: los pasos 1-2(-3) por video y una tabla resumen
     interfaz.py, Analizar.bat       la ventana
-    tests/test_*.py                 nueve pruebas: python tests/test_<nombre>.py
+    tests/test_*.py                 diez pruebas: python tests/test_<nombre>.py
     tests/test_regresion.py         la regresión de los 11 videos (--completo: desde el video)
     scripts/regenerar_todo.py       regenera todos los resultados vigentes
 

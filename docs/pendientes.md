@@ -36,7 +36,7 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
      - (a') la elegida. Bordes en el límite con ±15: 068 68 %, 341 34 %, 466 12 %, 063 3 %, el resto < 1 %. Resultado: los 8 validados y 613 idénticos bit a bit; 068 y 341 pasan solos a ±30 (idénticos a la referencia); **304 queda en ±15** (cambia `center_px`, ningún número informado: 0 eventos, NO REPORTABLE; RANSAC mejor en 341 fotogramas, peor en 70). Referencia regenerada para 304.
    - El 20 % sale de pocos casos (D4).
    - Scripts y tabla de la medición: `data/_mediciones_fases/b1_ventana/`.
-   - Queda abierto: en 466 hay otro gradiente a ~15 px del borde (12 % de los fotogramas con bordes en el límite). Vale entender qué es.
+   - **Medido (2026-10-10): el otro gradiente de 466.** En el borde **superior** hay un segundo escalón oscuro→claro ~15–20 px hacia adentro del gel, casi tan fuerte como el borde (mediana 0.94 del principal; > la mitad en el 87 % de columnas×fotogramas) y que se mueve con el gel (correlación 0.74). En la imagen es una franja brillante paralela al borde: probablemente la cara superior del gel vista inclinada o fuera de foco. Con ±15 el borde verdadero gana casi siempre; con ±30 el escalón entra y a veces gana (201 → 191 px, 5 → 2 eventos). Confirma la elección a'. Sin cambios. Detalle: `data/_mediciones_fases/b1_gradiente_466/`.
 2. **Ruido estimado solo en los tramos quietos.** En 341 el tren de 22 s infla el ruido (0.10 contra 0.034 px) y sube el umbral.
    - **Medido el 2026-10-10, sin implementar (en espera):** ruido = MAD de los fotogramas quietos (se saca lo que pasa de 5 MAD hacia los dos lados, ±0.5 s alrededor, y se repite hasta que no cambia). Solo cambia el ruido que fija el umbral (escaneo de k y reporte).
      - Seis validados y 476: **mismos eventos, instantes, período y amplitud**. El ruido baja 2–27 % y k sube en la misma proporción: el umbral en px queda casi igual (Video_prueba 0.80 → 0.78 px). Ni mejora ni empeora.
@@ -65,7 +65,7 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
 2. **Detector de vibración** usando una referencia fija con textura (el anclaje). En 068, 304 y 341 los anillos del anclaje sirvieron; en 583 no había ninguna referencia usable.
 3. **Interfaz más amigable**. La ventana ya está hecha (`interfaz.py`, `Analizar.bat`). Quedan, de la sección 6 de la guía:
    - un solo comando que corra todo
-   - procesar una carpeta entera con tabla resumen
+   - **hecho (2026-10-10): procesar una carpeta entera con tabla resumen**, desde la ventana ("o una carpeta entera") y por consola (`scripts/procesar_carpeta.py`). Reusa `interfaz.armar_comandos`/`correr` (los mismos pasos) y después solo lee los Excel: una fila por video con estado, eventos, reportable, tren (período ± error, captura), amplitud % y px (y de qué grupo), ROI, ventana de búsqueda y avisos; la consola de cada video queda en `consola_<video>.txt`. Verificado: Video_prueba procesado como carpeta da la huella idéntica a la referencia (`center_px` incluido); test `tests/test_lote.py`.
    - un informe por video
    - un archivo de doble clic o una ventanita
    - un archivo de configuración
@@ -85,12 +85,12 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
 5. **Hecho (2026-10-08):** test de regresión automático (`tests/test_regresion.py`, referencia congelada en `tests/referencia_regresion.json`; `scripts/regenerar_todo.py` para regenerar).
 8. **A futuro: visualizador en vivo** (pedido por Franco, 2026-10-10): que mientras se graba el video se vaya analizando y mostrando algo (por ejemplo, la posición de la franja y los eventos a medida que aparecen). Requiere leer de la cámara o de un archivo que crece, una versión del análisis que funcione por tramos (hoy la ROI y el umbral k se eligen mirando el video entero) y decidir qué se puede mostrar "en vivo" sin que sea un número final. No cambia los números del análisis completo, que se sigue haciendo al terminar.
 6. Intervalos de confianza por bootstrap para las medianas por video.
-7. Versiones fijas en `requirements.txt`.
+7. **Hecho (2026-10-10): versiones fijas en `requirements.txt`**, las del `.venv` (numpy 2.5.3, scipy 1.18.1, pandas 3.0.6, scikit-learn 1.9.1, opencv-python-headless 5.0.0.93, matplotlib 3.11.2, openpyxl 3.1.5; tkinterdnd2 0.6.3, opcional). Instaladas de cero en un entorno limpio: tests, regresión de los 11 y `--completo` idénticos.
 
 ## D. Dudas abiertas para revisar con más videos
-1. 466: la medida por intensidad da 0.88 de la de bordes; no se sabe cuál está más cerca de la verdad. Puede que su % esté subestimado en un 10–20 %. ¿Pasa con toda la tanda EXP5? (476 da 0.82)
-2. 476: ¿el salto de brillo cada 5 fotos (compresión) aparece en otros RARITOS y no en los OK?
-3. 063: ¿la contracción espontánea de 0.31 s es local? A ojo no parece tan chica como mide la zona angosta. Medir la amplitud por tramos a lo largo del gel.
+1. **Medido (2026-10-10).** `motion_check` sin cambios en los 11 videos y el cociente calculado también evento por evento (la pendiente de `motion_check` se achica cuando `center_px` es ruidoso). Por eventos: Video_prueba 0.96, 063 0.99, 583 0.99, **476 0.99** (el 0.82 era del estimador), y **268 0.88, 466 0.86, 491 0.86**. No es cosa de EXP5 (476 es EXP5 y da 0.99; 268 es EXP3 y da 0.88). En esos tres la intensidad ve ~12–14 % menos, parejo en todos los eventos; sigue sin saberse cuál está más cerca de la verdad. Propuesta chica, esperando visto bueno: que el veredicto de `motion_check` muestre también el cociente por eventos (cambia la cifra que imprime: 476 0.82 → 0.99; ningún número informado). Detalle: `data/_mediciones_fases/d1_d2_intensidad/`.
+2. **Medido y cerrado (2026-10-10): no.** El peine está en los 11 videos, OK y RARITOS por igual: todos son H.264 con un fotograma P cada 4 (cada 2 en 466, 613 y 068) entre fotogramas B, y en los P el |dI| sube 4–20 % en el fondo. A `center_px` casi no pasa (corrimiento por fase ≤ 0.016 px, ≤ 5 % del ruido rápido); en 063 y 268, los más limpios, los saltos en los P son ~2 veces los de los B (algo de ruido, sin sesgo). Detalle: `data/_mediciones_fases/d2_peine/`.
+3. **Medido (2026-10-10): sí, es local.** Con el mismo método en tramos de 120 px a lo largo del gel: las 5 estimuladas mueven todo el gel parecido (más en el centro); la de 0.31 s es 0 en el tercio izquierdo y crece hacia la derecha hasta 0.52 px (1.4 veces lo que mide la ROI, 0.37 px). Una espontánea puede ser local, y su amplitud depende de dónde cae la ROI. No cambia ningún número informado (la amplitud que se informa es la de los estimulados). Detalle: `data/_mediciones_fases/d3_amplitud_tramos/`.
 4. Reglas que salieron de pocos videos:
    - "meseta de k más bajo" (un solo caso real con dos mesetas)
    - piso de 40 columnas
@@ -102,7 +102,7 @@ Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
    - timestamps inventados por el contenedor (H15)
    - poco contraste (H22)
    - cintura corta (H21)
-7. 476: oscilación chica (~0.3–0.5 px) después de cada contracción, debajo del umbral. ¿Se repite en otros videos?
+7. **Medido (2026-10-10): es propia de 476.** Promediando alineado al final de cada evento: en 476 queda una oscilación de ~2.4 Hz y ±0.2–0.3 px durante ~2.5 s, en los 6 eventos (2.2 veces el tramo quieto, evento a evento). En 063, 268, 466 y 583 no hay oscilación, solo una vuelta lenta a la línea base (0.1–0.2 px en 268 y 466); 491 tiene solo 2 eventos. No genera eventos ni cambia números. Si interesa: ¿rebote mecánico o actividad? (pregunta para Cami). Detalle: `data/_mediciones_fases/d7_oscilacion_post/`.
 
 ## E. Mantenimiento
 1. **Hecho (2026-10-08):** los 11 resultados vigentes regenerados con el código nuevo (nombres nuevos, figuras NO REPORTABLE, resumen con las filas nuevas), sin cambiar ningún número. Se borró `Video_068` (sin hw30). Ojo: 304 y 341 se habían corrido con `--half-window 30` sin sufijo en la carpeta (anotado en `tests/referencia.py`). El paso 3 de 476 se regeneró el 2026-10-10 con el nombre nuevo (`movimiento_<video>.xlsx`): la serie idéntica a la vieja, más la hoja `veredicto` (0.82 de tamaño, correlación 0.91).
@@ -128,7 +128,7 @@ La revisión (H1–H55) estaba en `docs/historia/hallazgos-revision-codigo.md`, 
 
 **2. Riesgos que no avisan** (H15, H21 y H22 están en D6)
 - **H18: hecho (2026-10-10).** La zona elegida a mano (`--x-start/--x-end`) se mantiene "por si acaso", pero ahora recibe el mismo veredicto que la automática (variación ≤ 6 %): `--exigir-roi` la frena y el `resumen` dice si cumple. Además avisa siempre que es manual, y si es más angosta que el mínimo (120 px) o no contiene la cintura. La automática no cambia (tests y regresión iguales).
-- **H23.** Las ventanas de suavizado de la ROI escalan con el ancho de la imagen (`w // 60`, `w // 50`), no con el gel. Sin efecto medido.
+- **H23: medido (2026-10-10), propuesta: no cambiar ahora.** La ventana sí importa (×0.5 o ×2 cambia la ROI en 9 de 11 videos), pero escalarla con el grosor del gel, reprocesando los 11 desde el video: 7 idénticos bit a bit; 466 y 476 con los mismos eventos, k, período, amplitud y TTP (solo el ruido en la 3.ª cifra); cambia la zona de 068 y 341, que siguen NO REPORTABLES. Hoy todos los videos son de 1920 px, así que no gana nada medible y rompe la regresión exacta. Anotado para cuando llegue un video de otra resolución o aumento. Espera decisión de Franco. Detalle: `data/_mediciones_fases/h23_ventanas_roi/`.
 - **H30: medido y cerrado (2026-10-10), sin cambios.** En los 11 videos: 1000 intentos en vez de 200 da idéntico bit a bit (el corte dinámico al 99 % termina antes: `max_trials` nunca limita). Umbral 2 × MAD: peor (descarta el doble de columnas, el ruido sube en 10 de 11 y 063 pierde un evento, 6 → 5). Umbral 4 × MAD: mixto (mismos conteos en los reportables y menos ruido en Video_prueba, 063 y 583, pero más en 466 y cambian instantes en 466 y 476). 3 × MAD se queda. Detalle: `data/_mediciones_fases/h30_ransac/`.
 
 **3. Trazabilidad y limpieza (no cambian números)**
@@ -143,4 +143,4 @@ La revisión (H1–H55) estaba en `docs/historia/hallazgos-revision-codigo.md`, 
 - **H42: hecho (2026-10-10).** `DOCUMENTACION.md` §3.6 aclara que la amplitud relativa es una normalización, no una deformación del gel.
 
 **4. Observación para la comparación con MuscleMotion**
-- **H52.** Las diferencias de intensidad entre fotogramas tienen un "peine" cada 10 fotogramas (compresión del video, probablemente) que las series de bordes no tienen. Un método por intensidad, como MuscleMotion, lo arrastra. Falta verlo en los videos de `OK` (relacionado con D2).
+- **H52: medido (2026-10-10).** Confirmado que es la compresión: el salto de |dI| cae en los fotogramas P del H.264 (uno cada 4 o cada 2), en los 11 videos, OK incluidos. Los bordes casi no lo ven (ver D2). Un método por intensidad, como MuscleMotion, lo arrastra.

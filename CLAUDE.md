@@ -236,7 +236,9 @@ Flujo normal: doble clic en `Analizar.bat` (la ventana corre estos mismos comand
 `--procesos N` (en `main.py`) reparte los fotogramas entre N núcleos; por
 defecto 2 (en la notebook de Franco, 4 núcleos, más procesos no ganan nada y 7
 es más lento: lo que tarda es leer el video, en serie). El resultado es
-idéntico con cualquier N.
+idéntico con cualquier N. `contraction_report.py` también tiene `--procesos`
+(default 2): reparte el Monte Carlo de la prueba del tren, que es lo que más
+tarda con muchos eventos (613: 21 → 11 s; 2026-10-10). Resultado idéntico.
 `--exigir-roi` hace que aborte si la ROI no cumple el criterio de aceptación,
 en vez de avisar y seguir emitiendo números. `--verbose` (en los tres scripts)
 imprime el detalle técnico; sin él la consola muestra solo resultados y AVISOS

@@ -88,6 +88,15 @@ TOL_MULTIPLO = 0.03          # cuanto puede apartarse T2/(2*T1) de 1 para ser "m
 AMP_COMPATIBLE = (0.5, 2.0)  # amplitud compatible con el tren: 0.5-2x la mediana
 VENTANA_DIRIGIDA = 0.10      # busqueda dirigida: +-10 % del periodo configurado
 N_SIMULACIONES = 1000        # Monte Carlo: con 200 el p minimo es 0.005
+# Velocidad (2026-10-10). El Monte Carlo es lo que mas tarda del reporte y
+# crece con los eventos (medido, 1000 simulaciones sin frecuencia dada: 5
+# eventos 0.8 s, 12 -> 3 s, 30 -> 15 s, 60 -> 49 s). Con PROCESOS_MC > 1 las
+# simulaciones se reparten entre procesos (el resultado no cambia). Lo fija
+# `contraction_report.py --procesos`; 1 = en serie (lo que usan los tests).
+# Por debajo de MIN_EVENTOS_PARALELO arrancar los procesos cuesta mas que lo
+# que se gana.
+PROCESOS_MC = 1
+MIN_EVENTOS_PARALELO = 8
 
 
 # ---------------------------------------------------------------------------
@@ -104,18 +113,30 @@ def _contar_vectorizado(t, periodos, tols, bloque=200):
 
     Se hace en bloques de periodos para no construir un tensor gigante. Sin
     esto el Monte Carlo no es viable: son cientos de barridos completos.
+
+    Velocidad (2026-10-10): es lo que mas tarda del reporte (el Monte Carlo lo
+    llama 1000 veces). Las cuentas son las MISMAS y en el mismo orden que
+    antes (D/T, redondeo, *T, resta, valor absoluto); solo se reusa un mismo
+    arreglo en vez de crear cinco nuevos por bloque, y se cuenta con
+    count_nonzero. Resultado identico, verificado en casos al azar y con la
+    regresion de los 11 videos.
     """
     D = t[:, None] - t[None, :]                      # (N, N)
     n_p = len(periodos)
     mejores = np.zeros(n_p, dtype=int)
     anclas = np.zeros(n_p, dtype=int)
+    buf = np.empty((min(bloque, n_p),) + D.shape)
     for a in range(0, n_p, bloque):
         b = min(a + bloque, n_p)
         T = periodos[a:b][:, None, None]
         tol = tols[a:b][:, None, None]
-        resid = D[None, :, :] - np.round(D[None, :, :] / T) * T
-        cerca = np.abs(resid) <= tol                  # (P, i, j)
-        cuentas = cerca.sum(axis=1)                   # (P, j)
+        q = buf[:b - a]                               # (P, i, j)
+        np.divide(D[None], T, out=q)
+        np.round(q, out=q)
+        np.multiply(q, T, out=q)
+        np.subtract(D[None], q, out=q)                # residuo respecto de la grilla
+        np.abs(q, out=q)
+        cuentas = np.count_nonzero(q <= tol, axis=1)  # (P, j)
         mejores[a:b] = cuentas.max(axis=1)
         anclas[a:b] = cuentas.argmax(axis=1)
     return mejores, anclas
@@ -364,15 +385,30 @@ def _z_nulo(tiempos: np.ndarray, duracion_s: float, n_sim: int, rng, **kw) -> np
     n = len(t)
     t0, t1 = float(t[0]), float(t[-1])
     refrac = float(np.min(np.diff(t))) if n > 1 else 0.0
-    zs = []
+    # Primero se sortean TODAS las series (mismo orden de sorteo que antes) y
+    # despues se buscan las grillas, en serie o repartidas entre procesos: el
+    # resultado es identico con cualquier cantidad de procesos.
+    sims = []
     for _ in range(n_sim):
         for _intento in range(20):
             t_sim = np.sort(rng.uniform(t0, t1, n))
             if n < 2 or np.min(np.diff(t_sim)) >= 0.5 * refrac:
                 break
-        g = buscar_grilla(t_sim, duracion_s, **kw)
-        zs.append(g["z"] if g else 0.0)
+        sims.append(t_sim)
+    if PROCESOS_MC > 1 and n >= MIN_EVENTOS_PARALELO and n_sim >= 100:
+        import multiprocessing as mp
+        from functools import partial
+        with mp.get_context("spawn").Pool(PROCESOS_MC) as pool:
+            zs = pool.map(partial(_z_de_grilla, duracion_s=duracion_s, kw=kw), sims,
+                          chunksize=max(1, n_sim // (4 * PROCESOS_MC)))
+    else:
+        zs = [_z_de_grilla(ts, duracion_s, kw) for ts in sims]
     return np.asarray(zs)
+
+
+def _z_de_grilla(t_sim, duracion_s, kw):
+    g = buscar_grilla(t_sim, duracion_s, **kw)
+    return g["z"] if g else 0.0
 
 
 # ---------------------------------------------------------------------------

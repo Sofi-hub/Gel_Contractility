@@ -46,6 +46,7 @@ Uso:
 
 from __future__ import annotations
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -990,6 +991,10 @@ def parse_args():
     p.add_argument("--sin-separar", action="store_true",
                    help="No intentar separar estimuladas de espontaneas.")
     p.add_argument("--output-dir", default=None)
+    p.add_argument("--procesos", type=int, default=min(2, os.cpu_count() or 1),
+                   help="Procesos para la prueba del tren de estimulo (Monte Carlo), que es "
+                        "lo que mas tarda con muchos eventos. 1 = en serie. El resultado es "
+                        "identico con cualquier valor.")
     p.add_argument("--verbose", action="store_true",
                    help="Imprime tambien el detalle tecnico (escaneo del umbral, ruidos por "
                         "borde, ventanas, z/jitter, grupos, adelgazamiento). Todo eso queda "
@@ -999,6 +1004,7 @@ def parse_args():
 
 def main():
     a = parse_args()
+    rs.PROCESOS_MC = max(1, a.procesos)
     entradas = [(Path(a.input).parent.name or Path(a.input).stem, _leer(a.input))]
     if a.compare:
         entradas.append((Path(a.compare).parent.name or Path(a.compare).stem, _leer(a.compare)))

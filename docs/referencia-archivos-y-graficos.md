@@ -67,13 +67,18 @@ porcentaje de variación, y **todos los parámetros usados** (`n_columns`,
 `half_window` (con `half_window eleccion`: automática o fijada, y por qué) y `fotogramas con bordes en el limite (%)`, `min_gradient`, `edge_method`, `fit_method` (siempre `ransac`), `ransac_degree`,
 `ransac_residual_threshold`, `use_clahe`, `px_to_mm`) más los residuos medios.
 Existe para que cualquier número sea reproducible sin adivinar la configuración.
+Desde 2026-10-10 (H32) también `roi_tolerance`, `roi_min_gradient`, `roi_max_slope`,
+`ransac_residual_k`, `ransac_residual_floor`, `savgol_window`, `low_quality_frac` y
+`procesos`, el **`commit`** de git con que se corrió (con "+cambios sin commitear" si
+había código modificado; "desconocido" sin git) y las versiones de `python`, numpy,
+scipy, opencv, pandas y scikit-learn. Las series anteriores no tienen estas filas.
 
 **Campos agregados en la v4:**
 
 | campo | qué es |
 |---|---|
 | `base de tiempo` | `pts` o `frames`. **Tiene que decir `pts`** |
-| `fps usado` | el fps con el que se construyó el eje, si la base es `frames` |
+| `fps usado` | el fps del eje: con base `pts`, el de los timestamps (desde 2026-10-10, H32; antes mostraba el declarado aunque no se usara); con `frames`, el declarado o `--fps-override` |
 | `fps declarado por el archivo` | lo que dice el metadato del `.mp4`. Es un **promedio** y baja cuando faltan fotogramas: no es confiable |
 | `fps segun PTS` | 1 / mediana de los `dt` entre fotogramas. **Éste sí es el fps real de captura**: da 30.000 en los cinco vídeos, con declarados de 28.97 a 29.87 |
 | `duracion segun PTS (s)` | último timestamp menos el primero |
@@ -147,7 +152,7 @@ es ruido. **Desde la v4 el `k` se elige solo dentro de esa meseta.**
 
 (`picos_con_sep_menor` ya no existe: con la detección por prominencia no hay separación mínima que funda eventos.)
 
-**`eventos_<serie>`** — `evento`, `tiempo_s`, `amplitud_px`, `junto_a_hueco` (un fotograma sin medida en el pico o al lado) y `junto_al_borde` (a menos de media ventana del inicio o del fin del video: su línea de base es menos precisa) de cada uno.
+**`eventos_<serie>`** — `evento`, `tiempo_s`, `amplitud_px`, `junto_a_hueco` (un fotograma sin medida en el pico o al lado) y `junto_al_borde` (a menos de media ventana del inicio o del fin del video: su línea de base es menos precisa) de cada uno. Desde 2026-10-10 (H35): `en_promedio` (si entra en el promedio alineado: queda afuera si está a menos de la semiventana, 1.5 s, de un extremo) y `reportable` (si el conteo del video se informa; si dice `False`, las filas son candidatos, no resultados).
 
 **Qué es un evento (Fase 2.2):** un pico de la señal sin deriva con **altura** y
 **prominencia** ≥ `k × ruido` (la prominencia es cuánto sobresale sobre el valle
@@ -330,7 +335,9 @@ Si el rojo acompaña al azul y no hay franja verde, el título dice NO REPORTABL
   grises huecos y se dibujan también los **falsos de control** (triángulos rojos
   huecos hacia abajo: los picos de la señal invertida). Si los rojos acompañan a
   los grises, es ruido o vibración.
-- **Derecha:** el **promedio de eventos alineados**. `x` = tiempo respecto del
+- **Derecha:** el **promedio de eventos alineados**. El título dice cuántos de
+  cuántos entran (p. ej. 063: "promedio de 5 de 6", el de 0.31 s queda afuera por
+  estar a menos de la semiventana del inicio). `x` = tiempo respecto del
   pico (s), `y` = traslación promedio (px, azul). **Solo con `--verbose`**
   (desde 2026-10-08) se agrega un eje `y` derecho (rojo) con el cambio de grosor
   promedio (px, diagnóstico): el adelgazamiento no se informa (CLAUDE.md,

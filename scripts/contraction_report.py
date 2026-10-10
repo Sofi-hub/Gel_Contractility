@@ -373,6 +373,10 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
         "_mesetas": sel.get("mesetas", []),
         "_t": t, "_r": r, "_picos": picos, "_falsos": falsos, "_lag": lag,
         "_prom_g": prom_g, "_prom_c": prom_c, "_n_prom": n_ev,
+        # H35: que eventos entran en el promedio alineado (los que tienen la
+        # semiventana entera dentro del video; la misma regla que promedio_alineado)
+        "_en_promedio": np.array([p - int(half_s * fps) >= 0 and p + int(half_s * fps) + 1 <= len(r)
+                                  for p in picos], bool),
     }
 
     _SEPARAR, _MINCAP = separar, min_captura
@@ -777,8 +781,12 @@ def graficar(resultados, out_png: Path, detallado: bool = False) -> None:
                 ax2b.set_ylabel("grosor (px, diagnostico)", color="crimson")
             ax2.set_xlabel("t respecto del pico (s)")
             ax2.set_ylabel("traslacion (px)", color="#1f77b4")
-            ax2.set_title(f"promedio de {a['_n_prom']} "
-                          f"{'eventos' if reportable else 'candidatos (no reportable)'}", fontsize=9)
+            n_tot = int(a.get("n_eventos") or 0)
+            fuera = n_tot - int(a["_n_prom"])
+            ax2.set_title(f"promedio de {a['_n_prom']} de {n_tot} "
+                          f"{'eventos' if reportable else 'candidatos (no reportable)'}"
+                          + (f"\n({fuera} a menos de la semiventana de un extremo)" if fuera > 0 else ""),
+                          fontsize=9)
             ax2.grid(alpha=0.3)
     axes[-1, 0].set_xlabel("Tiempo (s)")
     fig.tight_layout()
@@ -1073,7 +1081,9 @@ def main():
                               "tiempo_s": r["tiempos_s"],
                               "amplitud_px": r["_r"][r["_picos"]],
                               "junto_a_hueco": r["_junto_a_hueco"],
-                              "junto_al_borde": r["_junto_al_borde"]}
+                              "junto_al_borde": r["_junto_al_borde"],
+                              "en_promedio": r["_en_promedio"],
+                              "reportable": bool(r["conteo_reportable"])}
                              ).to_excel(w, sheet_name=f"eventos_{nombre[:18]}", index=False)
             if r.get("_cinetica") is not None and len(r["_cinetica"]):
                 r["_cinetica"].to_excel(w, sheet_name=f"cinetica_{nombre[:18]}", index=False)

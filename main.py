@@ -29,6 +29,32 @@ from src.output_paths import video_output_dir
 from src import plotting
 
 
+def _trazabilidad() -> dict:
+    """Commit de git y versiones de las librerias (H32): con esto una corrida
+    se puede reproducir. Nunca falla: si no hay git, dice "desconocido"."""
+    import platform, subprocess
+    raiz = Path(__file__).resolve().parent
+    try:
+        c = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=raiz,
+                           capture_output=True, text=True, timeout=10)
+        commit = c.stdout.strip() or "desconocido"
+        if commit != "desconocido":
+            d = subprocess.run(["git", "status", "--porcelain", "--", "src", "scripts", "main.py"],
+                               cwd=raiz, capture_output=True, text=True, timeout=10)
+            if d.stdout.strip():
+                commit += " +cambios sin commitear"
+    except Exception:
+        commit = "desconocido"
+    out = {"commit": commit, "python": platform.python_version()}
+    for nombre, modulo in [("numpy", "numpy"), ("scipy", "scipy"), ("opencv", "cv2"),
+                           ("pandas", "pandas"), ("scikit-learn", "sklearn")]:
+        try:
+            out[f"version {nombre}"] = __import__(modulo).__version__
+        except Exception:
+            out[f"version {nombre}"] = "no instalado"
+    return out
+
+
 # B1 (2026-10-10). Ventana de busqueda automatica. Medido en los 11 videos de
 # referencia (fotogramas con algun borde pegado al limite de la ventana, +-15):
 # 068 68 %, 341 34 % (falla en silencio: 0 % sin borde), 466 12 %, 063 3 %,
@@ -193,7 +219,11 @@ def main():
         "frames totales": len(df),
         "frames rechazados": n_rejected,
         "frames baja calidad": n_low_quality,
-        "fps usado": round(float(df.attrs.get("fps", 0.0)), 5),
+        # H32: con base pts el eje sale de los timestamps, asi que el fps que
+        # realmente se usa es el de los timestamps, no el declarado.
+        "fps usado": round(float(df.attrs.get("fps_segun_pts", float("nan"))
+                             if df.attrs.get("base_tiempo") == "pts"
+                             else df.attrs.get("fps", 0.0)), 5),
         "fps declarado por el archivo": round(float(df.attrs.get("fps_declarado", 0.0)), 5),
         "base de tiempo": df.attrs.get("base_tiempo"),
         "fps segun PTS": round(float(df.attrs.get("fps_segun_pts", float("nan"))), 4),
@@ -227,6 +257,16 @@ def main():
         "ransac_degree": args.ransac_degree,
         "ransac_residual_threshold": args.ransac_residual_threshold or "adaptativo",
         "use_clahe": not args.no_clahe,
+        # H32 (2026-10-10): el resto de los parametros, para poder reproducir la corrida
+        "roi_tolerance": args.roi_tolerance,
+        "roi_min_gradient": args.roi_min_gradient,
+        "roi_max_slope": args.roi_max_slope,
+        "ransac_residual_k": args.ransac_residual_k,
+        "ransac_residual_floor": args.ransac_residual_floor,
+        "savgol_window": args.savgol_window,
+        "low_quality_frac": args.low_quality_frac,
+        "procesos": args.procesos,
+        **_trazabilidad(),
         "residuo medio borde sup (px)": round(float(df["residual_top_px"].mean()), 4),
         "residuo medio borde inf (px)": round(float(df["residual_bottom_px"].mean()), 4),
         # --- Fase 4 (H24): diagnosticos del ajuste, SIN umbral ---

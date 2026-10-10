@@ -147,7 +147,7 @@ Video_476   (2165 fotogramas, 73.1 s, 30.00 fps)
     umbral: 9.4 x ruido, dentro de la zona estable k = 7.1-12.5, con 0 falsos de control
     momentos (s): 11.32, 21.40, 31.36, 41.39, 51.36, 61.36
     tiempo tipico entre eventos: 9.998 s  (0.1000 Hz)
-    amplitud mediana: 1.691 px
+    amplitud mediana (todos los eventos): 1.691 px
 
   RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
     busqueda libre: tren periodico a 0.1000 Hz, no se configuro ninguna frecuencia  [6 de 6 pulsos, p = 0.001]
@@ -155,7 +155,7 @@ Video_476   (2165 fotogramas, 73.1 s, 30.00 fps)
     estimuladas: 6 | espontaneas: 0
 
   CONTRACTILIDAD (estimulados, 6 eventos)
-    amplitud: 0.64 % del grosor en reposo  (rango intercuartil 0.634-0.6575 %)
+    amplitud: 0.64 % del grosor en reposo = 1.69 px  (rango intercuartil 0.634-0.6575 %)
     TTP (inicio -> pico): menos de 155 ms  (2.5 fotogramas)
     RT50 (pico -> 50 % de relajacion): menos de 167 ms  (2.5 fotogramas)
     (con menos de 5 fotogramas no se puede dar un valor, solo un maximo: la contraccion es mas rapida que la camara)
@@ -208,7 +208,7 @@ Hay tres casos posibles:
 - **`(hay otra zona estable con 5 eventos...)`**: aparece en algunos videos (063). Se usa la de umbral más bajo, porque al subir el umbral se empiezan a perder contracciones reales.
 - **`momentos (s)`**: cuándo empezó cada contracción, en segundos desde el inicio del video.
 - **`tiempo tipico entre eventos`**: la mediana del tiempo entre una contracción y la siguiente. En 476: 10 s = 0.1 Hz, igual que el estimulador.
-- **`amplitud mediana: X px`**: cuánto se desplaza la franja, en píxeles. Sirve solo para comparar videos con el mismo aumento. Para comparar entre videos se usa el % de la sección CONTRACTILIDAD.
+- **`amplitud mediana (todos los eventos): X px`**: cuánto se desplaza la franja, en píxeles, mezclando estimuladas y espontáneas. Para informar, usar la de la sección CONTRACTILIDAD. Sirve solo para comparar videos con el mismo aumento. Para comparar entre videos se usa el % de la sección CONTRACTILIDAD.
 
 ### `RITMO`: estimuladas vs espontáneas
 
@@ -225,7 +225,7 @@ El estimulador dispara como un reloj (cada 10 s a 0.1 Hz); las contracciones esp
 ### `CONTRACTILIDAD`: las cifras a informar
 
 Si hay tren, son las de las **estimuladas**; si no, las de todos los eventos.
-- **`amplitud: 0.64 % del grosor en reposo`**: **la cifra principal.** Cuánto se desplaza el gel en cada contracción, como porcentaje de su grosor. Se puede comparar entre videos aunque tengan distinto aumento. Valores medidos: 0.4 % a 2.3 %.
+- **`amplitud: 0.64 % del grosor en reposo`**: **la cifra principal.** Cuánto se desplaza el gel en cada contracción, como porcentaje de su grosor. Se puede comparar entre videos aunque tengan distinto aumento. Valores medidos: 0.4 % a 2.3 %. Al lado va lo mismo en px, del mismo grupo (solo comparable a igual aumento).
 - **`TTP (inicio -> pico)`**: cuánto tarda la contracción en llegar al máximo. **`RT50`**: cuánto tarda en relajarse a la mitad.
 - **`menos de 155 ms (2.5 fotogramas)`**: la subida ocurre en 2 o 3 cuadros de cámara, así que el programa **no da un valor inventado**, solo el máximo posible. Para dar un valor hacen falta al menos 5 fotogramas.
 - *Si preguntan "¿por qué no da el TTP?":* "la contracción es más rápida que la cámara (30 cuadros por segundo). Para medirlo habría que grabar a 200–300 cuadros por segundo".
@@ -252,7 +252,7 @@ Video_613   (2179 fotogramas, 73.8 s, 30.00 fps)
     Los tiempos de abajo son para revisar el video, NO para informar.
     momentos (s): 0.39, 1.39, 2.05, ... 71.85
     tiempo tipico entre eventos: 0.667 s  (1.5000 Hz)
-    amplitud mediana: 0.320 px
+    amplitud mediana (todos los eventos): 0.320 px
 
   RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
     busqueda libre: no se encontro un tren periodico que se distinga del azar  [4 de 6 pulsos, p = 0.897]

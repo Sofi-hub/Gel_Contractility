@@ -76,7 +76,7 @@ Actualizado 2026-10-08 (tarde). Sirve para dos cosas: es el resumen del estado a
 
 | video | TTP | RT50 | amplitud relativa (estimulados) | amplitud (px) |
 |---|---|---|---|---|
-| Video_prueba | < ~100 ms (no medible) | < ~100 ms | 2.31 % | 2.09 |
+| Video_prueba | < ~100 ms (no medible) | < ~100 ms | 2.31 % | 6.81 |
 | Video_063 | < ~100 ms | < ~100 ms | 0.56 % | 1.59 |
 | Video_268 | < ~100 ms | < ~100 ms | 0.57 % | 1.55 |
 | Video_466 | 255 ms [137, 365] | 192 ms [33, 260] | 2.16 % | 4.36 |

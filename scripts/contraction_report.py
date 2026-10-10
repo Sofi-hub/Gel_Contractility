@@ -598,7 +598,7 @@ def imprimir(nombre: str, a: dict, detallado: bool = False) -> None:
     if a["n_eventos"] > 1:
         iv = a["intervalo_mediano_s"]
         print(f"    tiempo tipico entre eventos: {iv:.3f} s  ({1 / iv:.4f} Hz)")
-    print(f"    amplitud mediana: {a['amplitud_traslacion_px']:.3f} px")
+    print(f"    amplitud mediana (todos los eventos): {a['amplitud_traslacion_px']:.3f} px")
 
     # --- ritmo ---
     rit = a.get("ritmo")
@@ -697,6 +697,7 @@ def imprimir_cinetica(a: dict, detallado: bool = False) -> None:
         return
     if np.isfinite(a.get("amplitud_relativa_pct", np.nan)):
         print(f"    amplitud: {a['amplitud_relativa_pct']:.2f} % del grosor en reposo"
+              + (f" = {a['amplitud_px']:.2f} px" if np.isfinite(a.get("amplitud_px", np.nan)) else "")
               + (f"  (rango intercuartil {a['amplitud_relativa_iqr_pct']} %)"
                  if a.get("amplitud_relativa_iqr_pct") else ""))
     lentas = []

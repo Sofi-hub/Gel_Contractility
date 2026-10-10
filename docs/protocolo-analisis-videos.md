@@ -79,8 +79,8 @@ Los comandos (y la ventana `Analizar.bat`, que corre los mismos) están en
 
 **Métrica de contractilidad (Fase 3): una sola, la traslación de la franja.**
 `amplitud_relativa_pct` (% del grosor en reposo: cifra principal, comparable
-entre videos) y `amplitud_traslacion_px` al lado (comparable solo a igual
-aumento). El **adelgazamiento** (`adelgazamiento_robusto_px`,
+entre videos) y `amplitud_px` al lado (del mismo grupo que el %; comparable solo a igual
+aumento). `amplitud_traslacion_px` es la mediana de TODOS los eventos: no ponerla al lado del % (H40). El **adelgazamiento** (`adelgazamiento_robusto_px`,
 `cociente_robusto_pct`) **no se reporta**: es un diagnóstico, porque depende del
 preproceso (con y sin CLAHE, Video_prueba 18 % contra 9 %; 268 y 466 cambian de
 signo).

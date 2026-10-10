@@ -128,7 +128,8 @@ es ruido. **Desde la v4 el `k` se elige solo dentro de esa meseta.**
 | **`meseta_k_rango`** | el rango de `k` de esa meseta, p. ej. `12-20` |
 | **`conteo_reportable`** | **`False` = el número de eventos NO se reporta.** Chequeo de aceptación 3 |
 | `intervalo_mediano_s` | mediana de los intervalos entre eventos |
-| `amplitud_traslacion_px` | mediana de la amplitud de los picos |
+| `amplitud_traslacion_px` | mediana de la amplitud de **todos** los picos (estimulados y espontáneos juntos) |
+| `amplitud_px` | mediana de la amplitud en px del **mismo grupo** que `amplitud_relativa_pct` (estimulados si hay tren; si no, todos). Es la que va al lado del % (H40, 2026-10-10) |
 | `adelgazamiento_px` / `_sigma` | mínimo del promedio de eventos alineados, y su significancia |
 | `adelgazamiento_robusto_px` / `_sigma` | promedio de los 3 fotogramas **posteriores** al pico. Mejor que el mínimo, pero **desde la Fase 3 el adelgazamiento es solo diagnóstico: no se reporta** (depende del preproceso) |
 | `cociente_adelg_trasl_pct`, `cociente_robusto_pct` | cuánto del movimiento es adelgazamiento, en %. **Van con signo: positivo adelgaza, negativo engruesa.** Hasta el 2026-09-29 el código tomaba la magnitud y un engrosamiento se leía como adelgazamiento |

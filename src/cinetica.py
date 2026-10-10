@@ -246,6 +246,12 @@ def resumir(ev: pd.DataFrame, conteo_reportable: bool,
     out["amplitud_relativa_pct"] = (float(np.nanmedian(ar)) if np.isfinite(ar).any()
                                     else float("nan"))
     out["amplitud_relativa_iqr_pct"] = _iqr(ar)
+    # H40 (2026-10-10): la amplitud en px del MISMO grupo que el %. Antes la
+    # consola ponia al lado del % (estimulados) la mediana en px de TODOS los
+    # eventos (Video_prueba: 2.31 % junto a 2.09 px, que son de las espontaneas).
+    ap = (ev["amplitud_px"].to_numpy(float) if "amplitud_px" in ev
+          else np.array([np.nan]))
+    out["amplitud_px"] = float(np.nanmedian(ap)) if np.isfinite(ap).any() else float("nan")
 
     motivos = []
     for m in ("ttp", "rt50"):

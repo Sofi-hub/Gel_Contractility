@@ -131,14 +131,15 @@ La revisión (H1–H55) estaba en `docs/historia/hallazgos-revision-codigo.md`, 
 - **H30.** El umbral de RANSAC (3 × MAD, ~2.5 px) es grande: una burbuja que corre el borde 2 px no se descarta. `max_trials = 200` y 3 puntos por intento sin justificación. Sin efecto medido.
 
 **3. Trazabilidad y limpieza (no cambian números)**
-- **H14.** `frames faltantes (%)` está inflado por el jitter de los timestamps (063: 24 contados contra 12 reales). No toca el eje de tiempo.
+- **H14: hecho (2026-10-10).** `frames faltantes` solo cuenta los saltos de más de 1.8 intervalos (los de 1.5 eran fotogramas tardíos, no perdidos): 063 23 → 12, 466 102 → 93; en 063 deja de salir la nota (< 1 %). No toca el eje de tiempo ni ningún número informado; tests, regresión y `--completo` iguales. Valores por video en `base-de-tiempo-y-frames-perdidos.md`.
+- **Cuaderno (2026-10-10):** fallaba en la configuración (`fit_method`, borrado el 2026-10-08); arreglado y corrido entero con Video_prueba (29 eventos, COINCIDE con el reporte). Ahora guarda en `data/processed_data/_cuaderno/<video>/`, no en la carpeta de resultados vigentes.
 - **H32.** La hoja `resumen` no guarda varios parámetros (`roi_tolerance`, `roi_min_gradient`, `roi_max_slope`, `ransac_residual_k/floor`, `denoise`, `low_quality_frac`…), ni el commit ni las versiones; "fps usado" muestra el fps declarado aunque el eje salga de los timestamps; `thickness_mm` = `thickness_px`.
 - **H35 (resto).** En el promedio alineado se excluyen eventos a < 1.5 s de los extremos (063: "promedio de 5" con 6 eventos); revisar que la hoja de eventos marque NO REPORTABLE.
-- **H25: hecho (2026-10-10).** `min_roi_width_frac` borrado de `auto_detect_roi` (nadie lo pasaba; regresión idéntica). Queda H12: las listas de "métodos de ROI aceptables" de los documentos sobran: el criterio es la variación ≤ 6 %.
+- **H25: hecho (2026-10-10).** `min_roi_width_frac` borrado de `auto_detect_roi` (nadie lo pasaba; regresión idéntica). H12 también hecho: el protocolo y la referencia dicen que el criterio es `ROI cumple criterio` (variación ≤ 6 %), no una lista de métodos.
 - **H28: hecho (2026-10-10).** Ver B4. `min_gradient` se mantiene como protección.
 - **H39: hecho (2026-10-10).** Borrados `tol_frac`/`tol_min_s` de `separar` y el `fps_corregido` de `comparar_con_equipo` (el veredicto de "desvío chico" ahora apunta a la base de tiempo, no a un fps a corregir). Ningún número cambia.
 - **H3 / H10: hecho (2026-10-10). Cuaderno:** la celda del reporte ya no pasa `--sep-s` ni `--canal` (no existen) y lee `contracciones_<carpeta>.xlsx`; dice "dieciséis escaneos"; la duración sale de los timestamps; sin `fps_nominal`, `edge_method` ni `use_denoise`.
-- **H42 (resto).** Escribir en `DOCUMENTACION.md` que la amplitud relativa es una normalización para comparar videos, no una deformación del gel.
+- **H42: hecho (2026-10-10).** `DOCUMENTACION.md` §3.6 aclara que la amplitud relativa es una normalización, no una deformación del gel.
 
 **4. Observación para la comparación con MuscleMotion**
 - **H52.** Las diferencias de intensidad entre fotogramas tienen un "peine" cada 10 fotogramas (compresión del video, probablemente) que las series de bordes no tienen. Un método por intensidad, como MuscleMotion, lo arrastra. Falta verlo en los videos de `OK` (relacionado con D2).

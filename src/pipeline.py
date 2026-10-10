@@ -280,12 +280,19 @@ def process_video(
     # (= 30.0003 fps) en los cinco videos medidos, independientemente del
     # fps declarado, que va de 28.97 a 29.87. Los huecos son los dt que
     # valen un multiplo entero de esa mediana.
+    #
+    # H14 (2026-10-10): solo cuentan los dt de MAS de 1.8 veces la mediana,
+    # cada uno redondeado. En los 11 videos hay ~1560 dt de 1.3-1.8 seguidos
+    # de uno corto (0.6-0.9): es un fotograma que llego TARDE, no uno perdido.
+    # Los huecos reales son todos de >= 5 intervalos. Antes se sumaban las
+    # fracciones de todos los dt > 1.5 y 063 daba 23 perdidos en vez de 12.
+    # No toca el eje de tiempo (sale de los timestamps igual).
     if n_pts > 2:
         dts = np.diff(pts)
         dt_med = float(np.median(dts))
         fps_pts = 1.0 / dt_med if dt_med > 0 else float("nan")
-        huecos = dts[dts > 1.5 * dt_med]
-        faltantes = float(np.round((huecos / dt_med - 1).sum()))
+        huecos = dts[dts > 1.8 * dt_med]
+        faltantes = float((np.round(huecos / dt_med) - 1).sum())
         frac_faltantes = faltantes / max(n_pts + faltantes, 1.0)
         n_huecos = int(len(huecos))
     else:

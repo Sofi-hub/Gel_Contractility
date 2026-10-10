@@ -52,12 +52,17 @@ Dos advertencias prácticas sobre los timestamps:
 
 ## Fotogramas perdidos por video
 
-> **Valores vigentes (2026-10-08, hoja `resumen` de cada `serie_temporal_<video>.xlsx`).** La tabla de abajo es
-> de la primera medición; los conteos vigentes difieren levemente (no quedó anotado por qué). Hoy:
-> Video_prueba 7 huecos / 27 fotogramas (1.33 %), 063 22 / 23 (1.23 %), 268 17 / 41 (1.76 %),
-> **466 24 / 102 (4.68 %)**, 491 6 / 28 (1.49 %), 583 4 / 33 (1.45 %); RARITOS: 476 1.9 %, 613 2.3 %,
-> 068 2.3 %, 304 2.1 %, 341 1.7 %. La conclusión no cambia: con `--base-tiempo pts` no afectan.
-> El período de cada tren, vigente, está en `separacion-estimuladas-espontaneas.md`.
+> **Valores vigentes (2026-10-10, H14).** Solo cuentan como hueco los `dt` de **más de 1.8**
+> veces el mediano, cada uno redondeado. En los 11 videos hay ~1560 `dt` de 1.3–1.8 seguidos de
+> uno corto (0.6–0.9): un fotograma que llegó **tarde**, no uno perdido. Los huecos reales son
+> todos de ≥ 5 intervalos (entre 2.2 y 5 no hay ninguno). Antes se sumaban las fracciones de
+> todos los `dt` > 1.5 y el conteo salía inflado (063: 23 en vez de 12). Hoy (huecos / perdidos / %):
+> Video_prueba 2 / 24 / 1.18 %, 063 1 / 12 / 0.65 %, 268 3 / 35 / 1.51 %, **466 10 / 93 / 4.29 %**,
+> 491 3 / 27 / 1.44 %, 583 3 / 33 / 1.45 %; RARITOS: 476 4 / 37 / 1.68 %, 613 4 / 42 / 1.89 %,
+> 068 7 / 43 / 2.28 %, 304 6 / 42 / 1.85 %, 341 3 / 23 / 1.24 %. No toca el eje de tiempo: con
+> `--base-tiempo pts` los tiempos salen de las marcas igual. La tabla de abajo es la primera
+> medición (con el criterio viejo) y queda como historia; también la cuenta de 466 de la sección
+> siguiente, que usa 4.73 %.
 
 Un hueco es un `dt` que vale un múltiplo entero del `dt` mediano:
 

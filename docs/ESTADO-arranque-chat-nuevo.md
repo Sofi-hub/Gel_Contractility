@@ -42,7 +42,7 @@ Actualizado 2026-10-08 (tarde). Sirve para dos cosas: es el resumen del estado a
 
 ## Dónde está todo
 
-**Resultados vigentes:** `data/processed_data/<video>/`, sin sufijo. Las corridas anteriores están solo en el historial de git. Mediciones de las fases: `data/_mediciones_fases/`. Los videos crudos (`data/raw_videos/`) no están en git. `Video_068_hw30` es 068 corrido con `--half-window 30` (la carpeta `Video_068` se borró); 304 y 341 también llevan `--half-window 30`. Argumentos de cada carpeta: `tests/referencia.py`. **Regresión con un comando:** `python tests/test_regresion.py` (agregar `--completo` si se tocó ROI, bordes o RANSAC).
+**Resultados vigentes:** `data/processed_data/<video>/`, sin sufijo. Las corridas anteriores están solo en el historial de git. Mediciones de las fases: `data/_mediciones_fases/`. Los videos crudos (`data/raw_videos/`) no están en git. `Video_068_hw30` es 068 (corre con ±30, ahora automático; la carpeta conserva el sufijo).py`. **Regresión con un comando:** `python tests/test_regresion.py` (agregar `--completo` si se tocó ROI, bordes o RANSAC).
 
 | documento (`docs/`) | para qué |
 |---|---|
@@ -91,7 +91,7 @@ Actualizado 2026-10-08 (tarde). Sirve para dos cosas: es el resumen del estado a
 |---|---|---|
 | 476 | 6 estimuladas a 0.1 Hz, 0.64 % | normal; MuscleMotion falla por la compresión del video |
 | 613 | NO REPORTABLE | vibración al inicio y al final; sin contracciones detectables |
-| 068 | NO REPORTABLE (con `--half-window 30`) | actividad continua del tejido, sin pausas: el método de eventos no aplica |
+| 068 | NO REPORTABLE (con ventana ±30, automática) | actividad continua del tejido, sin pausas: el método de eventos no aplica |
 | 304 | 0 eventos | oscilación continua a ~3.5–4.3 Hz: mismo caso que 068 |
 | 341 | NO REPORTABLE | mezcla: ráfagas del tejido hacia los dos lados y un tren limpio a ~3.2 Hz |
 
@@ -110,6 +110,7 @@ Actualizado 2026-10-08 (tarde). Sirve para dos cosas: es el resumen del estado a
   - el sexto evento de 063 es real;
   - la ráfaga final de 583 es vibración.
 - **2026-10-08 (código, sin cambiar números):** Excel con el nombre del video (se aceptan los nombres viejos); video leído una vez menos, fotogramas en paralelo (`--procesos`) y RANSAC propio (igual al de sklearn): de 5–6 min a ~70 s por video; borradas opciones y scripts sin uso. CLAHE sobre la franja: medido y descartado. Mail a Cami con los RARITOS y preguntas (`docs/RARITOS_resultados_y_preguntas.pdf`).
+- **2026-10-10:** ventana de búsqueda automática (B1, opción a'): ±15 y, si el borde se sale, ±30. Solo cambia 304 (sin cambiar números informados).
 - **2026-10-08 (tarde):** resultados regenerados con nombres nuevos (sin cambiar números); test de regresión automático de los 11 videos; `--procesos` por defecto 2 (medido en la notebook).
 - **2026-10-07:** se procesaron los RARITOS. Después: consola clara, `--verbose`, sentido de los eventos corregido, figuras NO REPORTABLE, la ventana (`interfaz.py`) y la documentación ordenada.
 
@@ -119,7 +120,7 @@ Actualizado 2026-10-08 (tarde). Sirve para dos cosas: es el resumen del estado a
 - `rhythm_split` necesita al menos 4 latidos estimulados y el 75 % de los pulsos ocupados.
 - **Una vibración del montaje entra en `center_px` igual que una contracción.** El control con la señal invertida la delata cuando va hacia los dos lados (613), pero no siempre: la ráfaga final de 583 casi cuenta como evento.
 - **El método cuenta contracciones separadas por reposo.** Si el tejido no se queda quieto nunca (068, 304), el conteo no aplica; falta una medida de actividad (`pendientes.md`).
-- **Si el gel se mueve más de ±15 px**, el borde se sale de la ventana de búsqueda: usar `--half-window 30` (068).
+- **Si el gel se mueve más de ±15 px**, el borde se sale de la ventana de búsqueda: desde 2026-10-10 `main.py` lo detecta (bordes pegados al límite) y reprocesa solo con ±30 (068, 341).
 - A 30 fps, TTP y RT50 no son medibles cuando la subida dura menos de 5 fotogramas.
 - En las muestras lentas (466, 583) el pico es una meseta de 4–5 fotogramas: el instante del pico es ambiguo, el del inicio no.
 - El grosor da un salto positivo en el fotograma de máxima velocidad: es motion blur, no engrosamiento.

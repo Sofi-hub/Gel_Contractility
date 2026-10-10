@@ -44,7 +44,7 @@ def carpeta_por_defecto(video: str) -> Path:
 
 
 def armar_comandos(video: str, carpeta: str, paso1: bool, paso2: bool, paso3: bool,
-                   frecuencias: str = "", gel_movil: bool = False,
+                   frecuencias: str = "",
                    verbose: bool = False) -> list[tuple[str, list[str]]]:
     """Devuelve [(titulo, comando), ...] o levanta ValueError con un mensaje claro."""
     py = sys.executable
@@ -76,8 +76,6 @@ def armar_comandos(video: str, carpeta: str, paso1: bool, paso2: bool, paso3: bo
     if paso1:
         c = [py, "-u", str(RAIZ / "main.py"), "--video", str(video),
              "--output-dir", str(carpeta), "--base-tiempo", "pts"]
-        if gel_movil:
-            c += ["--half-window", "30"]
         cmds.append(("Paso 1: medir el gel en cada fotograma", c + extra))
     if paso2:
         c = [py, "-u", str(RAIZ / "scripts" / "contraction_report.py"), "--input", str(serie)]
@@ -138,7 +136,6 @@ def main():
     v_carpeta = tk.StringVar()
     v_freq = tk.StringVar()
     v_p1, v_p2, v_p3 = tk.BooleanVar(value=True), tk.BooleanVar(value=True), tk.BooleanVar(value=False)
-    v_movil = tk.BooleanVar(value=False)
     v_verbose = tk.BooleanVar(value=False)
     carpeta_tocada = {"si": False}
 
@@ -201,9 +198,6 @@ def main():
     ttk.Label(fila, text="Frecuencia del estimulador (Hz, vacio = no se):").pack(side="left")
     ttk.Entry(fila, textvariable=v_freq, width=12).pack(side="left", padx=6)
     ttk.Label(fila, foreground="gray", text="ej: 0.1   o   0.1 0.2").pack(side="left")
-    ttk.Checkbutton(opc, variable=v_movil,
-                    text="El gel se mueve mucho (ventana de busqueda +-30 px, --half-window 30)"
-                    ).pack(anchor="w")
     ttk.Checkbutton(opc, variable=v_verbose,
                     text="Mostrar detalle tecnico (--verbose)").pack(anchor="w")
 
@@ -254,19 +248,12 @@ def main():
         b_correr.config(state="normal")
         b_parar.config(state="disabled")
         estado.config(text="Terminado")
-        texto = salida.get("1.0", "end")
-        if "--half-window" in texto and "Proba de nuevo" in texto and not v_movil.get():
-            messagebox.showinfo(
-                "Sugerencia",
-                "Muchos fotogramas quedaron sin borde: el gel se mueve mucho.\n\n"
-                "Marca 'El gel se mueve mucho', cambia la carpeta de resultados "
-                "(por ejemplo agregando _hw30 al final) y volve a correr.")
 
     def analizar():
         try:
             cmds = armar_comandos(v_video.get().strip().strip('"'), v_carpeta.get().strip(),
                                   v_p1.get(), v_p2.get(), v_p3.get(), v_freq.get(),
-                                  v_movil.get(), v_verbose.get())
+                                  v_verbose.get())
         except ValueError as e:
             messagebox.showwarning("Falta algo", str(e))
             return

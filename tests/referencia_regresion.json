@@ -3,6 +3,10 @@
   {
    "fecha": "2026-10-08",
    "motivo": "linea base 2026-10-08, nombres nuevos"
+  },
+  {
+   "fecha": "2026-10-10",
+   "motivo": "B1: ventana automatica; 304 pasa a +-15"
   }
  ],
  "videos": {
@@ -432,13 +436,13 @@
     60
    ],
    "n_frames": 2233,
-   "hash_center_px": "39dab88e57efd2c9",
+   "hash_center_px": "e4502f554ccf3b2c",
    "signo": 1,
    "n_eventos": 0,
    "conteo_reportable": false,
    "k_usado": 8.559,
    "meseta_k_rango": null,
-   "ruido_canal_px": 0.4075667400000035,
+   "ruido_canal_px": 0.41497973999999677,
    "tiempos_s": [],
    "amplitudes_px": [],
    "amplitud_traslacion_px": null,

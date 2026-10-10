@@ -44,6 +44,7 @@ nombre nuevo, salvo `movimiento.xlsx` y `07_movimiento.png` de Video_476 (paso 3
 | `outlier_frac` | 0–1 | `n_outlier_columns / (2N)`. Diagnóstico, sin umbral desde la Fase 4 (H24): no es criterio de aceptación |
 | `residual_top_px` | px | MAD de los residuos del ajuste del borde superior en ese fotograma |
 | `residual_bottom_px` | px | ídem, borde inferior |
+| `n_bordes_en_limite` | — | cuántos bordes (de los 2N) quedaron a ≤ 2 px del límite de la ventana de búsqueda. Si en más del 20 % de los fotogramas hay alguno, el borde verdadero puede estar afuera y `main.py` reprocesa con ±30 (B1) |
 | `frame_quality` | texto | `OK`, `LOW_QUALITY` (outlier_frac ≥ `low_quality_frac`) o `REJECTED` (ningún ajuste posible; las medidas quedan `NaN`) |
 
 **`thickness_px` y `center_px` son complementarios.** El grosor es la resta de
@@ -63,7 +64,7 @@ automática rota).
 Registra el vídeo de origen, el conteo de fotogramas por categoría de calidad,
 los estadísticos globales del grosor, la ROI elegida con su método y su
 porcentaje de variación, y **todos los parámetros usados** (`n_columns`,
-`half_window`, `min_gradient`, `edge_method`, `fit_method` (siempre `ransac`), `ransac_degree`,
+`half_window` (con `half_window eleccion`: automática o fijada, y por qué) y `fotogramas con bordes en el limite (%)`, `min_gradient`, `edge_method`, `fit_method` (siempre `ransac`), `ransac_degree`,
 `ransac_residual_threshold`, `use_clahe`, `px_to_mm`) más los residuos medios.
 Existe para que cualquier número sea reproducible sin adivinar la configuración.
 

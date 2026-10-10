@@ -44,7 +44,9 @@ class PipelineConfig:
                                   # modelo: si el polinomio no representa
                                   # la geometría, más columnas es más
                                   # ruido, no menos.
-    half_window: int = 15        # ventana de búsqueda del borde (px)
+    half_window: int = 15        # ventana de búsqueda del borde (px). main.py
+                                  # la pasa sola a 30 si el borde se sale
+                                  # (B1, 2026-10-10: ver n_bordes_en_limite)
     min_gradient: float = 5.0    # gradiente mínimo para aceptar un borde.
                                   # OJO: se compara contra el gradiente de
                                   # la imagen YA pasada por CLAHE, así que
@@ -127,6 +129,17 @@ def process_frame(
         min_gradient=config.min_gradient,
     )
 
+    # B1 (2026-10-10): columnas cuyo borde quedo pegado (<= 2 px) al limite de
+    # la ventana de busqueda. Si son muchas, el borde verdadero esta afuera y
+    # la ventana agarra otra cosa SIN dejar el fotograma sin borde (341 con
+    # +-15: 0 % sin borde, 22 -> 16 eventos). main.py usa esto para decidir.
+    hw = config.half_window
+    t0 = np.asarray(top_guess)[x_positions].astype(int)
+    b0 = np.asarray(bottom_guess)[x_positions].astype(int)
+    with np.errstate(invalid="ignore"):
+        en_limite = int((np.isfinite(y_top) & ((y_top - (t0 - hw) <= 2) | ((t0 + hw) - y_top <= 2))).sum()
+                        + (np.isfinite(y_bot) & ((y_bot - (b0 - hw) <= 2) | ((b0 + hw) - y_bot <= 2))).sum())
+
     top_fit = _fit(x, y_top, config)
     bot_fit = _fit(x, y_bot, config)
 
@@ -145,6 +158,7 @@ def process_frame(
             "residual_top_px": np.nan,
             "residual_bottom_px": np.nan,
             "frame_quality": "REJECTED",
+            "n_bordes_en_limite": en_limite,
         }
 
     thickness_per_column = bot_fit.y_fitted - top_fit.y_fitted
@@ -172,6 +186,7 @@ def process_frame(
         "residual_top_px": round(float(top_fit.residual_px), 4),
         "residual_bottom_px": round(float(bot_fit.residual_px), 4),
         "frame_quality": "OK" if frac < config.low_quality_frac else "LOW_QUALITY",
+        "n_bordes_en_limite": en_limite,
         # Residuo de cada columna (borde medido - parabola). No va a la tabla:
         # process_video lo acumula para el "error de modelo" (Fase 4, H24).
         "_rcol_top": y_top - top_fit.y_fitted,

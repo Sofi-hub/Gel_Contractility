@@ -240,17 +240,17 @@ idéntico con cualquier N.
 `--exigir-roi` hace que aborte si la ROI no cumple el criterio de aceptación,
 en vez de avisar y seguir emitiendo números. `--verbose` (en los tres scripts)
 imprime el detalle técnico; sin él la consola muestra solo resultados y AVISOS
-cuando hay que actuar, y todo queda igual en los Excel. Si el gel se mueve más de
-±15 px (muchos fotogramas sin borde, Video_068), correr `main.py` con
-`--half-window 30` en otra carpeta (`<video>_hw30`). Qué significa cada línea de
+cuando hay que actuar, y todo queda igual en los Excel. La ventana de búsqueda del
+borde es automática (B1, 2026-10-10): ±15 px y, si el borde se sale (más del 20 %
+de los fotogramas con bordes en el límite de la ventana, o más del 1 % sin borde),
+`main.py` reprocesa solo con ±30 y lo dice. `--half-window N` la fija a mano. Qué significa cada línea de
 la consola: `docs/guia-salida-consola.md`.
 
 Los resultados vigentes están en `data/processed_data/<carpeta>/`,
 regenerados el 2026-10-08 con `scripts/regenerar_todo.py` (nombres nuevos, sin
 cambiar ningún número). Las corridas anteriores, solo en el historial de git.
-Qué argumentos lleva cada carpeta está en `tests/referencia.py`: **304 y 341 van
-con `--half-window 30` aunque la carpeta no tenga el sufijo** (con 15, 341 da 16
-eventos en vez de 22). La frecuencia 0.1 Hz de los seis videos de `OK` y de 476
+Qué argumentos lleva cada carpeta está en `tests/referencia.py` (desde B1 ninguno
+lleva `--half-window`: 068 y 341 pasan solos a ±30; 304 queda en ±15). La frecuencia 0.1 Hz de los seis videos de `OK` y de 476
 **no está confirmada** por el equipo (la midió el propio pipeline); se mantiene
 para la regresión, y en videos nuevos no se pasa salvo que el equipo la confirme.
 
@@ -289,9 +289,10 @@ cuaderno) y la regeneración lo devolvió a 29. Línea base: Video_prueba 29 eve
 - **El método cuenta contracciones separadas por reposo.** Con actividad continua
   del tejido (068, 304) la oscilación cuenta como ruido y el conteo no aplica; hace
   falta otra medida (actividad), anotada en `docs/pendientes.md`.
-- **Ventana de búsqueda del borde ±15 px.** Si el gel se mueve más, los fotogramas
-  quedan sin borde (068: 19 % rechazados); `main.py` lo avisa. Usar
-  `--half-window 30` hasta que se cambie la posición inicial de búsqueda.
+- **Ventana de búsqueda del borde: ±15 px, o ±30 automática** si el borde se sale
+  (068, 341). No usar ±30 para todos: en 466 engancha otro gradiente (5 → 2
+  eventos). Un borde fuera de la ventana puede fallar **en silencio** (341: 0 %
+  sin borde y 22 → 16 eventos); por eso se cuentan los bordes pegados al límite.
 - Un evento a menos de media ventana del detrend del inicio o del fin queda
   marcado `junto_al_borde` (su línea base se estima con media ventana). El de
   Video_063 en 0.31 s es real (se ve en la señal cruda y por intensidad).

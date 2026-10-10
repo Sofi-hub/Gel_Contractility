@@ -45,11 +45,12 @@ VIDEOS = {
     "Video_491_EXP5_CTRL1_36HZ":  (f"{OK}/Video_491_EXP5_CTRL1_36HZ.mp4", [], None),
     "Video_476":                  (f"{RAR}/Video_476_EXP5_FAPS5_40V.mp4", [], [0.1]),
     "Video_613":                  (f"{RAR}/Video_613_EXP6_CTRL7_40V.mp4", [], None),
-    "Video_068_hw30":             (f"{RAR}/Video_068_FAPS2_5V.mp4", ["--half-window", "30"], None),
-    # 304 y 341 se procesaron (2026-10-07) con --half-window 30, aunque la
-    # carpeta no lleve el sufijo _hw30: con 15 cambia la serie (medido 2026-10-08).
-    "Video_304":                  (f"{RAR}/Video_304_EXP3_FAPS1_1_2HZ.mp4", ["--half-window", "30"], None),
-    "Video_341":                  (f"{RAR}/Video_341_EXP3_FAPS6_5_10HZ.mp4", ["--half-window", "30"], None),
+    # B1 (2026-10-10): la ventana de busqueda es automatica. 068 y 341 pasan solos
+    # a +-30 (068 conserva el sufijo _hw30 en la carpeta por historia); 304 queda
+    # en +-15 (antes iba con 30 a mano; con 15 RANSAC descarta menos columnas).
+    "Video_068_hw30":             (f"{RAR}/Video_068_FAPS2_5V.mp4", [], None),
+    "Video_304":                  (f"{RAR}/Video_304_EXP3_FAPS1_1_2HZ.mp4", [], None),
+    "Video_341":                  (f"{RAR}/Video_341_EXP3_FAPS6_5_10HZ.mp4", [], None),
 }
 # los que el modo --completo vuelve a procesar desde el video
 REGRESION_COMPLETA = ["Video_prueba", "Video_063_CTRL1_5V"]

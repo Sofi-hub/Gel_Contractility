@@ -29,6 +29,22 @@ from src.output_paths import video_output_dir
 from src import plotting
 
 
+# B1 (2026-10-10). Ventana de busqueda automatica. Medido en los 11 videos de
+# referencia (fotogramas con algun borde pegado al limite de la ventana, +-15):
+# 068 68 %, 341 34 % (falla en silencio: 0 % sin borde), 466 12 %, 063 3 %,
+# el resto < 1 %. Con +-30 para todos, 466 engancha otro gradiente (5 -> 2
+# eventos): por eso 30 es solo el plan B. El 20 % sale de pocos casos
+# (pendientes.md, D4).
+HW_NORMAL, HW_AMPLIA, UMBRAL_LIMITE, UMBRAL_SIN_BORDE = 15, 30, 0.20, 0.01
+
+
+def _falla_ventana(df):
+    """(fraccion de fotogramas con bordes en el limite, fraccion sin borde o dudosos)."""
+    lim = float((df["n_bordes_en_limite"] > 0).mean())
+    mal = float((df["frame_quality"] != "OK").mean())
+    return lim, mal
+
+
 def parse_args():
     p = argparse.ArgumentParser(
         description="Pipeline de contractilidad de geles 3D (bordes subpíxel + RANSAC)",
@@ -60,8 +76,11 @@ def parse_args():
     g = p.add_argument_group("muestreo y deteccion de borde")
     g.add_argument("--n-columns", type=int, default=60,
                    help="Columnas muestreadas por frame. Subirlo NO compensa un modelo mal elegido.")
-    g.add_argument("--half-window", type=int, default=15,
-                   help="Semi-ancho (px) de la ventana de busqueda del borde alrededor del guess.")
+    g.add_argument("--half-window", type=int, default=None,
+                   help="Semi-ancho (px) de la ventana de busqueda del borde. Por defecto es "
+                        "AUTOMATICO: +-15 px y, si el borde se sale de la ventana (mas del "
+                        f"{100*UMBRAL_LIMITE:.0f}%% de los fotogramas con bordes en el limite, o mas "
+                        "del 1%% sin borde), se reprocesa solo con +-30. Pasar un numero lo fija.")
     g.add_argument("--min-gradient", type=float, default=5.0,
                    help="Gradiente minimo para aceptar un borde. Se mide sobre la imagen ya "
                         "pasada por CLAHE, asi que su valor cambia si usas --no-clahe.")
@@ -128,7 +147,7 @@ def main():
 
     config = PipelineConfig(
         n_columns=args.n_columns,
-        half_window=args.half_window,
+        half_window=args.half_window or HW_NORMAL,
         min_gradient=args.min_gradient,
         edge_method=args.edge_method,
         ransac_degree=args.ransac_degree,
@@ -155,6 +174,18 @@ def main():
     print(f"Procesando {args.video} ...")
     df = process_video(args.video, config, detallado=args.verbose,
                        n_procesos=args.procesos)
+    lim, mal = _falla_ventana(df)
+    hw_motivo = "fijada por el usuario" if args.half_window else "automatica: +-15 alcanzo"
+    if args.half_window is None and (lim > UMBRAL_LIMITE or mal > UMBRAL_SIN_BORDE):
+        print(f"  nota: el borde se sale de la ventana de +-{HW_NORMAL} px "
+              f"({100*lim:.0f}% de los fotogramas con bordes en el limite, {100*mal:.0f}% sin "
+              f"borde): el gel se mueve mucho. Se vuelve a procesar con +-{HW_AMPLIA} px.")
+        lim15, mal15 = lim, mal
+        config.half_window = HW_AMPLIA
+        df = process_video(args.video, config, verbose=False, n_procesos=args.procesos)
+        lim, mal = _falla_ventana(df)
+        hw_motivo = (f"automatica: +-15 fallo ({100*lim15:.1f}% en el limite, "
+                     f"{100*mal15:.1f}% sin borde)")
     roi = df.attrs.get("roi", {})
 
     n_rejected = int((df["frame_quality"] == "REJECTED").sum())
@@ -191,7 +222,9 @@ def main():
         "n_columnas usadas": q.get("n_columnas_usadas"),
         "roi_min_columnas": args.roi_min_columnas,
         "outlier_frac medio": round(float(df["outlier_frac"].mean()), 4),
-        "half_window": args.half_window,
+        "half_window": config.half_window,
+        "half_window eleccion": hw_motivo,
+        "fotogramas con bordes en el limite (%)": round(100 * lim, 2),
         "min_gradient": args.min_gradient,
         "edge_method": args.edge_method,
         "fit_method": "ransac",   # unica opcion desde 2026-10-08 (se borro "median")
@@ -268,8 +301,11 @@ def main():
     if frac_mal > 0.01:
         print(f"  AVISO: {100*frac_mal:.0f}% de los fotogramas sin borde o dudosos. "
               f"Lo mas comun: el gel se mueve mas que la ventana de busqueda "
-              f"(+-{args.half_window} px). Proba de nuevo agregando --half-window "
-              f"{2 * args.half_window}.")
+              f"(+-{config.half_window} px). Mira la hoja diagnostics de la serie.")
+    if lim > UMBRAL_LIMITE:
+        print(f"  AVISO: en el {100*lim:.0f}% de los fotogramas hay bordes pegados al limite "
+              f"de la ventana de busqueda (+-{config.half_window} px): el borde verdadero "
+              f"puede estar afuera. Mira la columna n_bordes_en_limite de la hoja diagnostics.")
 
     # --- Diagnostico del ajuste (Fase 4, H24): sin umbral, solo en detalle ---
     # outlier_frac ya NO es criterio de aceptacion (el umbral de descarte se

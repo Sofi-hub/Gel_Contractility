@@ -12,7 +12,7 @@ Doble clic en **`Analizar.bat`** (en la carpeta del proyecto). Se abre una venta
 1. **Video:** botón "Elegir..." o arrastrar el archivo a la ventana. Para arrastrar hay que instalar una vez `pip install tkinterdnd2` con el entorno activado.
 2. **Guardar resultados en:** se completa sola con `data\processed_data\<nombre del video>`; se puede cambiar. El nombre de esa carpeta es el que aparece en los títulos de los gráficos y de las hojas del Excel.
 3. **Qué correr:** los tres pasos de la sección 1, por separado o juntos. Los pasos 2 y 3 usan el `serie_temporal_<video>.xlsx` que ya esté en la carpeta, así que se pueden repetir (por ejemplo, con otra frecuencia) sin volver a medir el gel.
-4. **Opciones:** frecuencia del estimulador, "el gel se mueve mucho" (`--half-window 30`) y detalle técnico (`--verbose`).
+4. **Opciones:** frecuencia del estimulador y detalle técnico (`--verbose`). La ventana de búsqueda del borde se agranda sola si el gel se mueve mucho (ver 2.4).
 5. **Analizar.** Abajo aparece en vivo lo mismo que en la consola: los avisos en rojo y los títulos en azul. "Detener" corta el paso en curso y "Abrir carpeta de resultados" abre la carpeta en el explorador de archivos.
 
 La ventana no calcula nada propio: corre los mismos comandos de la sección 1, así que los números son idénticos. Si un paso falla, muestra el error y no corre los siguientes.
@@ -52,12 +52,7 @@ Si no lo saben, el mismo comando sin `--frecuencia-estimulo 0.1`. Si hubo dos fr
 python scripts\motion_check.py --video "data\raw_videos\$v.mp4" --serie "data\processed_data\$v\serie_temporal_$v.xlsx"
 ```
 
-**Si el paso 1 avisa que hay muchos fotogramas sin borde** (ver 2.4), repetir el paso 1 en otra carpeta con la ventana más grande y seguir desde ahí:
-
-```
-python main.py --video "data\raw_videos\$v.mp4" --output-dir "data\processed_data\${v}_hw30" --base-tiempo pts --half-window 30
-python scripts\contraction_report.py --input "data\processed_data\${v}_hw30\serie_temporal_$v.xlsx"
-```
+Si el gel se mueve mucho, el paso 1 lo detecta y se agranda la ventana solo (ver 2.4): no hay que repetir nada.
 
 Todos los resultados quedan en `data\processed_data\<video>\`.
 
@@ -117,22 +112,23 @@ Dónde quedó todo:
 | `el grosor varia X% dentro de la zona (mas del 6% aceptable). Puede que incluya el ensanchamiento cerca de un anclaje` | la zona elegida no es uniforme | mirar `00_roi_profile`; si hace falta, elegir la zona a mano agregando `--x-start A --x-end B` |
 | `la zona no incluye la parte mas angosta del gel (la cintura)` | se eligió un tramo raro | mirar `00_roi_profile` |
 | `no se encontro una zona plana del gel con el criterio normal; se uso uno mas flojo` | el gel no tiene un tramo uniforme claro (desenfoque, forma rara) | no confiar en los números sin mirar la figura |
-| `N% de los fotogramas sin borde o dudosos... Proba de nuevo agregando --half-window 30` | ver 2.4 | repetir con `--half-window 30` |
+| `nota: el borde se sale de la ventana de +-15 px ... Se vuelve a procesar con +-30 px` | el gel se mueve mucho (ver 2.4) | nada: el programa ya lo resolvió |
+| `N% de los fotogramas sin borde o dudosos` o `en el N% de los fotogramas hay bordes pegados al limite` (después de ±30) | el borde sigue sin encontrarse bien | no confiar en los números; mirar la hoja `diagnostics` (`frame_quality`, `n_bordes_en_limite`) |
 | `la camara perdio ... y el eje de tiempo se armo con fotograma / fps` | se corrió sin `--base-tiempo pts` | volver a correr con `--base-tiempo pts` |
 | `el video no trae marcas de tiempo usables` | el archivo no guarda la hora de cada cuadro | los tiempos pueden estar algo comprimidos si se perdieron cuadros; avisarlo |
 
-### 2.4 Ejemplo con aviso: Video_068 con la configuración de siempre
+### 2.4 Ejemplo: el gel se mueve mucho (Video_068)
 
 ```
 Zona analizada del gel: columnas 391 a 542 (151 px de ancho)
   variacion del grosor dentro de la zona: 0.28% (aceptable hasta 6%) -> OK
+  nota: el borde se sale de la ventana de +-15 px (68% de los fotogramas con bordes en el limite, 60% sin borde): el gel se mueve mucho. Se vuelve a procesar con +-30 px.
   nota: la camara perdio ~44 fotogramas (2.3%). ...
-Fotogramas: 1843 | sin borde (descartados): 346 | dudosos: 769
-  AVISO: 60% de los fotogramas sin borde o dudosos. Lo mas comun: el gel se mueve mas que la ventana de busqueda (+-15 px). Proba de nuevo agregando --half-window 30.
+Fotogramas: 1843 | sin borde (descartados): 0 | dudosos: 0
 ```
 
-**Qué pasa:** para encontrar el borde, el programa lo busca en una ventana de ±15 px alrededor de donde espera que esté. En 068 el gel se mueve ±10 px todo el tiempo y el punto de partida está corrido, así que en muchos fotogramas el borde queda fuera de esa ventana.
-**Qué hacer:** repetir con `--half-window 30`. En 068 eso deja **0** fotogramas sin borde.
+**Qué pasa:** para encontrar el borde, el programa lo busca en una ventana de ±15 px alrededor de donde espera que esté. En 068 el gel se mueve ±10 px todo el tiempo y el punto de partida está corrido, así que en muchos fotogramas el borde queda fuera de esa ventana. El programa lo nota porque los bordes que encuentra quedan pegados al límite de la ventana, y vuelve a medir con ±30 (tarda el doble). En 068 eso deja **0** fotogramas sin borde.
+**Ojo:** puede pasar sin fotogramas sin borde (341: 0 %, pero 34 % con bordes en el límite y 16 eventos en vez de 22). Por eso se cuentan los bordes en el límite y no solo los fotogramas perdidos. No se usa ±30 para todos porque en 466 la ventana grande agarra otro borde.
 **Si preguntan:** "el gel se mueve mucho y el programa lo buscaba en una ventana muy chica; la agrandamos".
 
 ---
@@ -194,7 +190,7 @@ Cuánto "tiembla" la medición cuando el gel está quieto: es la vara para decid
 |---|---|---|
 | `nota: N evento(s) muy cerca del principio o del final del video` | ese evento se mide con menos contexto alrededor | no; está marcado en el Excel (columna `junto_al_borde`) |
 | `nota: N fotograma(s) dudosos (LOW_QUALITY)` | fotogramas donde el borde se vio peor | poco, si son pocos |
-| `AVISO: N fotograma(s) sin medida` | hay huecos sin dato | si son muchos, volver al paso 1 con `--half-window 30` |
+| `AVISO: N fotograma(s) sin medida` | hay huecos sin dato | si son muchos, mirar la hoja `diagnostics` de la serie |
 | `AVISO: N contraccion(es) con un fotograma sin medida en el pico` | el instante y el tamaño de esa contracción son inciertos | revisarla en el Excel (`junto_a_hueco`) |
 | `AVISO: el conteo cambia segun la ventana usada para quitar la deriva` | el resultado depende de un ajuste interno | el conteo sale NO REPORTABLE |
 | `AVISO: la ventana ... se fijo a mano mas corta` | solo si alguien usó `--win-s` a mano | no usar `--win-s` |
@@ -271,7 +267,7 @@ Video_613   (2179 fotogramas, 73.8 s, 30.00 fps)
 **En las figuras:** el título dice en rojo "NO REPORTABLE — candidatos para auditar"; los candidatos van en gris y los falsos de control como triángulos rojos hacia abajo. Si los rojos acompañan a los grises, es vibración o ruido.
 - "no hay meseta" = no existe ninguna zona estable del umbral.
 
-### Ejemplo de actividad continua (Video_068, con `--half-window 30`)
+### Ejemplo de actividad continua (Video_068, con la ventana de ±30 automática)
 
 ```
 Video_068_hw30   (1843 fotogramas, 62.5 s, 30.00 fps)

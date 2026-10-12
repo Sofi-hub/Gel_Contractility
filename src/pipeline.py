@@ -202,8 +202,13 @@ def process_frame(
 _TRABAJO: dict = {}
 
 
-def _iniciar_proceso(x_positions, top_guess, bottom_guess, config):
+def _iniciar_proceso(x_positions, top_guess, bottom_guess, config, shm_nombre=None, forma=None):
     _TRABAJO.update(x=x_positions, top=top_guess, bot=bottom_guess, config=config)
+    if shm_nombre is not None:
+        from multiprocessing import shared_memory
+        shm = shared_memory.SharedMemory(name=shm_nombre)
+        _TRABAJO["shm"] = shm          # que no lo junte el recolector
+        _TRABAJO["buf"] = np.ndarray(forma, dtype=np.uint8, buffer=shm.buf)
 
 
 def _procesar_en_proceso(frame):
@@ -211,31 +216,59 @@ def _procesar_en_proceso(frame):
     return process_frame(frame, w["x"], w["top"], w["bot"], w["config"])
 
 
+def _procesar_ranura(ranura):
+    """El fotograma esta en la memoria compartida (ranura): no viaja por la tuberia."""
+    w = _TRABAJO
+    return process_frame(w["buf"][ranura], w["x"], w["top"], w["bot"], w["config"])
+
+
 def _procesar_fotogramas(video_path, x_positions, top_guess, bottom_guess, config, n_procesos):
-    """Devuelve [(indice, resultado), ...] en orden, en serie o en paralelo."""
+    """Devuelve [(indice, resultado), ...] en orden, en serie o en paralelo.
+
+    En paralelo (2026-10-11): este proceso lee el video y copia cada fotograma a
+    una MEMORIA COMPARTIDA con varias ranuras; los otros procesos lo leen de ahi.
+    Antes cada fotograma (2 MB) se mandaba copiado por la tuberia entre procesos,
+    y eso costaba tanto como lo que se ganaba: en la notebook de Franco, 1 y 2
+    procesos tardaban lo mismo (62 s). El calculo de cada fotograma es el mismo:
+    el resultado es identico bit a bit con cualquier numero de procesos."""
     frames = io_utils.frame_generator(video_path)
     if n_procesos <= 1:
         for idx, frame in frames:
             yield idx, process_frame(frame, x_positions, top_guess, bottom_guess, config)
         return
+    import collections
     import multiprocessing as mp
-    tanda = 32 * n_procesos
-    with mp.get_context("spawn").Pool(
-            n_procesos, initializer=_iniciar_proceso,
-            initargs=(x_positions, top_guess, bottom_guess, config)) as pool:
-        # Mientras los procesos calculan una tanda, este lee la siguiente del
-        # video: asi la lectura (que es en serie) no deja a nadie esperando.
-        pendiente = None
-        while True:
-            lote = list(itertools.islice(frames, tanda))
-            nuevo = (pool.map_async(_procesar_en_proceso, [f for _, f in lote], chunksize=8)
-                     if lote else None)
-            if pendiente is not None:
-                idxs, trabajo = pendiente
-                yield from zip(idxs, trabajo.get())
-            if nuevo is None:
-                break
-            pendiente = ([i for i, _ in lote], nuevo)
+    from multiprocessing import shared_memory
+    primero = next(frames, None)
+    if primero is None:
+        return
+    frames = itertools.chain([primero], frames)
+    alto, ancho = primero[1].shape
+    n_ranuras = 4 * n_procesos
+    shm = shared_memory.SharedMemory(create=True, size=n_ranuras * alto * ancho)
+    try:
+        buf = np.ndarray((n_ranuras, alto, ancho), dtype=np.uint8, buffer=shm.buf)
+        with mp.get_context("spawn").Pool(
+                n_procesos, initializer=_iniciar_proceso,
+                initargs=(x_positions, top_guess, bottom_guess, config,
+                          shm.name, (n_ranuras, alto, ancho))) as pool:
+            libres = collections.deque(range(n_ranuras))
+            en_curso = collections.deque()      # (idx, ranura, resultado pendiente), en orden
+            for idx, frame in frames:
+                if not libres:                  # esperar al mas viejo (asi sale en orden)
+                    i0, r0, t0 = en_curso.popleft()
+                    yield i0, t0.get()
+                    libres.append(r0)
+                r = libres.popleft()
+                buf[r] = frame
+                en_curso.append((idx, r, pool.apply_async(_procesar_ranura, (r,))))
+            while en_curso:
+                i0, r0, t0 = en_curso.popleft()
+                yield i0, t0.get()
+        del buf
+    finally:
+        shm.close()
+        shm.unlink()
 
 
 def process_video(

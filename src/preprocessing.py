@@ -79,10 +79,10 @@ def preprocess_frame(frame: np.ndarray, use_clahe: bool = True) -> np.ndarray:
     Habia un `use_denoise` (non-local-means, `--denoise`). Medido en
     Video_prueba y Video_063 (B4/H28, 2026-10-10): mismos eventos, sin
     ganancia de ruido y ~30 veces mas lento. Se borro."""
-    out = frame.copy()
+    # CLAHE devuelve una imagen nueva: copiar antes era trabajo de mas (2026-10-11)
     if use_clahe:
-        out = apply_clahe(out)
-    return out
+        return apply_clahe(frame)
+    return frame.copy()
 
 
 # ---------------------------------------------------------------------

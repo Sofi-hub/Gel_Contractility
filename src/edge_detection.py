@@ -142,7 +142,9 @@ def extract_edges_for_frame(
         columnas donde no se pudo localizar el borde con confianza
         (posible burbuja / artefacto).
     """
-    frame_f = frame.astype(np.float64)
+    # solo las columnas que se miden pasan a float (antes, la imagen entera:
+    # ~12 % del tiempo de cada fotograma; los valores son los mismos)
+    cols_f = frame[:, np.asarray(x_positions)].astype(np.float64)
     h = frame.shape[0]
 
     y_top = np.full(len(x_positions), np.nan)
@@ -150,7 +152,7 @@ def extract_edges_for_frame(
     quality = np.full(len(x_positions), 0.0)
 
     for i, x in enumerate(x_positions):
-        col_profile = frame_f[:, x]
+        col_profile = cols_f[:, i]
 
         t_guess = top_guess[x]
         b_guess = bottom_guess[x]

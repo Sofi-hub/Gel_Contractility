@@ -23,8 +23,7 @@ Dónde quedamos (2026-10-11, tarde): hechos C7, C3, C6, D6, D1 y las mediciones 
 Orden sugerido:
 1. Probar en Windows lo nuevo de la ventana y anotar lo que se vea mal.
 2. Medir en mi notebook cuánto tarda cada parte de main.py: correr data/_mediciones_fases/tiempos_main/medir_tiempos.py (te paso la salida).
-3. Regenerar el paso 2 de los resultados vigentes para que tengan el IC 95 % (no cambia ningún número; verificar con la regresión).
-4. Ventana: recordar la última carpeta y la pestaña.
+3. Ventana: recordar la última carpeta y la pestaña.
 ```
 
 ---

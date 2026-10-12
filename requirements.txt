@@ -11,3 +11,5 @@ openpyxl==3.1.5
 # Opcionales de la ventana (interfaz.py): arrastrar el video, y el tema moderno.
 tkinterdnd2==0.6.3
 sv-ttk==2.6.1
+# Opcional: la ventana y el informe leen los Excel ~8 veces más rápido (mismas tablas).
+python-calamine==0.8.3

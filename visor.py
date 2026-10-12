@@ -29,6 +29,7 @@ import pandas as pd
 RAIZ = Path(__file__).resolve().parent
 sys.path.insert(0, str(RAIZ))
 sys.path.insert(0, str(RAIZ / "scripts"))
+from src.excel import read_excel as leer_excel  # noqa: E402
 from src.output_paths import buscar_serie          # noqa: E402
 from src.estadistica import detrend_median         # noqa: E402
 
@@ -73,7 +74,7 @@ _CACHE: dict = {}
 
 def leer_resultado(carpeta: Path, cache: bool = True) -> Resultado:
     """Lee todo lo de una carpeta. Con cache por fecha de los Excel (una sola
-    entrada; la pestaña Comparar lee con cache=False para no pisarla)."""
+    entradas por carpeta; Comparar también la usa)."""
     import informe
     import procesar_carpeta as pc
     carpeta = Path(carpeta)
@@ -87,7 +88,7 @@ def leer_resultado(carpeta: Path, cache: bool = True) -> Resultado:
     r.frase = informe.frase_resultado(d)
     r.avisos = informe.avisos(d)
     serie = buscar_serie(carpeta)
-    df = pd.read_excel(serie, sheet_name="diagnostics")
+    df = leer_excel(serie, sheet_name="diagnostics")
     r.t = df["time_s"].to_numpy(float)
     c = df["center_px"].to_numpy(float)
     r.grosor = df["thickness_px"].to_numpy(float)
@@ -97,7 +98,7 @@ def leer_resultado(carpeta: Path, cache: bool = True) -> Resultado:
         signo = float(r.res.get("signo") or 1.0)
         r.senal = signo * detrend_median(c, fps, win)
         contr = sorted(carpeta.glob("contracciones_*.xlsx"))
-        h = pd.read_excel(contr[0], sheet_name=None)
+        h = leer_excel(contr[0], sheet_name=None)
         r.cin = _hoja(h, "cinetica")
         r.grilla = _hoja(h, "grilla")
         ev = _hoja(h, "eventos")
@@ -108,7 +109,11 @@ def leer_resultado(carpeta: Path, cache: bool = True) -> Resultado:
     else:
         r.senal = c - np.nanmedian(c)
     if cache:
-        _CACHE.clear()      # una sola entrada alcanza; no crece sin limite
+        # las ultimas 30 carpetas: volver a una ya vista es instantaneo
+        for k in [k for k in _CACHE if k[0] == clave[0]]:
+            del _CACHE[k]          # version vieja de la misma carpeta
+        while len(_CACHE) >= 30:
+            del _CACHE[next(iter(_CACHE))]
         _CACHE[clave] = r
     return r
 
@@ -360,7 +365,7 @@ def fotograma(r: Resultado, i: int):
                                     f"ni en data/raw_videos)")
         video = cand[0]
     p = int(r.cin.iloc[i]["frame_pico"])
-    df = pd.read_excel(buscar_serie(r.carpeta), sheet_name="diagnostics",
+    df = leer_excel(buscar_serie(r.carpeta), sheet_name="diagnostics",
                        usecols=["frame", "y_top_px", "y_bottom_px"])
     fila = df.iloc[min(p, len(df) - 1)]
     nro = int(fila["frame"])
@@ -496,9 +501,20 @@ class PestanaResultados:
                              font=("Segoe UI", 10))
         self.frase.pack(fill="x", pady=(4, 4))
         self.frase.configure(state="disabled")
+        self.estado = ttk.Label(der, text="", foreground="gray")
+        self.estado.pack(side="bottom", anchor="w")
 
-        fila = ttk.Frame(der)
-        fila.pack(fill="x")
+        # dos sub-pestañas: con todo junto el grafico quedaba muy chico
+        self.sub = ttk.Notebook(der)
+        self.sub.pack(fill="both", expand=True, pady=(2, 0))
+        t_num = ttk.Frame(self.sub, padding=(4, 8))
+        t_graf = ttk.Frame(self.sub, padding=(0, 4))
+        self.sub.add(t_num, text="  Números y ficha  ")
+        self.sub.add(t_graf, text="  Gráfico  ")
+        self.sub.select(1)
+
+        fila = ttk.Frame(t_num)
+        fila.pack(fill="both", expand=True)
         # numeros: etiquetas que parten los textos largos en varias lineas
         # (una tabla Treeview no parte el texto y los avisos largos se cortaban)
         self.numeros = ttk.Frame(fila)
@@ -529,8 +545,8 @@ class PestanaResultados:
         self.ficha.bind("<Configure>",
                         lambda e: self.ficha_txt.config(wraplength=max(150, e.width - 24)))
 
-        barra = ttk.Frame(der)
-        barra.pack(fill="x", pady=(6, 2))
+        barra = ttk.Frame(t_graf)
+        barra.pack(fill="x", pady=(2, 2))
         ttk.Label(barra, text="Vista:").pack(side="left")
         self.v_vista = tk.StringVar(value=VISTAS[0][0])
         cb = ttk.Combobox(barra, textvariable=self.v_vista, values=[v[0] for v in VISTAS],
@@ -552,17 +568,18 @@ class PestanaResultados:
         except Exception:
             dpi = 100.0
         self.fig = Figure(figsize=(9, 4.2), dpi=dpi)
-        self.canvas = FigureCanvasTkAgg(self.fig, master=der)
-        tb = NavigationToolbar2Tk(self.canvas, der, pack_toolbar=False)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=t_graf)
+        tb = NavigationToolbar2Tk(self.canvas, t_graf, pack_toolbar=False)
         tb.update()
         tb.pack(fill="x")
         # ancho pedido chico: el grafico igual ocupa todo; si pide mucho, el panel
         # de la lista no se puede acomodar
         self.canvas.get_tk_widget().configure(width=300, height=200)
+        # resumen de la contraccion elegida, para no tener que cambiar de sub-pestaña
+        self.ficha_corta = ttk.Label(t_graf, text="", justify="left")
+        self.ficha_corta.pack(side="bottom", anchor="w", fill="x", pady=(2, 0))
         self.canvas.get_tk_widget().pack(fill="both", expand=True)
         self.canvas.mpl_connect("pick_event", self._al_clic)
-        self.estado = ttk.Label(der, text="", foreground="gray")
-        self.estado.pack(anchor="w")
 
         # ancho inicial de la lista (si no, el panel puede arrancar cerrado)
         # ancho inicial de la lista: se fija cuando el panel ya tiene su ancho real
@@ -695,6 +712,7 @@ class PestanaResultados:
                 lb.configure(foreground=col)
             lb.grid(row=k, column=1, sticky="nw", pady=1)
         self.ficha_txt.config(text="—")
+        self.ficha_corta.config(text="Clic en una contracción (o ← →) para ver su resumen acá.")
         for b in (self.b_dudosa, self.b_copiar, self.b_gficha, self.b_foto):
             b.config(state="disabled")
         self.estado.config(text=str(r.carpeta))
@@ -838,6 +856,12 @@ class PestanaResultados:
         if nota:
             filas.append(("Marca manual", f"{nota} (no cambia ningún número)"))
         self.ficha_txt.config(text="\n".join(f"{a}:  {b}" for a, b in filas))
+        d = dict(filas)
+        self.ficha_corta.config(text="  ·  ".join(x for x in (
+            f"Contracción {d.get('Contracción', '')}", d.get("Instante del pico", ""),
+            d.get("Tipo", ""), d.get("Amplitud", ""),
+            f"TTP {d.get('Tiempo al pico (TTP)', '—')}", "dudosa" if nota else "")
+            if x))
         self.b_dudosa.config(text="Quitar marca (D)" if nota else "Marcar dudosa (D)")
         for b in (self.b_dudosa, self.b_copiar, self.b_gficha, self.b_foto):
             b.config(state="normal")

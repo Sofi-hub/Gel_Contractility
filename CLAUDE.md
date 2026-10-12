@@ -229,6 +229,7 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     scripts/procesar_carpeta.py     una CARPETA entera (ventana o consola): mismos pasos por video + tabla resumen
     visor.py                        pestaña Resultados de la ventana: lista, numeros y grafico interactivo (solo LEE);
                                     marcar "dudosa" (marcas_<carpeta>.json, aparte), fotograma del pico, exportar ficha
+    src/excel.py                    lectura rapida de los Excel (python-calamine, opcional; solo ventana/informe/tabla)
     comparar.py                     pestaña Comparar: 2+ resultados lado a lado, promedio superpuesto, amplitud con IC (solo LEE)
     tests/test_visor.py             la pestaña Resultados muestra lo de los Excel (ficha de cada contraccion)
     scripts/informe.py              paso 4: informe_<carpeta>.html de una pagina; solo LEE los Excel y figuras

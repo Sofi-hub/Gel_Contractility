@@ -31,6 +31,7 @@ RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 sys.path.insert(0, str(RAIZ / "scripts"))
 import procesar_carpeta as pc                  # noqa: E402
+from src.excel import read_excel as leer_excel  # noqa: E402
 from src.output_paths import buscar_serie      # noqa: E402
 
 FIGURAS = [  # (prefijo, título, explicación)
@@ -79,11 +80,11 @@ def leer(carpeta: Path) -> dict:
     d: dict = {"carpeta": carpeta, "fila": pc.leer_fila(carpeta), "serie": {}, "res": {}}
     serie = buscar_serie(carpeta)
     if serie.is_file():
-        r = pd.read_excel(serie, sheet_name="resumen")
+        r = leer_excel(serie, sheet_name="resumen")
         d["serie"] = dict(zip(r["Métrica"].astype(str), r["Valor"]))
     contr = sorted(carpeta.glob("contracciones_*.xlsx"))
     if contr:
-        h = pd.read_excel(contr[0], sheet_name=None)
+        h = leer_excel(contr[0], sheet_name=None)
         res = pc._hoja(h, "resumen")
         if res is not None and len(res):
             d["res"] = res.iloc[0].to_dict()
@@ -91,7 +92,7 @@ def leer(carpeta: Path) -> dict:
     mov = sorted(carpeta.glob("movimiento_*.xlsx"))
     if mov:
         try:
-            d["veredicto"] = pd.read_excel(mov[0], sheet_name="veredicto").iloc[0].to_dict()
+            d["veredicto"] = leer_excel(mov[0], sheet_name="veredicto").iloc[0].to_dict()
         except Exception:
             pass
     # la consola guardada (procesar_carpeta) solo si es de esta corrida: no mas vieja

@@ -33,6 +33,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(RAIZ))
 import interfaz                                # noqa: E402  (no abre ventana)
+from src.excel import read_excel as leer_excel  # noqa: E402
 from src.output_paths import buscar_serie      # noqa: E402
 
 EXTENSIONES = {".mp4", ".avi", ".mov"}
@@ -73,7 +74,7 @@ def leer_fila(carpeta: Path) -> dict:
     serie = buscar_serie(carpeta)
     if serie.is_file():
         try:
-            r = pd.read_excel(serie, sheet_name="resumen")
+            r = leer_excel(serie, sheet_name="resumen")
             m = dict(zip(r["Métrica"].astype(str), r["Valor"]))
             if "ROI cumple criterio" in m:
                 fila["roi_cumple"] = bool(_num(m["ROI cumple criterio"]))
@@ -85,7 +86,7 @@ def leer_fila(carpeta: Path) -> dict:
     contr = sorted(carpeta.glob("contracciones_*.xlsx"))
     if not contr:
         return fila
-    hojas = pd.read_excel(contr[0], sheet_name=None)
+    hojas = leer_excel(contr[0], sheet_name=None)
     res = _hoja(hojas, "resumen")
     if res is None or res.empty:
         return fila

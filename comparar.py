@@ -72,11 +72,21 @@ class PestanaComparar:
         self.titulo = ttk.Label(der, text="Elegí resultados a la izquierda y apretá Comparar",
                                 style="Seccion.TLabel")
         self.titulo.pack(anchor="w")
-        # tabla arriba y grafico abajo, con divisor arrastrable
-        vert = ttk.PanedWindow(der, orient="vertical")
-        vert.pack(fill="both", expand=True, pady=(4, 0))
-        caja = ttk.Frame(vert)
-        vert.add(caja, weight=1)
+        self.estado = ttk.Label(der, text="", foreground="gray")
+        self.estado.pack(side="bottom", anchor="w")
+        # dos sub-pestañas: tabla o grafico (juntos, todo quedaba chico)
+        self.sub = ttk.Notebook(der)
+        self.sub.pack(fill="both", expand=True, pady=(4, 0))
+        t_tab = ttk.Frame(self.sub, padding=(0, 6))
+        t_graf = ttk.Frame(self.sub, padding=(0, 4))
+        self.sub.add(t_tab, text="  Tabla  ")
+        self.sub.add(t_graf, text="  Gráfico  ")
+        bt = ttk.Frame(t_tab)
+        bt.pack(side="bottom", fill="x", pady=(6, 0))
+        ttk.Button(bt, text="Guardar tabla...", command=self._guardar_tabla).pack(side="left")
+        ttk.Label(bt, text="todo sale de los Excel", foreground="gray").pack(side="left", padx=8)
+        caja = ttk.Frame(t_tab)
+        caja.pack(fill="both", expand=True)
         self.tabla = ttk.Treeview(caja, show="headings", height=8)
         sx = ttk.Scrollbar(caja, orient="horizontal", command=self.tabla.xview)
         sy = ttk.Scrollbar(caja, orient="vertical", command=self.tabla.yview)
@@ -85,18 +95,15 @@ class PestanaComparar:
         sy.grid(row=0, column=1, sticky="ns")
         sx.grid(row=1, column=0, sticky="ew")
         caja.columnconfigure(0, weight=1)
+        caja.rowconfigure(0, weight=1)
         self._px = px
 
-        caja.rowconfigure(0, weight=1)
-        abajo = ttk.Frame(vert)
-        vert.add(abajo, weight=2)
-        barra = ttk.Frame(abajo)
-        barra.pack(fill="x", pady=(4, 2))
-        ttk.Button(barra, text="Guardar tabla...", command=self._guardar_tabla).pack(side="left")
-        ttk.Button(barra, text="Guardar gráfico...", command=self._guardar_png).pack(side="left", padx=4)
-        ttk.Label(barra, text="números: de los Excel · curva: solo dibujo",
+        barra = ttk.Frame(t_graf)
+        barra.pack(fill="x", pady=(2, 2))
+        ttk.Button(barra, text="Guardar gráfico...", command=self._guardar_png).pack(side="left")
+        ttk.Label(barra, text="amplitud: de los Excel · curva promedio: solo dibujo",
                   foreground="gray").pack(side="left", padx=8)
-        der = abajo
+        der = t_graf
 
         try:
             dpi = max(80.0, min(200.0, 0.85 * 96.0 * k))
@@ -111,8 +118,6 @@ class PestanaComparar:
         # de la lista no se puede acomodar
         self.canvas.get_tk_widget().configure(width=300, height=200)
         self.canvas.get_tk_widget().pack(fill="both", expand=True)
-        self.estado = ttk.Label(der, text="", foreground="gray")
-        self.estado.pack(anchor="w")
 
         # ancho inicial de la lista: se fija cuando el panel ya tiene su ancho real
         # (fijarlo antes, con la pestaña sin dibujar, lo dejaba en cualquier lado)
@@ -164,7 +169,7 @@ class PestanaComparar:
             rs, errores = [], []
             for c in carpetas:
                 try:
-                    rs.append(visor.leer_resultado_sin_cache(c))
+                    rs.append(visor.leer_resultado(c))
                 except Exception as e:
                     errores.append(f"{c.name}: {e}")
             self.raiz.after(0, lambda: self._mostrar(rs, errores))
@@ -175,7 +180,7 @@ class PestanaComparar:
         self.titulo.config(text=f"Comparando {len(rs)} resultados")
         filas = visor.tabla_comparar(rs)
         cols = ["m"] + [f"r{i}" for i in range(len(rs))]
-        self.tabla.configure(columns=cols, height=min(len(filas), 9))
+        self.tabla.configure(columns=cols, height=len(filas))
         self.tabla.heading("m", text="")
         self.tabla.column("m", width=self._px(190), stretch=False, anchor="w")
         for i, r in enumerate(rs):
@@ -187,8 +192,7 @@ class PestanaComparar:
         self._dibujar()
         txt = "Listo." if not errores else "No pude leer: " + "; ".join(errores)
         if any(visor.ic_amplitud(r) is None and r.fila.get("reportable") for r in rs):
-            txt += ("  Sin IC: resultado anterior al 2026-10-10; se agrega corriendo de nuevo solo "
-                    "el paso 2 (no cambia ningún número).")
+            txt += "  Punto hueco = resultado anterior al IC 95 % (se agrega al rehacer el paso 2)."
         self.estado.config(text=txt)
 
     def _dibujar(self):

@@ -1,40 +1,37 @@
 # Estado del proyecto y arranque de un chat nuevo
 
-Actualizado 2026-10-10 (noche). Sirve para dos cosas: es el resumen del estado actual, y su primera sección se puede pegar tal cual al abrir un chat nuevo. **Lo que falta hacer está en `docs/pendientes.md`**, no acá.
+Actualizado 2026-10-11. Sirve para dos cosas: es el resumen del estado actual, y su primera sección se puede pegar tal cual al abrir un chat nuevo. **Lo que falta hacer está en `docs/pendientes.md`**, no acá.
 
 ---
 
 ## Prompt para pegar en el chat nuevo
 
-> Trabajo en `gel_contractility`, un pipeline en Python que mide la contractilidad de geles 3D a partir de video de microscopía, para el equipo de Tecnun. Funciona: está validado sobre seis videos y se aplicó a cinco videos "raros" (`RARITOS`). El código está en mi carpeta (repo git) y los documentos en `docs/`, con copia en este proyecto.
->
-> **Cómo funciona, una línea por etapa:**
-> 1. El video se convierte en un mapa de máxima intensidad.
-> 2. Se detecta automáticamente la zona plana del gel, lejos de los anclajes.
-> 3. En cada fotograma se localizan los dos bordes con precisión subpíxel en 40–60 columnas.
-> 4. Un polinomio de grado 2 ajustado con RANSAC descarta las columnas arruinadas por burbujas.
-> 5. Salen cuatro series: `y_top_px`, `y_bottom_px`, `thickness_px` y `center_px`.
-> 6. Se detectan las contracciones sobre `center_px`, con un control de falsos positivos sobre la señal invertida.
-> 7. Se separan estimuladas y espontáneas por enganche de fase con el estimulador.
->
-> **Los cinco hallazgos que definen el método, y que no hay que perder:**
-> 1. **La contracción se detecta sobre `center_px`, no sobre el grosor.** En este montaje es sobre todo un desplazamiento de toda la franja, y el grosor es ciego a eso. La métrica que se informa es la amplitud de ese desplazamiento en % del grosor en reposo.
-> 2. **Estimuladas y espontáneas se separan por enganche de fase**, no por amplitud.
-> 3. **El eje temporal sale de los timestamps del video** (`--base-tiempo pts`), no de `fotograma / fps`.
-> 4. **El umbral `k` se elige solo, dentro de la meseta del escaneo** con 0 falsos de control. Sin meseta, el conteo no se informa (NO REPORTABLE).
-> 5. **A 30 fps, TTP y RT50 no son medibles en las muestras rápidas:** se da una cota ("menos de X ms"), no un valor.
->
-> **Fuera de alcance:** no se calibra a milímetros; todo en píxeles y comparaciones relativas.
->
-> **Principio de trabajo:** medir y proponer antes de cambiar. Ningún cambio de algoritmo sin regresión sobre Video_prueba y Video_063. Nunca ajustar un parámetro hasta que el número dé lindo.
->
-> Antes de empezar leé `CLAUDE.md`, este documento y `docs/pendientes.md`.
+```
+Continuamos gel_contractility (Tecnun), con el código.
+ANTES DE EMPEZAR leé del proyecto CLAUDE.md, claude/ESTADO-arranque-chat-nuevo.md y claude/pendientes.md. Leé el código desde mi carpeta (repo git): C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility. Traé los videos solo si una tarea lo pide.
+
+Reglas de siempre: medir y proponer primero, explicarme en simple, respuestas cortas, comandos de git juntos al final. Los documentos viven en docs/ del repo, con copia de los vigentes en el proyecto: si cambiás uno, actualizá los dos y verificá que lo que copiás a mi carpeta llegó bien (re-traerlo y comparar; una vez la copia quedó vieja aunque la herramienta dijo que había escrito). Verificación de cada cambio: tests (incluidos test_lote y test_visor), `python tests/test_regresion.py` y, si se toca ROI, bordes o RANSAC, `--completo`. Las versiones fijas están en requirements.txt.
+
+Modo de trabajo: resolver lo que MENOS atención mía requiera.
+* Si un cambio NO cambia ningún número (o solo agrega diagnósticos o mejora la ventana), hacelo directo, verificalo y copialo; contame al final.
+* Si cambia un número informado, medilo y dejame la propuesta con la tabla; no lo implementes sin mi visto bueno.
+* Mediciones largas: de fondo, revisarlas cada ~10 min; scripts y tablas en data/_mediciones_fases/<tema>/ con un LEEME.md.
+* Al final, un resumen corto: qué se hizo, qué quedó esperando mi decisión, y los comandos de git.
+
+Dónde quedamos (2026-10-11): hechos C7 (versiones fijas), C3 (carpeta entera con tabla resumen, informe HTML por video = paso 4, configuracion.ini), C6 (IC 95 % por bootstrap), D6 (avisos de timestamps inventados, cintura corta y poco contraste), D1 (motion_check juzga el tamaño por contracción), mediciones D2, D3, D7, B1 y H23 (cerradas; H23 se deja como está). La ventana tiene pestañas Analizar / Resultados (visor.py: gráfico interactivo, clic en una contracción = su ficha), tema sv-ttk, nitidez en Windows y letra según la escala de pantalla (tamano_letra en configuracion.ini). La pregunta 13 (H41) y lo de los estimuladores esperan la reunión con Cami del jueves 15.
+
+Orden sugerido:
+1. Ventana, etapa 2: pestaña Comparar (2 o más resultados, nuevos o viejos: tabla lado a lado, contracción promedio superpuesta en % del grosor, amplitud con su IC 95 %). Solo lee los Excel, no calcula.
+2. Ventana, detalles: textos largos de la tabla de números en varias líneas; atajos; exportar la ficha.
+3. Ideas: marcar una contracción como "dudosa" (guardado aparte, sin tocar números); amplitud de cada contracción contra el tiempo; fotograma del video al hacer clic.
+4. Medir en mi notebook cuánto tarda cada parte de main.py (te paso la salida).
+```
 
 ---
 
 ## Cómo se usa hoy
 
-- **La forma fácil:** doble clic en `Analizar.bat`, que abre la ventana de `interfaz.py`. Ahí se elige el video y la carpeta, se marcan los pasos que se quieren correr y se ve la salida en vivo.
+- **La forma fácil:** doble clic en `Analizar.bat`, que abre la ventana de `interfaz.py`. Pestaña Analizar: video o carpeta entera, pasos (1 medir, 2 contracciones, 3 confirmar, 4 informe HTML) y salida en vivo. Pestaña Resultados (`visor.py`): todo `processed_data`, números, avisos y gráfico interactivo (clic en una contracción = su ficha).
 - **Por consola:**
   - `main.py` → `scripts/contraction_report.py`, con `scripts/motion_check.py` como paso opcional.
   - Comandos y explicación de todo lo que se imprime en `docs/guia-salida-consola.md`.

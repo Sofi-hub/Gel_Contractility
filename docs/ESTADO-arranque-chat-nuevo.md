@@ -18,20 +18,20 @@ Modo de trabajo: resolver lo que MENOS atención mía requiera.
 * Mediciones largas: de fondo, revisarlas cada ~10 min; scripts y tablas en data/_mediciones_fases/<tema>/ con un LEEME.md.
 * Al final, un resumen corto: qué se hizo, qué quedó esperando mi decisión, y los comandos de git.
 
-Dónde quedamos (2026-10-11): hechos C7 (versiones fijas), C3 (carpeta entera con tabla resumen, informe HTML por video = paso 4, configuracion.ini), C6 (IC 95 % por bootstrap), D6 (avisos de timestamps inventados, cintura corta y poco contraste), D1 (motion_check juzga el tamaño por contracción), mediciones D2, D3, D7, B1 y H23 (cerradas; H23 se deja como está). La ventana tiene pestañas Analizar / Resultados (visor.py: gráfico interactivo, clic en una contracción = su ficha), tema sv-ttk, nitidez en Windows y letra según la escala de pantalla (tamano_letra en configuracion.ini). La pregunta 13 (H41) y lo de los estimuladores esperan la reunión con Cami del jueves 15.
+Dónde quedamos (2026-10-11, tarde): hechos C7, C3, C6, D6, D1 y las mediciones D2, D3, D7, B1 y H23 (cerradas). La ventana tiene pestañas Analizar / Resultados / Comparar: Resultados con gráfico interactivo, ficha de cada contracción (copiar o guardar), marcar "dudosa" (marcas_<carpeta>.json, sin tocar números), fotograma del pico con los bordes, amplitud contra el tiempo y atajos; Comparar con tabla lado a lado, promedio superpuesto en % del grosor y amplitud con IC 95 %. Falta que Franco pruebe todo esto en Windows. La pregunta 13 (H41) y lo de los estimuladores esperan la reunión con Cami del jueves 15.
 
 Orden sugerido:
-1. Ventana, etapa 2: pestaña Comparar (2 o más resultados, nuevos o viejos: tabla lado a lado, contracción promedio superpuesta en % del grosor, amplitud con su IC 95 %). Solo lee los Excel, no calcula.
-2. Ventana, detalles: textos largos de la tabla de números en varias líneas; atajos; exportar la ficha.
-3. Ideas: marcar una contracción como "dudosa" (guardado aparte, sin tocar números); amplitud de cada contracción contra el tiempo; fotograma del video al hacer clic.
-4. Medir en mi notebook cuánto tarda cada parte de main.py (te paso la salida).
+1. Probar en Windows lo nuevo de la ventana y anotar lo que se vea mal.
+2. Medir en mi notebook cuánto tarda cada parte de main.py: correr data/_mediciones_fases/tiempos_main/medir_tiempos.py (te paso la salida).
+3. Regenerar el paso 2 de los resultados vigentes para que tengan el IC 95 % (no cambia ningún número; verificar con la regresión).
+4. Ventana: recordar la última carpeta y la pestaña.
 ```
 
 ---
 
 ## Cómo se usa hoy
 
-- **La forma fácil:** doble clic en `Analizar.bat`, que abre la ventana de `interfaz.py`. Pestaña Analizar: video o carpeta entera, pasos (1 medir, 2 contracciones, 3 confirmar, 4 informe HTML) y salida en vivo. Pestaña Resultados (`visor.py`): todo `processed_data`, números, avisos y gráfico interactivo (clic en una contracción = su ficha).
+- **La forma fácil:** doble clic en `Analizar.bat`, que abre la ventana de `interfaz.py`. Pestaña Analizar: video o carpeta entera, pasos (1 medir, 2 contracciones, 3 confirmar, 4 informe HTML) y salida en vivo. Pestaña Resultados (`visor.py`): todo `processed_data`, números, avisos y gráfico interactivo (clic en una contracción = su ficha; marcar dudosa, fotograma, exportar). Pestaña Comparar (`comparar.py`): 2 o más resultados lado a lado.
 - **Por consola:**
   - `main.py` → `scripts/contraction_report.py`, con `scripts/motion_check.py` como paso opcional.
   - Comandos y explicación de todo lo que se imprime en `docs/guia-salida-consola.md`.
@@ -110,6 +110,7 @@ Orden sugerido:
 - **2026-10-10:** ventana de búsqueda automática (B1, opción a'): ±15 y, si el borde se sale, ±30. Solo cambia 304 (sin cambiar números informados).
 - **2026-10-10 (tarde, sin cambiar números):** versiones fijas en `requirements.txt`; procesar una **carpeta entera** con tabla resumen (ventana y `scripts/procesar_carpeta.py`). Medidas y cerradas: D2/H52 (el peine de compresión está en los 11 videos, no pasa a los bordes), D3 (la espontánea de 0.31 s de 063 es local), D7 (la oscilación post-evento es solo de 476), B1 (en 466 el borde superior tiene un segundo escalón a ~15 px). D1: por contracción 476 da 0.99 y 268, 466 y 491 dan 0.86–0.88; `motion_check` ahora juzga el tamaño contracción por contracción. H23: escalar la ventana de la ROI con el gel no cambia ningún número informado; se deja como está.
 - **2026-10-10 (noche, sin cambiar números):** informe HTML de una página por video (paso 4, `scripts/informe.py`); `configuracion.ini`; IC 95 % por bootstrap de la amplitud (y TTP/RT50); avisos de timestamps inventados, cintura corta y poco contraste (D6).
+- **2026-10-11 (sin cambiar números):** pestaña Comparar; en Resultados, números en varias líneas, atajos, exportar la ficha, marcar dudosa (aparte), fotograma del pico y amplitud contra el tiempo. Script para medir los tiempos de `main.py` en la notebook (`data/_mediciones_fases/tiempos_main/`).
 - **2026-10-08 (tarde):** resultados regenerados con nombres nuevos (sin cambiar números); test de regresión automático de los 11 videos; `--procesos` por defecto 2 (medido en la notebook).
 - **2026-10-07:** se procesaron los RARITOS. Después: consola clara, `--verbose`, sentido de los eventos corregido, figuras NO REPORTABLE, la ventana (`interfaz.py`) y la documentación ordenada.
 

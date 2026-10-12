@@ -300,8 +300,10 @@ def main():
     nb.pack(fill="both", expand=True, padx=12, pady=(0, 10))
     tab1 = ttk.Frame(nb, padding=14)
     tab2 = ttk.Frame(nb)
+    tab3 = ttk.Frame(nb)
     nb.add(tab1, text="  Analizar  ")
     nb.add(tab2, text="  Resultados  ")
+    nb.add(tab3, text="  Comparar  ")
     visor_ref: dict = {}
 
     def pestana_resultados():
@@ -310,10 +312,26 @@ def main():
             import visor
             visor_ref["v"] = visor.PestanaResultados(tab2, CONFIG["carpeta_resultados"],
                                                      oscuro=tema["oscuro"])
+            visor_ref["v"].atajos(activa=lambda: nb.index("current") == 1)
         return visor_ref["v"]
 
-    nb.bind("<<NotebookTabChanged>>",
-            lambda _e: pestana_resultados() if nb.index("current") == 1 else None)
+    def pestana_comparar():
+        if "c" not in visor_ref:
+            import comparar
+            visor_ref["c"] = comparar.PestanaComparar(tab3, CONFIG["carpeta_resultados"])
+        return visor_ref["c"]
+
+    def al_cambiar_pestana(_e=None):
+        i = nb.index("current")
+        if i == 1:
+            pestana_resultados()
+        elif i == 2:
+            pestana_comparar()
+
+    nb.bind("<<NotebookTabChanged>>", al_cambiar_pestana)
+    # atajos generales: Ctrl+1/2/3 cambian de pestaña
+    for n in (1, 2, 3):
+        root.bind(f"<Control-Key-{n}>", lambda _e, n=n: nb.select(n - 1))
 
     v_video = tk.StringVar()
     v_carpeta = tk.StringVar()
@@ -489,6 +507,8 @@ def main():
             b_ver.config(state="normal")
             if "v" in visor_ref:          # que la lista de Resultados incluya lo nuevo
                 visor_ref["v"].refrescar()
+            if "c" in visor_ref:
+                visor_ref["c"].refrescar()
 
     def ver_resultados():
         nb.select(1)
@@ -553,6 +573,12 @@ def main():
             subprocess.Popen(["xdg-open", str(c)])
 
     b_correr.config(command=analizar)
+    root.bind("<Control-Return>", lambda _e: (analizar() if nb.index("current") == 0
+                                              and str(b_correr["state"]) != "disabled" else None))
+    ttk.Label(tab1, style="Ayuda.TLabel",
+              text="Atajos: Ctrl+Enter analizar · Ctrl+1/2/3 pestañas · en Resultados: ← → contracción, "
+                   "D marcar dudosa, F fotograma, Ctrl+C copiar ficha, Ctrl+F buscar, F5 actualizar, "
+                   "Ctrl+S guardar gráfico").pack(anchor="w", pady=(6, 0))
     b_parar.config(command=lambda: parar.update(si=True))
     b_abrir.config(command=abrir)
     root.after(100, vaciar_cola)

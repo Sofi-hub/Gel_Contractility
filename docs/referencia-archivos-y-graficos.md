@@ -274,6 +274,12 @@ traslada también mueve solo sus bordes).
 
 ---
 
+## 3c. `marcas_<carpeta>.json` — marcas a mano desde la ventana (2026-10-11)
+
+Solo existe si alguien marcó una contracción como **dudosa** en la pestaña Resultados (botón o tecla D). Guarda `{"dudosas": {"<número de contracción>": "dudosa"}}` y la fecha. Es una nota: **no cambia ningún número ni ningún Excel**, y ningún script del análisis lo lee (solo la ventana, que la muestra en el gráfico, la ficha y la tabla de Comparar). Si se quita la última marca, el archivo se borra. Ojo: los números de contracción son los del reporte actual; si se vuelve a correr el paso 2 y cambian, la marca puede quedar apuntando a otra.
+
+La pestaña Comparar puede además guardar, donde se elija, `comparacion.xlsx` (la tabla lado a lado, tal como se ve) y `comparacion.png`.
+
 ## 3b. `informe_<carpeta>.html` — salida de `scripts/informe.py` (paso 4)
 
 Una página, un solo archivo con las figuras adentro, para mandar al equipo. Tiene el

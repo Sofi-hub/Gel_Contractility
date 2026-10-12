@@ -71,14 +71,15 @@ def _hoja(h: dict, pref: str):
 _CACHE: dict = {}
 
 
-def leer_resultado(carpeta: Path) -> Resultado:
-    """Lee todo lo de una carpeta. Con cache por fecha de los Excel."""
+def leer_resultado(carpeta: Path, cache: bool = True) -> Resultado:
+    """Lee todo lo de una carpeta. Con cache por fecha de los Excel (una sola
+    entrada; la pestaña Comparar lee con cache=False para no pisarla)."""
     import informe
     import procesar_carpeta as pc
     carpeta = Path(carpeta)
     archivos = sorted(carpeta.glob("*.xlsx"))
     clave = (str(carpeta), tuple((a.name, a.stat().st_mtime) for a in archivos))
-    if clave in _CACHE:
+    if cache and clave in _CACHE:
         return _CACHE[clave]
     d = informe.leer(carpeta)                       # lo mismo que usa el informe
     r = Resultado(carpeta=carpeta, fila=d["fila"], serie_meta=d["serie"], res=d["res"],
@@ -106,9 +107,14 @@ def leer_resultado(carpeta: Path) -> Resultado:
                     r.cin[col] = ev[col].to_numpy()
     else:
         r.senal = c - np.nanmedian(c)
-    _CACHE.clear()          # una sola entrada por carpeta alcanza; no crece sin limite
-    _CACHE[clave] = r
+    if cache:
+        _CACHE.clear()      # una sola entrada alcanza; no crece sin limite
+        _CACHE[clave] = r
     return r
+
+
+def leer_resultado_sin_cache(carpeta: Path) -> Resultado:
+    return leer_resultado(carpeta, cache=False)
 
 
 def _ms(x) -> str:
@@ -159,6 +165,250 @@ def ficha_evento(r: Resultado, i: int) -> list[tuple[str, str]]:
     return filas
 
 
+def ficha_texto(r: Resultado, i: int) -> str:
+    """La ficha como texto (para copiar o guardar): de qué resultado es y sus filas."""
+    filas = [("Resultado", r.carpeta.name)] + ficha_evento(r, i)
+    m = leer_marcas(r.carpeta).get(str(int(r.cin.iloc[i]["evento"])))
+    if m:
+        filas.append(("Marca manual", m))
+    return "\n".join(f"{a}:\t{b}" for a, b in filas)
+
+
+# ---- marcas manuales ("dudosa"): archivo aparte, nunca tocan los Excel ----
+def archivo_marcas(carpeta: Path) -> Path:
+    return Path(carpeta) / f"marcas_{Path(carpeta).name}.json"
+
+
+def leer_marcas(carpeta: Path) -> dict[str, str]:
+    """{numero de evento (texto): nota}. Archivo aparte: los Excel no se tocan
+    y ningún número cambia. Si no existe o está roto, vacío."""
+    import json
+    try:
+        d = json.loads(archivo_marcas(carpeta).read_text(encoding="utf-8"))
+        return {str(k): str(v) for k, v in d.get("dudosas", {}).items()}
+    except Exception:
+        return {}
+
+
+def marcar_dudosa(carpeta: Path, evento: int, dudosa: bool = True, nota: str = "dudosa") -> dict:
+    import json
+    from datetime import datetime
+    m = leer_marcas(carpeta)
+    if dudosa:
+        m[str(int(evento))] = nota or "dudosa"
+    else:
+        m.pop(str(int(evento)), None)
+    p = archivo_marcas(carpeta)
+    if m:
+        p.write_text(json.dumps({"que_es": "contracciones marcadas a mano como dudosas desde la "
+                                           "ventana. Solo una nota: no cambia ningún número.",
+                                 "actualizado": datetime.now().isoformat(timespec="seconds"),
+                                 "dudosas": dict(sorted(m.items(), key=lambda kv: int(kv[0])))},
+                                ensure_ascii=False, indent=1), encoding="utf-8")
+    elif p.is_file():
+        p.unlink()
+    return m
+
+
+# ---- para comparar y para las vistas nuevas (solo dibujo y lectura) ----
+def eventos_principales(r: Resultado) -> np.ndarray:
+    """Qué contracciones entran en el promedio que se compara: las del grupo de
+    la amplitud informada (`cinetica_grupo_principal`), y de esas las que tienen
+    la ventana entera (`en_promedio`). Si no es reportable, todas las candidatas."""
+    if r.cin is None or not len(r.cin):
+        return np.zeros(0, bool)
+    m = np.ones(len(r.cin), bool)
+    g = r.res.get("cinetica_grupo_principal") if r.res else None
+    if bool(r.fila.get("reportable")) and isinstance(g, str) and g and g != "todos":
+        sel = r.cin["grupo"].astype(str).to_numpy() == g
+        if sel.any():
+            m &= sel
+    if "en_promedio" in r.cin:
+        m &= np.array([bool(x) if x == x else True for x in r.cin["en_promedio"].to_numpy()])
+    return m
+
+
+def promedio_para_dibujar(r: Resultado, half_s: float = 1.5):
+    """Contracción promedio en % del grosor en reposo, alineada en el pico.
+    Es un DIBUJO (la misma idea que promedio_alineado del reporte, cada evento
+    dividido por su grosor en reposo); los números que se comparan salen del
+    resumen. Devuelve (lag_s, y_pct, n) o (None, None, 0)."""
+    m = eventos_principales(r)
+    if not m.any() or r.senal is None:
+        return None, None, 0
+    fps = float(r.res.get("fps_medido") or r.res.get("fps") or 30.0) if r.res else 30.0
+    h = int(half_s * fps)
+    segs = []
+    for _, e in r.cin[m].iterrows():
+        p = int(e["frame_pico"])
+        g = float(e["grosor_reposo_px"])
+        if p - h >= 0 and p + h + 1 <= len(r.senal) and g > 0:
+            segs.append(100.0 * r.senal[p - h:p + h + 1] / g)
+    if not segs:
+        return None, None, 0
+    return np.arange(-h, h + 1) / fps, np.nanmean(np.asarray(segs), axis=0), len(segs)
+
+
+def ic_amplitud(r: Resultado) -> tuple[float, float] | None:
+    """El IC 95 % de la amplitud tal como está en el resumen ('a-b'); None si
+    el resultado es anterior al IC (2026-10-10) o no hay."""
+    ic = r.res.get("amplitud_relativa_ic95_pct") if r.res else None
+    try:
+        a, b = (float(v) for v in str(ic).split("-"))
+        return a, b
+    except (TypeError, ValueError):
+        return None
+
+
+def _txt_num(x, fmt=".2f", vacio="—"):
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return vacio
+    return vacio if v != v else format(v, fmt)
+
+
+def tabla_comparar(rs: list[Resultado]) -> list[tuple[str, list[str]]]:
+    """Filas de la tabla lado a lado: (métrica, [valor de cada resultado]).
+    Todo sale de los Excel; lo que no está (resultados viejos) queda '—'."""
+    import informe
+
+    def fila(nombre, f):
+        out = []
+        for r in rs:
+            try:
+                out.append(f(r))
+            except Exception:
+                out.append("—")
+        return (nombre, out)
+
+    def rep(r):
+        v = r.fila.get("reportable")
+        return "—" if v is None else ("sí" if v else "NO")
+
+    def tren(r):
+        f = r.fila
+        if f.get("tren") != "si":
+            return "no" if r.res else "—"
+        return (f"{f['n_estimulados']} estim., {f['periodo_s']:.4f} ± {f['periodo_err_s']:.4f} s, "
+                f"captura {f['captura_pct']:.0f} %")
+
+    def amp_pct(r):
+        if not r.fila.get("reportable") or r.fila.get("amplitud_pct") is None:
+            return "—"
+        ic = ic_amplitud(r)
+        return f"{r.fila['amplitud_pct']:.2f} %" + (f"  (IC {ic[0]:.2f}–{ic[1]:.2f})" if ic else "  (sin IC)")
+
+    def cin(m):
+        def f(r):
+            if not r.fila.get("reportable") or not r.res:
+                return "—"
+            return informe.cinetica_txt(r.res, m).replace(
+                " (más rápida que la cámara: a 30 fps no se puede dar un valor)", " (no medible)")
+        return f
+
+    def roi(r):
+        s = r.serie_meta
+        return f"{int(float(s['ROI x_start']))}–{int(float(s['ROI x_end']))} px"
+
+    return [
+        fila("Contracciones", lambda r: _txt_num(r.fila.get("eventos"), ".0f")),
+        fila("Reportable", rep),
+        fila("Tren de estímulo", tren),
+        fila("Amplitud (% del grosor)", amp_pct),
+        fila("Amplitud (px)", lambda r: _txt_num(r.fila.get("amplitud_px"))
+             if r.fila.get("reportable") else "—"),
+        fila("Grupo de la amplitud", lambda r: (r.fila.get("amplitud_grupo") or "—")
+             if r.fila.get("reportable") else "—"),
+        fila("TTP", cin("ttp")),
+        fila("RT50", cin("rt50")),
+        fila("Grosor medio (px)", lambda r: _txt_num(r.serie_meta.get("grosor medio (px)"), ".0f")),
+        fila("Zona (ROI)", roi),
+        fila("Duración (s)", lambda r: _txt_num(r.serie_meta.get("duracion segun PTS (s)"), ".1f")),
+        fila("Fotogramas perdidos (%)", lambda r: _txt_num(r.serie_meta.get("frames faltantes (%)"))),
+        fila("2.º método", lambda r: str(r.veredicto.get("veredicto", "—")) if r.veredicto else "—"),
+        fila("Avisos", lambda r: str(len(r.avisos)) if r.avisos else "ninguno"),
+        fila("Marcadas dudosas (a mano)", lambda r: str(len(leer_marcas(r.carpeta)))),
+    ]
+
+
+def guardar_tabla_comparar(rs: list[Resultado], destino: Path) -> Path:
+    """La tabla lado a lado a un Excel (o .csv), tal como se ve."""
+    filas = tabla_comparar(rs)
+    df = pd.DataFrame({"métrica": [a for a, _ in filas]}
+                      | {r.carpeta.name: [v[i] for _, v in filas] for i, r in enumerate(rs)})
+    destino = Path(destino)
+    if destino.suffix.lower() == ".csv":
+        df.to_csv(destino, index=False, encoding="utf-8-sig")
+    else:
+        df.to_excel(destino, index=False)
+    return destino
+
+
+def fotograma(r: Resultado, i: int):
+    """El fotograma del pico de la contracción i, leído del video original, con
+    los bordes medidos (y_top_px / y_bottom_px de la serie) y la zona (ROI).
+    Devuelve (imagen gris, x0, x1, y_top, y_bottom, nro) o levanta
+    FileNotFoundError si el video ya no está donde se analizó."""
+    import cv2
+    video = Path(str(r.serie_meta.get("video", "")))
+    if not video.is_file():   # se movio la carpeta: buscarlo por nombre en data/raw_videos
+        nombre = str(r.serie_meta.get("video", "")).replace("\\", "/").split("/")[-1]
+        cand = sorted((RAIZ / "data" / "raw_videos").rglob(nombre)) if nombre else []
+        if not cand:
+            raise FileNotFoundError(f"No encuentro el video {nombre or '?'} (ni donde se analizó "
+                                    f"ni en data/raw_videos)")
+        video = cand[0]
+    p = int(r.cin.iloc[i]["frame_pico"])
+    df = pd.read_excel(buscar_serie(r.carpeta), sheet_name="diagnostics",
+                       usecols=["frame", "y_top_px", "y_bottom_px"])
+    fila = df.iloc[min(p, len(df) - 1)]
+    nro = int(fila["frame"])
+    cap = cv2.VideoCapture(str(video))
+    try:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, nro)
+        ok, img = cap.read()
+    finally:
+        cap.release()
+    if not ok:
+        raise RuntimeError(f"No pude leer el fotograma {nro} de {video.name}")
+    if img.ndim == 3:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    x0 = float(r.serie_meta.get("ROI x_start", 0))
+    x1 = float(r.serie_meta.get("ROI x_end", img.shape[1]))
+    return img, x0, x1, float(fila["y_top_px"]), float(fila["y_bottom_px"]), nro
+
+
+def guardar_ficha_png(r: Resultado, i: int, destino: Path) -> Path:
+    """Imagen de una contracción: su forma y la ficha al lado (para mandar)."""
+    from matplotlib.figure import Figure
+    e = r.cin.iloc[i]
+    p = int(min(e["frame_pico"], len(r.t) - 1))
+    fig = Figure(figsize=(10, 4.2), dpi=150)
+    ax = fig.add_axes([0.07, 0.14, 0.42, 0.74])
+    m = (r.t >= r.t[p] - 1.0) & (r.t <= r.t[p] + 1.5)
+    ax.plot(r.t[m] - r.t[p], r.senal[m], color="#4a6fa5", lw=1.3, marker=".", ms=4)
+    for col, ls, lab in (("onset_s", ":", "inicio"), ("offset_s", "--", "fin")):
+        v = e.get(col)
+        if v is not None and v == v:
+            ax.axvline(float(v) - r.t[p], color="gray", ls=ls, lw=0.8, label=lab)
+    ax.axvline(0, color="#d62728", lw=0.8, label="pico")
+    ax.axhline(0, color="#999", lw=0.5)
+    ax.set_xlabel("s desde el pico")
+    ax.set_ylabel("posición de la franja sin deriva (px)")
+    ax.legend(fontsize=7)
+    ax.grid(alpha=0.25)
+    fig.suptitle(f"{r.carpeta.name} · contracción {int(e['evento'])}", fontsize=11)
+    filas = ficha_evento(r, i)
+    nota = leer_marcas(r.carpeta).get(str(int(e["evento"])))
+    if nota:
+        filas.append(("Marca manual", nota))
+    fig.text(0.54, 0.86, "\n".join(f"{a}:  {b}" for a, b in filas), va="top", fontsize=8.5,
+             family="DejaVu Sans", wrap=True)
+    fig.savefig(destino)
+    return Path(destino)
+
+
 def abrir_en_sistema(p: Path):
     p = str(p)
     if sys.platform.startswith("win"):
@@ -173,6 +423,7 @@ def abrir_en_sistema(p: Path):
 # Pestaña
 # --------------------------------------------------------------------------
 VISTAS = [("Contracciones (interactivo)", None),
+          ("Amplitud de cada contracción vs tiempo", "amp_t"),
           ("Grosor (diagnóstico)", "grosor"),
           ("Ritmo (figura guardada)", "10_ritmo"),
           ("Forma promedio (figura guardada)", "11_cinetica"),
@@ -241,21 +492,39 @@ class PestanaResultados:
         pan.add(der, weight=4)
         self.titulo = ttk.Label(der, text="Elegí un resultado de la lista", style="Seccion.TLabel")
         self.titulo.pack(anchor="w")
-        self.frase = tk.Text(der, height=3, wrap="word", relief="flat", borderwidth=0,
+        self.frase = tk.Text(der, height=3, width=30, wrap="word", relief="flat", borderwidth=0,
                              font=("Segoe UI", 10))
         self.frase.pack(fill="x", pady=(4, 4))
         self.frase.configure(state="disabled")
 
         fila = ttk.Frame(der)
         fila.pack(fill="x")
-        self.numeros = ttk.Treeview(fila, columns=("v",), show="tree", height=7)
-        self.numeros.column("#0", width=px(190), stretch=False)
-        self.numeros.column("v", width=px(330))
+        # numeros: etiquetas que parten los textos largos en varias lineas
+        # (una tabla Treeview no parte el texto y los avisos largos se cortaban)
+        self.numeros = ttk.Frame(fila)
         self.numeros.pack(side="left", fill="y")
-        self.ficha = ttk.LabelFrame(fila, text="Contracción elegida (clic en el gráfico)", padding=6)
+        self.numeros.columnconfigure(1, weight=1)
+        self._ancho_num = px(330)
+        self._px = px
+        # los numeros usan como mucho la mitad del ancho; el resto, la ficha
+        fila.bind("<Configure>", lambda e: self._ajustar_numeros(e.width), add="+")
+        self.ficha = ttk.LabelFrame(fila, text="Contracción elegida (clic en el gráfico, ← →)", padding=6)
         self.ficha.pack(side="left", fill="both", expand=True, padx=(8, 0))
         self.ficha_txt = ttk.Label(self.ficha, text="—", justify="left", wraplength=px(520))
         self.ficha_txt.pack(anchor="nw")
+        fb = ttk.Frame(self.ficha)
+        fb.pack(anchor="sw", side="bottom", pady=(6, 0), fill="x")
+        self.b_dudosa = ttk.Button(fb, text="Marcar dudosa (D)", command=self.alternar_dudosa,
+                                   state="disabled")
+        self.b_copiar = ttk.Button(fb, text="Copiar", command=self.copiar_ficha, state="disabled")
+        self.b_gficha = ttk.Button(fb, text="Guardar...", command=self.guardar_ficha,
+                                   state="disabled")
+        self.b_foto = ttk.Button(fb, text="Fotograma (F)", command=self.ver_fotograma,
+                                 state="disabled")
+        # 2 x 2: entran aunque la ficha quede angosta
+        for k, b in enumerate((self.b_dudosa, self.b_foto, self.b_copiar, self.b_gficha)):
+            b.grid(row=k // 2, column=k % 2, sticky="ew", padx=2, pady=2)
+        fb.columnconfigure((0, 1), weight=1)
         # el texto de la ficha se acomoda al ancho que quede libre
         self.ficha.bind("<Configure>",
                         lambda e: self.ficha_txt.config(wraplength=max(150, e.width - 24)))
@@ -265,7 +534,7 @@ class PestanaResultados:
         ttk.Label(barra, text="Vista:").pack(side="left")
         self.v_vista = tk.StringVar(value=VISTAS[0][0])
         cb = ttk.Combobox(barra, textvariable=self.v_vista, values=[v[0] for v in VISTAS],
-                          state="readonly", width=38)
+                          state="readonly", width=22)
         cb.pack(side="left", padx=4)
         cb.bind("<<ComboboxSelected>>", lambda _e: self._dibujar())
         ttk.Button(barra, text="Abrir informe", command=self._abrir_informe).pack(side="right")
@@ -287,13 +556,24 @@ class PestanaResultados:
         tb = NavigationToolbar2Tk(self.canvas, der, pack_toolbar=False)
         tb.update()
         tb.pack(fill="x")
+        # ancho pedido chico: el grafico igual ocupa todo; si pide mucho, el panel
+        # de la lista no se puede acomodar
+        self.canvas.get_tk_widget().configure(width=300, height=200)
         self.canvas.get_tk_widget().pack(fill="both", expand=True)
         self.canvas.mpl_connect("pick_event", self._al_clic)
         self.estado = ttk.Label(der, text="", foreground="gray")
         self.estado.pack(anchor="w")
 
         # ancho inicial de la lista (si no, el panel puede arrancar cerrado)
-        self.raiz.after(100, lambda: pan.sashpos(0, px(340)))
+        # ancho inicial de la lista: se fija cuando el panel ya tiene su ancho real
+        # (fijarlo antes, con la pestaña sin dibujar, lo dejaba en cualquier lado)
+        self._sash_ok = False
+
+        def _sash(e, pan=pan):
+            if not self._sash_ok and e.width > 400:
+                self._sash_ok = True
+                self.raiz.after_idle(lambda w=e.width: pan.sashpos(0, min(px(340), int(0.4 * w))))
+        pan.bind("<Configure>", _sash, add="+")
         self._carpetas: list[Path] = []
         self._info: dict[str, tuple] = {}
         self.refrescar()
@@ -358,7 +638,8 @@ class PestanaResultados:
                 r = leer_resultado(carpeta)
                 self.raiz.after(0, lambda: self._mostrar(r))
             except Exception as e:
-                self.raiz.after(0, lambda: self.estado.config(text=f"No pude leer {carpeta.name}: {e}"))
+                msg = str(e)   # `e` deja de existir al salir del except
+                self.raiz.after(0, lambda: self.estado.config(text=f"No pude leer {carpeta.name}: {msg}"))
         threading.Thread(target=trabajo, daemon=True).start()
 
     # ---------------- mostrar ----------------
@@ -376,7 +657,8 @@ class PestanaResultados:
         self.frase.configure(state="disabled")
 
         import informe
-        self.numeros.delete(*self.numeros.get_children())
+        for w in self.numeros.winfo_children():
+            w.destroy()
         f, res = r.fila, r.res
         filas = [("Contracciones", f"{f.get('eventos', '—')}"
                   + ("" if f.get("reportable") is None else
@@ -400,11 +682,31 @@ class PestanaResultados:
             filas.append(("2.º método", str(r.veredicto.get("veredicto", ""))))
         for a in r.avisos:
             filas.append(("Aviso", a))
-        for a, b in filas:
-            self.numeros.insert("", "end", text=a, values=(b,))
+        dud = leer_marcas(r.carpeta)
+        if dud:
+            filas.append(("Marcadas dudosas", ", ".join(sorted(dud, key=int))
+                          + "  (a mano; no cambia ningún número)"))
+        ttk = self.ttk
+        for k, (a, b) in enumerate(filas):
+            col = "#b03a2e" if a == "Aviso" else None
+            ttk.Label(self.numeros, text=a).grid(row=k, column=0, sticky="nw", padx=(0, 10), pady=1)
+            lb = ttk.Label(self.numeros, text=b, wraplength=self._ancho_num, justify="left")
+            if col:
+                lb.configure(foreground=col)
+            lb.grid(row=k, column=1, sticky="nw", pady=1)
         self.ficha_txt.config(text="—")
+        for b in (self.b_dudosa, self.b_copiar, self.b_gficha, self.b_foto):
+            b.config(state="disabled")
         self.estado.config(text=str(r.carpeta))
         self._dibujar()
+
+    def _ajustar_numeros(self, ancho: int):
+        w = max(160, int(0.5 * ancho) - self._px(170))
+        if abs(w - self._ancho_num) < 8:
+            return
+        self._ancho_num = w
+        for lb in self.numeros.grid_slaves(column=1):
+            lb.configure(wraplength=w)
 
     def _dibujar(self):
         r = self.r
@@ -415,6 +717,8 @@ class PestanaResultados:
         clave = dict(VISTAS)[self.v_vista.get()]
         if clave is None:
             self._dibujar_contracciones()
+        elif clave == "amp_t":
+            self._dibujar_amplitud_tiempo()
         elif clave == "grosor":
             ax = self.fig.add_subplot(111)
             ax.plot(r.t, r.grosor, lw=0.7, color="#555")
@@ -455,6 +759,13 @@ class PestanaResultados:
                        "candidatos": "candidatos (no reportable)"}.get(g, g)
                 ax.scatter([], [], c=COLOR.get(g, "#444"), marker="v", label=f"{n} {nom}")
             ax.legend(fontsize=8, loc="upper right")
+            dud = leer_marcas(r.carpeta)
+            md = np.array([str(int(v)) in dud for v in r.cin["evento"].to_numpy()])
+            if md.any():
+                ax.scatter(r.t[idx[md]], r.senal[idx[md]], s=110, facecolors="none",
+                           edgecolors="#e67e22", linewidths=1.4, zorder=4,
+                           label=f"{int(md.sum())} marcadas dudosas (a mano)")
+                ax.legend(fontsize=8, loc="upper right")
             self._sel_art = ax.scatter([], [], s=160, facecolors="none", edgecolors="k",
                                        linewidths=1.5, zorder=4)
         ax.set_xlabel("tiempo (s)")
@@ -468,6 +779,44 @@ class PestanaResultados:
         self.fig.tight_layout()
         if self.sel is not None:
             self._seleccionar(self.sel)
+
+    def _dibujar_amplitud_tiempo(self):
+        """Amplitud de cada contraccion (hoja cinetica) contra su instante: ¿se
+        cansa el gel? Solo dibuja lo del Excel; no ajusta ninguna tendencia."""
+        r = self.r
+        ax = self.fig.add_subplot(111)
+        self._puntos = None
+        if r.cin is None or not len(r.cin):
+            ax.axis("off")
+            ax.text(0.5, 0.5, "No hay contracciones (falta el paso 2)", ha="center", color="gray")
+            return
+        rep = bool(r.fila.get("reportable"))
+        grupos = r.cin["grupo"].astype(str).to_numpy() if rep else np.array(["candidatos"] * len(r.cin))
+        t = r.cin["tiempo_s"].to_numpy(float)
+        a = r.cin["amplitud_relativa_pct"].to_numpy(float)
+        dud = leer_marcas(r.carpeta)
+        md = np.array([str(int(v)) in dud for v in r.cin["evento"].to_numpy()])
+        for g in dict.fromkeys(grupos):
+            m = grupos == g
+            nom = {"estimulados": "estimuladas", "espontaneos": "espontáneas",
+                   "candidatos": "candidatos (no reportable)"}.get(g, g)
+            ax.plot(t[m], a[m], "o-" if g == "estimulados" else "o", color=COLOR.get(g, "#444"),
+                    ms=5, lw=0.8, label=f"{int(m.sum())} {nom}")
+        if md.any():
+            ax.scatter(t[md], a[md], s=110, facecolors="none", edgecolors="#e67e22",
+                       linewidths=1.4, label="marcadas dudosas (a mano)", zorder=4)
+        amp = r.fila.get("amplitud_pct") if rep else None
+        if amp is not None:
+            ax.axhline(amp, color="gray", ls="--", lw=0.8,
+                       label=f"amplitud informada ({r.fila.get('amplitud_grupo') or 'todas'}): {amp:.2f} %")
+        ax.set_xlabel("tiempo (s)")
+        ax.set_ylabel("amplitud (% del grosor en reposo)")
+        ax.set_title("Amplitud de cada contracción (hoja cinetica) · ¿se cansa el gel?",
+                     fontsize=9, color="gray")
+        ax.set_ylim(0, 1.2 * float(np.nanmax(a)) if np.isfinite(a).any() else 1)
+        ax.grid(alpha=0.25)
+        ax.legend(fontsize=8, loc="lower right")
+        self.fig.tight_layout()
 
     def _al_clic(self, ev):
         if ev.artist is not self._puntos or not len(ev.ind):
@@ -484,8 +833,17 @@ class PestanaResultados:
         self.sel = i
         e = r.cin.iloc[i]
         p = int(min(e["frame_pico"], len(r.t) - 1))
+        filas = ficha_evento(r, i)
+        nota = leer_marcas(r.carpeta).get(str(int(e["evento"])))
+        if nota:
+            filas.append(("Marca manual", f"{nota} (no cambia ningún número)"))
+        self.ficha_txt.config(text="\n".join(f"{a}:  {b}" for a, b in filas))
+        self.b_dudosa.config(text="Quitar marca (D)" if nota else "Marcar dudosa (D)")
+        for b in (self.b_dudosa, self.b_copiar, self.b_gficha, self.b_foto):
+            b.config(state="normal")
+        if dict(VISTAS)[self.v_vista.get()] is not None:   # otra vista: solo la ficha
+            return
         self._sel_art.set_offsets([[r.t[p], r.senal[p]]])
-        self.ficha_txt.config(text="\n".join(f"{a}:  {b}" for a, b in ficha_evento(r, i)))
         az = self.ax_zoom
         az.clear()
         m = (r.t >= r.t[p] - 1.0) & (r.t <= r.t[p] + 1.5)
@@ -501,6 +859,127 @@ class PestanaResultados:
         az.tick_params(labelsize=7)
         az.legend(fontsize=7)
         self.canvas.draw_idle()
+
+    # ---------------- ficha: mover, marcar, exportar, fotograma ----------------
+    def mover(self, paso: int):
+        """Contracción anterior / siguiente (flechas)."""
+        if self.r is None or self.r.cin is None or not len(self.r.cin):
+            return
+        n = len(self.r.cin)
+        i = 0 if self.sel is None else (self.sel + paso) % n
+        self._seleccionar(i)
+
+    def alternar_dudosa(self):
+        if self.r is None or self.sel is None:
+            return
+        ev = int(self.r.cin.iloc[self.sel]["evento"])
+        ya = str(ev) in leer_marcas(self.r.carpeta)
+        try:
+            marcar_dudosa(self.r.carpeta, ev, dudosa=not ya)
+        except OSError as e:
+            self.estado.config(text=f"No pude guardar la marca: {e}")
+            return
+        self.estado.config(text=(f"Contracción {ev}: marca quitada" if ya else
+                                 f"Contracción {ev} marcada dudosa")
+                           + f" (en {archivo_marcas(self.r.carpeta).name}; ningún número cambia)")
+        sel = self.sel
+        self._mostrar(self.r)
+        self._seleccionar(sel)
+
+    def copiar_ficha(self):
+        if self.r is None or self.sel is None:
+            return
+        self.raiz.clipboard_clear()
+        self.raiz.clipboard_append(ficha_texto(self.r, self.sel))
+        self.estado.config(text="Ficha copiada: se puede pegar en Excel, Word o un mail.")
+
+    def guardar_ficha(self):
+        if self.r is None or self.sel is None:
+            return
+        from tkinter import filedialog
+        ev = int(self.r.cin.iloc[self.sel]["evento"])
+        f = filedialog.asksaveasfilename(
+            defaultextension=".png", initialdir=str(self.r.carpeta),
+            initialfile=f"ficha_{self.r.carpeta.name}_contraccion_{ev}.png",
+            filetypes=[("Imagen con la ficha y la forma", "*.png"), ("Texto", "*.txt")])
+        if not f:
+            return
+        if f.lower().endswith(".txt"):
+            Path(f).write_text(ficha_texto(self.r, self.sel), encoding="utf-8")
+        else:
+            guardar_ficha_png(self.r, self.sel, Path(f))
+        self.estado.config(text=f"Ficha guardada en {f}")
+
+    def ver_fotograma(self):
+        if self.r is None or self.sel is None:
+            return
+        r, i = self.r, self.sel
+        self.estado.config(text="Leyendo el fotograma del video...")
+
+        def trabajo():
+            try:
+                datos = fotograma(r, i)
+                self.raiz.after(0, lambda: self._ventana_fotograma(r, i, datos))
+            except Exception as e:
+                msg = str(e)
+                self.raiz.after(0, lambda: self.estado.config(text=f"Fotograma: {msg}"))
+        threading.Thread(target=trabajo, daemon=True).start()
+
+    def _ventana_fotograma(self, r, i, datos):
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+        img, x0, x1, yt, yb, nro = datos
+        ev = int(r.cin.iloc[i]["evento"])
+        top = self.tk.Toplevel(self.raiz)
+        top.title(f"{r.carpeta.name} · contracción {ev} · fotograma {nro}")
+        fig = Figure(figsize=(9, 5), dpi=100)
+        ax = fig.add_subplot(111)
+        ax.imshow(img, cmap="gray")
+        ax.hlines([yt, yb], x0, x1, colors=["#e74c3c", "#3498db"], lw=1.2)
+        ax.axvline(x0, color="#f1c40f", lw=0.8, ls="--")
+        ax.axvline(x1, color="#f1c40f", lw=0.8, ls="--", label="zona (ROI)")
+        ax.plot([], [], color="#e74c3c", label=f"borde sup. medido ({yt:.1f} px)")
+        ax.plot([], [], color="#3498db", label=f"borde inf. medido ({yb:.1f} px)")
+        ax.legend(fontsize=8, loc="lower right")
+        ax.set_title(f"Fotograma del pico (n.º {nro}); las líneas son los bordes de la serie, "
+                     "en el centro de la zona", fontsize=9)
+        fig.tight_layout()
+        cv = FigureCanvasTkAgg(fig, master=top)
+        tb = NavigationToolbar2Tk(cv, top, pack_toolbar=False)
+        tb.update()
+        tb.pack(fill="x")
+        cv.get_tk_widget().pack(fill="both", expand=True)
+        cv.draw_idle()
+        self.estado.config(text=f"Fotograma {nro} (lupa de la barra para acercarse al borde)")
+
+    # ---------------- atajos ----------------
+    def atajos(self, activa=lambda: True):
+        """Teclas de la pestaña. `activa()` dice si la pestaña está a la vista;
+        en un campo de texto las letras y flechas no se roban."""
+        def h(f, letra=False):
+            def g(ev):
+                if not activa():
+                    return None
+                if letra and ev.widget.winfo_class() in ("TEntry", "Entry", "Text", "TCombobox"):
+                    return None
+                f()
+                return "break"
+            return g
+        r = self.raiz
+        r.bind("<Control-f>", h(lambda: self._foco_buscar()), add="+")
+        r.bind("<F5>", h(self.refrescar), add="+")
+        r.bind("<Control-s>", h(self._guardar_png), add="+")
+        r.bind("<Left>", h(lambda: self.mover(-1), True), add="+")
+        r.bind("<Right>", h(lambda: self.mover(+1), True), add="+")
+        r.bind("<KeyPress-d>", h(self.alternar_dudosa, True), add="+")
+        r.bind("<KeyPress-f>", h(self.ver_fotograma, True), add="+")
+        r.bind("<Control-c>", h(self.copiar_ficha, True), add="+")
+
+    def _foco_buscar(self):
+        for w in self.lista.master.winfo_children():
+            if w.winfo_class() == "TEntry":
+                w.focus_set()
+                return
 
     # ---------------- botones ----------------
     def _abrir_informe(self):

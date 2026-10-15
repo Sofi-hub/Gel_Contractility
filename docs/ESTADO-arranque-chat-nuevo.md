@@ -18,12 +18,12 @@ Modo de trabajo: resolver lo que MENOS atención mía requiera.
 * Mediciones largas: de fondo, revisarlas cada ~10 min; scripts y tablas en data/_mediciones_fases/<tema>/ con un LEEME.md.
 * Al final, un resumen corto: qué se hizo, qué quedó esperando mi decisión, y los comandos de git.
 
-Dónde quedamos (2026-10-11, tarde): hechos C7, C3, C6, D6, D1 y las mediciones D2, D3, D7, B1 y H23 (cerradas). La ventana tiene pestañas Analizar / Resultados / Comparar: Resultados con gráfico interactivo, ficha de cada contracción (copiar o guardar), marcar "dudosa" (marcas_<carpeta>.json, sin tocar números), fotograma del pico con los bordes, amplitud contra el tiempo y atajos; Comparar con tabla lado a lado, promedio superpuesto en % del grosor y amplitud con IC 95 %. Falta que Franco pruebe todo esto en Windows. La pregunta 13 (H41) y lo de los estimuladores esperan la reunión con Cami del jueves 15.
+Dónde quedamos (2026-10-11, tarde): hechos C7, C3, C6, D6, D1 y las mediciones D2, D3, D7, B1 y H23 (cerradas). La ventana tiene pestañas Analizar / Resultados / Comparar: Resultados con gráfico interactivo, ficha de cada contracción (copiar o guardar), marcar "dudosa" (marcas_<carpeta>.json, sin tocar números), fotograma del pico con los bordes, amplitud contra el tiempo y atajos; Comparar con tabla lado a lado, promedio superpuesto en % del grosor y amplitud con IC 95 %. Franco la probó en Windows: se ve bien. La pregunta 13 (H41) y lo de los estimuladores esperan la reunión con Cami del jueves 15.
 
 Orden sugerido:
-1. Probar en Windows lo nuevo de la ventana y anotar lo que se vea mal.
-2. Medir en mi notebook cuánto tarda cada parte de main.py: correr data/_mediciones_fases/tiempos_main/medir_tiempos.py (te paso la salida).
-3. Ventana: recordar la última carpeta y la pestaña.
+1. Anotar las respuestas de la reunión con Cami (pregunta 13 / H41, estimuladores, actividad espontánea, adquisición) y decidir según eso.
+2. Si la actividad espontánea les interesa: diseñar juntos la medida de actividad (C1) y el detector de vibración (C2), los dos con el anclaje como referencia.
+3. La ventana quedó probada en Windows; si aparece un error, arreglarlo.
 ```
 
 ---

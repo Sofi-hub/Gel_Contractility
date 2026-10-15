@@ -57,3 +57,24 @@ E. ¿Qué entregaba MuscleMotion que usaban (número de picos, amplitud, tiempos
     Según la definición, TTP cambia ~±25 % y RT50 hasta ×2. Hoy se usa "el fotograma más alto", que dentro de la meseta lo decide el ruido.
     - ¿Qué definición usan ustedes o la bibliografía que siguen (MuscleMotion, el paper de eLife)?
     - Alternativa que no depende de la meseta: **tiempo de subida 10–90 %** y **bajada 90–50 %**. Medido: 466 161 ms / 82 ms; 583 146 ms / 110 ms. Pero a 30 fps son 3–5 fotogramas: quedarían en el límite de lo medible (pregunta 7, grabar a 200–300 fps).
+
+---
+
+## Respuestas de Cami por mail (2026-10-14)
+
+1. **Protocolo de grabación.** El estimulador (C-Pace) está siempre encendido, pero no siempre estimula. Cada video dura ~1 minuto: **los primeros 10 s son basales, sin estimulación**; después se activa el programa.
+   - **Voltajes:** 5, 10, 20, 30 y 40 V; pulsos de 2 ms a **0.1 Hz** (twitch).
+   - **Frecuencias:** 40 V; trenes de **1 s** a 1–5, 10, 20, 30 y 36 Hz (tetanus), con **10 s de descanso** entre frecuencias.
+2. **Los programas son siempre los mismos en todas las muestras.** Si la frecuencia que medimos no coincide, puede ser actividad espontánea.
+3. **La actividad espontánea no es muy importante.** Buscan sacar más información; propone cuantificarla **solo en los primeros 10 s** (la ventana basal).
+4. **MuscleMotion:** su análisis se basa en la intensidad del píxel, y eso afectaba la magnitud de la contracción.
+5. **fps:** cuanto más alto, mejor, pero están limitados por la cámara (sin compromiso de 200–300 fps).
+6. **Videos nuevos:** otra estudiante grabó videos la semana pasada; los van a pasar (sirven para probar la luz, etc.).
+
+### Qué significa para el análisis (lectura nuestra, 2026-10-15)
+- **0.1 Hz confirmado** para los videos de voltaje (063 5 V, 268/466/583 40 V, 476): coincide con lo que mide el programa. Se puede pasar `--frecuencia-estimulo 0.1` en esos.
+- **El estímulo arranca a los ~10 s.** Lo anterior es basal: la espontánea de 063 a 0.31 s cae en la basal (esperable).
+- **Videos de frecuencia (304 "1_2HZ", 341 "5_10HZ", 491 "36HZ"):** cada estímulo es un **tren de 1 s**, no un pulso. A frecuencias altas el gel no se relaja entre pulsos (tétanos), así que la unidad a medir es **la respuesta a cada tren de 1 s**, no contracciones sueltas. Explica 491 (2 contracciones de ~1 s, compatibles con un tétanos fusionado) y por qué 304 y 341 salían NO REPORTABLE con el método de contracciones sueltas. Hace falta un análisis por bloques de estímulo (pendiente nuevo).
+- **Espontánea:** basta un resumen de la ventana 0–10 s (cuántas, amplitud), no la medida de actividad completa (C1 baja de prioridad).
+- **TTP/RT50 en muestras rápidas:** seguirán sin poder medirse a 30 fps.
+- Sin respuesta todavía: pregunta 13 (qué es "el pico" en una meseta), 613 y 068.

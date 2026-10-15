@@ -197,6 +197,7 @@ def tabla_texto(filas: list[dict]) -> str:
                    f"{f(r.get('eventos'), 'd'):>3s} {rep:7s} {per:>12s} "
                    f"{f(r.get('amplitud_pct'), '.2f'):>6s} {f(r.get('amplitud_px'), '.2f'):>7s} "
                    f"{r.get('n_avisos', 0)}")
+    lin.append("(ampl % y px: MEDIANA de las contracciones del grupo informado)")
     return "\n".join(lin)
 
 

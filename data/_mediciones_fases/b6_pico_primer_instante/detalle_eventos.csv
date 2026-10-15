@@ -1,0 +1,134 @@
+video,variante,evento,grupo,meseta_Z2_fr,ttp_ms,ttp_fr,rt50_ms,rt50_fr
+Video_466_EXP5_FAPS4_40V,actual (fotograma mas alto),1,estimulados,5,215,7,198,6
+Video_466_EXP5_FAPS4_40V,actual (fotograma mas alto),2,estimulados,4,292,9,120,4
+Video_466_EXP5_FAPS4_40V,actual (fotograma mas alto),3,estimulados,3,255,8,158,5
+Video_466_EXP5_FAPS4_40V,actual (fotograma mas alto),4,estimulados,5,285,9,90,3
+Video_466_EXP5_FAPS4_40V,actual (fotograma mas alto),5,estimulados,6,254,8,192,6
+Video_466_EXP5_FAPS4_40V,1er fotograma >= max - 1 ruido,1,estimulados,5,183,6,230,7
+Video_466_EXP5_FAPS4_40V,1er fotograma >= max - 1 ruido,2,estimulados,4,292,9,120,4
+Video_466_EXP5_FAPS4_40V,1er fotograma >= max - 1 ruido,3,estimulados,3,255,8,158,5
+Video_466_EXP5_FAPS4_40V,1er fotograma >= max - 1 ruido,4,estimulados,5,152,5,223,7
+Video_466_EXP5_FAPS4_40V,1er fotograma >= max - 1 ruido,5,estimulados,6,154,5,292,9
+Video_466_EXP5_FAPS4_40V,1er fotograma >= max - 2 ruido,1,estimulados,5,183,6,230,7
+Video_466_EXP5_FAPS4_40V,1er fotograma >= max - 2 ruido,2,estimulados,4,215,7,196,6
+Video_466_EXP5_FAPS4_40V,1er fotograma >= max - 2 ruido,3,estimulados,3,255,8,158,5
+Video_466_EXP5_FAPS4_40V,1er fotograma >= max - 2 ruido,4,estimulados,5,152,5,223,7
+Video_466_EXP5_FAPS4_40V,1er fotograma >= max - 2 ruido,5,estimulados,6,154,5,292,9
+Video_466_EXP5_FAPS4_40V,1er fotograma >= 95 % del max,1,estimulados,5,183,6,230,7
+Video_466_EXP5_FAPS4_40V,1er fotograma >= 95 % del max,2,estimulados,4,292,9,120,4
+Video_466_EXP5_FAPS4_40V,1er fotograma >= 95 % del max,3,estimulados,3,255,8,158,5
+Video_466_EXP5_FAPS4_40V,1er fotograma >= 95 % del max,4,estimulados,5,152,5,223,7
+Video_466_EXP5_FAPS4_40V,1er fotograma >= 95 % del max,5,estimulados,6,154,5,292,9
+Video_466_EXP5_FAPS4_40V,1er fotograma >= 90 % del max,1,estimulados,5,183,6,230,7
+Video_466_EXP5_FAPS4_40V,1er fotograma >= 90 % del max,2,estimulados,4,215,7,196,6
+Video_466_EXP5_FAPS4_40V,1er fotograma >= 90 % del max,3,estimulados,3,255,8,158,5
+Video_466_EXP5_FAPS4_40V,1er fotograma >= 90 % del max,4,estimulados,5,152,5,223,7
+Video_466_EXP5_FAPS4_40V,1er fotograma >= 90 % del max,5,estimulados,6,154,5,292,9
+Video_466_EXP5_FAPS4_40V,instante interpolado al 95 %,1,estimulados,5,174,6,240,7
+Video_466_EXP5_FAPS4_40V,instante interpolado al 95 %,2,estimulados,4,259,9,153,4
+Video_466_EXP5_FAPS4_40V,instante interpolado al 95 %,3,estimulados,3,247,8,166,5
+Video_466_EXP5_FAPS4_40V,instante interpolado al 95 %,4,estimulados,5,149,5,225,7
+Video_466_EXP5_FAPS4_40V,instante interpolado al 95 %,5,estimulados,6,146,5,301,9
+Video_466_EXP5_FAPS4_40V,instante interpolado a max - 1 ruido,1,estimulados,5,175,6,239,7
+Video_466_EXP5_FAPS4_40V,instante interpolado a max - 1 ruido,2,estimulados,4,266,9,146,4
+Video_466_EXP5_FAPS4_40V,instante interpolado a max - 1 ruido,3,estimulados,3,248,8,165,5
+Video_466_EXP5_FAPS4_40V,instante interpolado a max - 1 ruido,4,estimulados,5,152,5,223,7
+Video_466_EXP5_FAPS4_40V,instante interpolado a max - 1 ruido,5,estimulados,6,149,5,297,9
+Video_583_EXP6_CTRL4_40V,actual (fotograma mas alto),1,estimulados,5,225,7,223,7
+Video_583_EXP6_CTRL4_40V,actual (fotograma mas alto),2,estimulados,5,288,9,152,5
+Video_583_EXP6_CTRL4_40V,actual (fotograma mas alto),3,estimulados,4,291,9,145,5
+Video_583_EXP6_CTRL4_40V,actual (fotograma mas alto),4,estimulados,4,254,8,185,6
+Video_583_EXP6_CTRL4_40V,actual (fotograma mas alto),5,estimulados,5,260,8,181,6
+Video_583_EXP6_CTRL4_40V,actual (fotograma mas alto),6,estimulados,5,255,8,181,6
+Video_583_EXP6_CTRL4_40V,1er fotograma >= max - 1 ruido,1,estimulados,5,225,7,223,7
+Video_583_EXP6_CTRL4_40V,1er fotograma >= max - 1 ruido,2,estimulados,5,288,9,152,5
+Video_583_EXP6_CTRL4_40V,1er fotograma >= max - 1 ruido,3,estimulados,4,291,9,145,5
+Video_583_EXP6_CTRL4_40V,1er fotograma >= max - 1 ruido,4,estimulados,4,220,7,219,7
+Video_583_EXP6_CTRL4_40V,1er fotograma >= max - 1 ruido,5,estimulados,5,159,5,283,9
+Video_583_EXP6_CTRL4_40V,1er fotograma >= max - 1 ruido,6,estimulados,5,155,5,281,9
+Video_583_EXP6_CTRL4_40V,1er fotograma >= max - 2 ruido,1,estimulados,5,193,6,254,8
+Video_583_EXP6_CTRL4_40V,1er fotograma >= max - 2 ruido,2,estimulados,5,189,6,250,8
+Video_583_EXP6_CTRL4_40V,1er fotograma >= max - 2 ruido,3,estimulados,4,191,6,245,8
+Video_583_EXP6_CTRL4_40V,1er fotograma >= max - 2 ruido,4,estimulados,4,189,6,250,8
+Video_583_EXP6_CTRL4_40V,1er fotograma >= max - 2 ruido,5,estimulados,5,159,5,283,9
+Video_583_EXP6_CTRL4_40V,1er fotograma >= max - 2 ruido,6,estimulados,5,155,5,281,9
+Video_583_EXP6_CTRL4_40V,1er fotograma >= 95 % del max,1,estimulados,5,193,6,254,8
+Video_583_EXP6_CTRL4_40V,1er fotograma >= 95 % del max,2,estimulados,5,189,6,250,8
+Video_583_EXP6_CTRL4_40V,1er fotograma >= 95 % del max,3,estimulados,4,191,6,245,8
+Video_583_EXP6_CTRL4_40V,1er fotograma >= 95 % del max,4,estimulados,4,189,6,250,8
+Video_583_EXP6_CTRL4_40V,1er fotograma >= 95 % del max,5,estimulados,5,159,5,283,9
+Video_583_EXP6_CTRL4_40V,1er fotograma >= 95 % del max,6,estimulados,5,155,5,281,9
+Video_583_EXP6_CTRL4_40V,1er fotograma >= 90 % del max,1,estimulados,5,193,6,254,8
+Video_583_EXP6_CTRL4_40V,1er fotograma >= 90 % del max,2,estimulados,5,189,6,250,8
+Video_583_EXP6_CTRL4_40V,1er fotograma >= 90 % del max,3,estimulados,4,191,6,245,8
+Video_583_EXP6_CTRL4_40V,1er fotograma >= 90 % del max,4,estimulados,4,154,5,285,9
+Video_583_EXP6_CTRL4_40V,1er fotograma >= 90 % del max,5,estimulados,5,124,4,318,10
+Video_583_EXP6_CTRL4_40V,1er fotograma >= 90 % del max,6,estimulados,5,124,4,313,10
+Video_583_EXP6_CTRL4_40V,instante interpolado al 95 %,1,estimulados,5,190,6,258,8
+Video_583_EXP6_CTRL4_40V,instante interpolado al 95 %,2,estimulados,5,183,6,256,8
+Video_583_EXP6_CTRL4_40V,instante interpolado al 95 %,3,estimulados,4,186,6,251,8
+Video_583_EXP6_CTRL4_40V,instante interpolado al 95 %,4,estimulados,4,169,6,270,8
+Video_583_EXP6_CTRL4_40V,instante interpolado al 95 %,5,estimulados,5,143,5,298,9
+Video_583_EXP6_CTRL4_40V,instante interpolado al 95 %,6,estimulados,5,142,5,294,9
+Video_583_EXP6_CTRL4_40V,instante interpolado a max - 1 ruido,1,estimulados,5,208,7,240,7
+Video_583_EXP6_CTRL4_40V,instante interpolado a max - 1 ruido,2,estimulados,5,268,9,171,5
+Video_583_EXP6_CTRL4_40V,instante interpolado a max - 1 ruido,3,estimulados,4,268,9,169,5
+Video_583_EXP6_CTRL4_40V,instante interpolado a max - 1 ruido,4,estimulados,4,205,7,234,7
+Video_583_EXP6_CTRL4_40V,instante interpolado a max - 1 ruido,5,estimulados,5,158,5,283,9
+Video_583_EXP6_CTRL4_40V,instante interpolado a max - 1 ruido,6,estimulados,5,155,5,282,9
+Video_491_EXP5_CTRL1_36HZ,actual (fotograma mas alto),1,,19,583,18,452,14
+Video_491_EXP5_CTRL1_36HZ,actual (fotograma mas alto),2,,18,557,17,481,15
+Video_491_EXP5_CTRL1_36HZ,1er fotograma >= max - 1 ruido,1,,19,516,16,519,16
+Video_491_EXP5_CTRL1_36HZ,1er fotograma >= max - 1 ruido,2,,18,530,16,507,16
+Video_491_EXP5_CTRL1_36HZ,1er fotograma >= max - 2 ruido,1,,19,416,13,619,19
+Video_491_EXP5_CTRL1_36HZ,1er fotograma >= max - 2 ruido,2,,18,458,14,579,18
+Video_491_EXP5_CTRL1_36HZ,1er fotograma >= 95 % del max,1,,19,583,18,452,14
+Video_491_EXP5_CTRL1_36HZ,1er fotograma >= 95 % del max,2,,18,530,16,507,16
+Video_491_EXP5_CTRL1_36HZ,1er fotograma >= 90 % del max,1,,19,416,13,619,19
+Video_491_EXP5_CTRL1_36HZ,1er fotograma >= 90 % del max,2,,18,490,15,547,17
+Video_491_EXP5_CTRL1_36HZ,instante interpolado al 95 %,1,,19,553,18,483,14
+Video_491_EXP5_CTRL1_36HZ,instante interpolado al 95 %,2,,18,521,16,516,16
+Video_491_EXP5_CTRL1_36HZ,instante interpolado a max - 1 ruido,1,,19,494,16,541,16
+Video_491_EXP5_CTRL1_36HZ,instante interpolado a max - 1 ruido,2,,18,493,16,544,16
+Video_476,actual (fotograma mas alto),1,estimulados,3,39,2,104,4
+Video_476,actual (fotograma mas alto),2,estimulados,3,133,4,59,3
+Video_476,actual (fotograma mas alto),3,estimulados,2,60,2,65,2
+Video_476,actual (fotograma mas alto),4,estimulados,3,108,4,39,2
+Video_476,actual (fotograma mas alto),5,estimulados,3,68,2,71,3
+Video_476,actual (fotograma mas alto),6,estimulados,3,79,3,66,2
+Video_476,1er fotograma >= max - 1 ruido,1,estimulados,3,39,2,104,4
+Video_476,1er fotograma >= max - 1 ruido,2,estimulados,3,55,2,137,5
+Video_476,1er fotograma >= max - 1 ruido,3,estimulados,2,60,2,65,2
+Video_476,1er fotograma >= max - 1 ruido,4,estimulados,3,41,2,105,4
+Video_476,1er fotograma >= max - 1 ruido,5,estimulados,3,33,1,106,4
+Video_476,1er fotograma >= max - 1 ruido,6,estimulados,3,46,2,99,3
+Video_476,1er fotograma >= max - 2 ruido,1,estimulados,3,39,2,104,4
+Video_476,1er fotograma >= max - 2 ruido,2,estimulados,3,55,2,137,5
+Video_476,1er fotograma >= max - 2 ruido,3,estimulados,2,60,2,65,2
+Video_476,1er fotograma >= max - 2 ruido,4,estimulados,3,41,2,105,4
+Video_476,1er fotograma >= max - 2 ruido,5,estimulados,3,33,1,106,4
+Video_476,1er fotograma >= max - 2 ruido,6,estimulados,3,46,2,99,3
+Video_476,1er fotograma >= 95 % del max,1,estimulados,3,39,2,104,4
+Video_476,1er fotograma >= 95 % del max,2,estimulados,3,133,4,59,3
+Video_476,1er fotograma >= 95 % del max,3,estimulados,2,60,2,65,2
+Video_476,1er fotograma >= 95 % del max,4,estimulados,3,41,2,105,4
+Video_476,1er fotograma >= 95 % del max,5,estimulados,3,33,1,106,4
+Video_476,1er fotograma >= 95 % del max,6,estimulados,3,46,2,99,3
+Video_476,1er fotograma >= 90 % del max,1,estimulados,3,39,2,104,4
+Video_476,1er fotograma >= 90 % del max,2,estimulados,3,55,2,137,5
+Video_476,1er fotograma >= 90 % del max,3,estimulados,2,60,2,65,2
+Video_476,1er fotograma >= 90 % del max,4,estimulados,3,41,2,105,4
+Video_476,1er fotograma >= 90 % del max,5,estimulados,3,33,1,106,4
+Video_476,1er fotograma >= 90 % del max,6,estimulados,3,46,2,99,3
+Video_476,instante interpolado al 95 %,1,estimulados,3,37,2,106,4
+Video_476,instante interpolado al 95 %,2,estimulados,3,95,4,96,3
+Video_476,instante interpolado al 95 %,3,estimulados,2,55,2,71,2
+Video_476,instante interpolado al 95 %,4,estimulados,3,39,2,107,4
+Video_476,instante interpolado al 95 %,5,estimulados,3,32,1,106,4
+Video_476,instante interpolado al 95 %,6,estimulados,3,44,2,101,3
+Video_476,instante interpolado a max - 1 ruido,1,estimulados,3,36,2,107,4
+Video_476,instante interpolado a max - 1 ruido,2,estimulados,3,53,2,139,5
+Video_476,instante interpolado a max - 1 ruido,3,estimulados,2,52,2,74,2
+Video_476,instante interpolado a max - 1 ruido,4,estimulados,3,38,2,108,4
+Video_476,instante interpolado a max - 1 ruido,5,estimulados,3,31,1,107,4
+Video_476,instante interpolado a max - 1 ruido,6,estimulados,3,43,2,102,3

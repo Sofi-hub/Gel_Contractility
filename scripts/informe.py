@@ -40,7 +40,7 @@ FIGURAS = [  # (prefijo, título, explicación)
     ("10_ritmo", "Ritmo: estimuladas y espontáneas",
      "Qué contracciones siguen al estimulador (enganche de fase) y cuáles no."),
     ("11_cinetica", "Forma de la contracción",
-     "Contracciones alineadas y promediadas: subida (TTP) y relajación (RT50)."),
+     "Contracciones alineadas en el pico y su mediana (línea azul): subida (TTP) y relajación (RT50)."),
     ("00_roi_profile", "Zona del gel analizada",
      "La zona elegida automáticamente: la parte más plana y angosta del gel, lejos de los anclajes."),
     ("05_estabilidad_umbral", "Control del umbral",
@@ -124,9 +124,18 @@ def frase_resultado(d: dict) -> tuple[str, str]:
         return "bien", (f"<b>{n} contracciones</b>; <b>{f.get('n_estimulados')}</b> siguen al "
                         f"estimulador a {_f(fr, '.3g')} Hz (período {_f(f.get('periodo_s'), '.4f')} ± "
                         f"{_f(f.get('periodo_err_s'), '.4f')} s, captura {_f(f.get('captura_pct'), '.0f')} %). "
-                        f"Amplitud de las estimuladas: <b>{amp}</b>.")
+                        f"Amplitud de las estimuladas (mediana): <b>{amp}</b>.")
     return "bien", (f"<b>{n} contracciones</b>, sin un tren de estímulo detectable "
                     f"(se tratan como espontáneas). Amplitud mediana: <b>{amp}</b>.")
+
+
+def texto_basal(res: dict) -> str:
+    """C8: el resumen de la basal tal como lo guardó el reporte (hoja resumen)."""
+    t = res.get("basal_resumen") if res else None
+    if not isinstance(t, str) or not t:
+        return "— (resultado anterior al 2026-10-15: aparece al rehacer el paso 2)"
+    fin = _num(res.get("basal_fin_s"))
+    return (f"0–{fin:.1f} s: " if fin is not None else "") + t
 
 
 def cinetica_txt(res: dict, m: str) -> str:
@@ -223,13 +232,15 @@ def armar_html(d: dict) -> str:
         filas.append(("Tren de estímulo", "no se encontró"))
     if f.get("reportable") and _num(f.get("amplitud_pct")) is not None:
         ic = res.get("amplitud_relativa_ic95_pct")
-        filas.append((f"Amplitud ({f.get('amplitud_grupo') or 'todas'})",
+        filas.append((f"Amplitud, mediana ({f.get('amplitud_grupo') or 'todas'})",
                       f"<b>{_f(f.get('amplitud_pct'))} %</b> del grosor en reposo = "
                       f"{_f(f.get('amplitud_px'))} px"
                       + (f"<br><span class='mut'>IC 95 % de la mediana: {_rango(ic)} %</span>"
                          if isinstance(ic, str) else "")))
-        filas.append(("Tiempo al pico (TTP)", cinetica_txt(res, "ttp")))
-        filas.append(("Relajación al 50 % (RT50)", cinetica_txt(res, "rt50")))
+        filas.append(("Tiempo al pico (TTP), mediana", cinetica_txt(res, "ttp")))
+        filas.append(("Relajación al 50 % (RT50), mediana", cinetica_txt(res, "rt50")))
+    if res:
+        filas.append(("Basal (antes del estímulo)", html.escape(texto_basal(res))))
     v = d.get("veredicto")
     if v:
         tam = _num(v.get("tamano_por_contraccion_mediana")) or _num(v.get("pendiente_desp_vert_sobre_center_px"))

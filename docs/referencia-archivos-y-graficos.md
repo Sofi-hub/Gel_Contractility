@@ -231,6 +231,8 @@ fase (`ritmo_*`). Puede aparecer en resultados anteriores.
 
 ---
 
+**`basal_<serie>`** (2026-10-15, C8) — el resumen de la basal (0 s hasta el menor entre 10 s y la primera estimulada), una fila por dato: `basal_fin_s`, `basal_definicion`, `basal_actividad_p95_px` / `_pct` (percentil 95 de |señal sin deriva| en la basal, en px y % del grosor), `basal_contable` (False si el conteo no es reportable), `basal_n_contracciones`, `basal_instantes_s`, `basal_junto_al_borde`, `basal_amplitud_mediana_pct` / `_px`, `basal_frecuencia_mediana_Hz`, `basal_frecuencia_iqr_Hz` (desde 4) y `basal_resumen` (la frase de la consola). Las mismas columnas están en `resumen_*`.
+
 ## 3. `movimiento_<video>.xlsx` — salida de `motion_check.py`
 
 Esta herramienta responde una pregunta distinta: **qué se mueve**, sin usar la
@@ -277,6 +279,10 @@ traslada también mueve solo sus bordes).
 ## 3c. `marcas_<carpeta>.json` — marcas a mano desde la ventana (2026-10-11)
 
 Solo existe si alguien marcó una contracción como **dudosa** en la pestaña Resultados (botón o tecla D). Guarda `{"dudosas": {"<número de contracción>": "dudosa"}}` y la fecha. Es una nota: **no cambia ningún número ni ningún Excel**, y ningún script del análisis lo lee (solo la ventana, que la muestra en el gráfico, la ficha y la tabla de Comparar). Si se quita la última marca, el archivo se borra. Ojo: los números de contracción son los del reporte actual; si se vuelve a correr el paso 2 y cambian, la marca puede quedar apuntando a otra.
+
+## 3d. `seleccion_<carpeta>.json` — pulsos elegidos en la ventana (2026-10-15)
+
+Solo existe si alguien apretó **Guardar selección** en Resultados → Pulsos. Guarda `{"eventos": [números de contracción], "regla": "los 3 primeros estimulados" | "a mano" | ...}` y la fecha. Como las marcas: **no cambia ningún número ni ningún Excel** y ningún script del análisis lo lee (la ventana lo usa para arrancar con esa selección y Comparar para "la selección guardada de cada uno"). "Exportar..." guarda donde se elija `pulsos_elegidos_<carpeta>.xlsx` (hojas `pulsos_elegidos` y `media`) o un .csv. Mismo límite que las marcas: si se rehace el paso 2 y cambia la numeración, la selección puede quedar apuntando a otras.
 
 La pestaña Comparar puede además guardar, donde se elija, `comparacion.xlsx` (la tabla lado a lado, tal como se ve) y `comparacion.png`.
 
@@ -364,8 +370,8 @@ Si el rojo acompaña al azul y no hay franja verde, el título dice NO REPORTABL
   grises huecos y se dibujan también los **falsos de control** (triángulos rojos
   huecos hacia abajo: los picos de la señal invertida). Si los rojos acompañan a
   los grises, es ruido o vibración.
-- **Derecha:** el **promedio de eventos alineados**. El título dice cuántos de
-  cuántos entran (p. ej. 063: "promedio de 5 de 6", el de 0.31 s queda afuera por
+- **Derecha:** el **promedio (media) de eventos alineados**. El título dice cuántos de
+  cuántos entran (p. ej. 063: "promedio (media) de 5 de 6", el de 0.31 s queda afuera por
   estar a menos de la semiventana del inicio). `x` = tiempo respecto del
   pico (s), `y` = traslación promedio (px, azul). **Solo con `--verbose`**
   (desde 2026-10-08) se agrega un eje `y` derecho (rojo) con el cambio de grosor

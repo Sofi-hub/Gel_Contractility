@@ -27,6 +27,10 @@ La ventana no calcula nada propio: corre los mismos comandos de la sección 1, a
 
 **Pestaña "Comparar" (2026-10-11).** Se eligen 2 o más resultados (Ctrl o Shift + clic, nuevos o viejos) y "Comparar": arriba una **tabla lado a lado** (contracciones, reportable, tren, amplitud en % con su IC 95 % y en px, grupo, TTP, RT50, grosor, zona, duración, fotogramas perdidos, segundo método, avisos y marcadas dudosas); abajo la **contracción promedio de cada uno superpuesta en % del grosor en reposo** (alineada en el pico, con el mismo grupo que la amplitud informada; línea de puntos = NO reportable) y la **amplitud informada de cada uno con su IC 95 %**. Los números salen de los Excel; la curva promedio es solo un dibujo. Los resultados anteriores al 2026-10-10 no tienen IC (punto hueco y "sin IC"): se agrega corriendo de nuevo solo el paso 2, que no cambia ningún número. "Guardar tabla..." la guarda en Excel o CSV; "Guardar gráfico..." como imagen. El divisor entre la tabla y el gráfico se puede arrastrar.
 
+**Pulsos individuales y selección (2026-10-15, pedido del equipo).** En Resultados hay una sub-pestaña nueva, **«Pulsos»**: una fila por contracción (n.º, instante, tipo, amplitud en % y px, TTP, RT50, duración y si está marcada dudosa), de la hoja `cinetica`. Clic en la fila = la misma ficha que el clic en el gráfico. En la columna «elegir» se suma o se saca cada pulso (clic en `[x]` o Espacio), y hay atajos: **los N primeros estimulados** (N elegible, 3 por defecto), **todos los estimulados**, **todos**, **ninguno**. Abajo se ven los pulsos elegidos superpuestos (en % del grosor, alineados en el pico) y su **media**, rotulada "Media de la selección: 3 de 6 pulsos": amplitud (% y px), TTP y RT50 (media de los medibles; si ninguno es medible, la cota). Es la única cuenta que hace la ventana, y es solo la media de valores por pulso que ya están en el Excel: **ningún número informado cambia** (la cifra informada sigue siendo la mediana del grupo). Al abrir un resultado arrancan elegidas las del grupo informado, o la selección guardada si hay. **Guardar selección** la deja en `seleccion_<carpeta>.json` (aparte, como las marcas dudosas); **Exportar...** guarda los pulsos elegidos y su media en Excel o CSV.
+
+**Comparar selecciones (2026-10-15).** Arriba de Comparar, el menú **«Pulsos que se comparan»** (vale para la tabla, los pulsos y el gráfico) elige qué se compara: *los del promedio informado* (como antes), *los N primeros estimulados* de cada video, o *la selección guardada de cada uno* (si un video no tiene, usa los N primeros). Con las dos últimas se dibujan los pulsos de cada video (finos) y su media (gruesa), en el panel de amplitud aparece la media como un rombo al lado de la amplitud informada, y la tabla suma cinco filas (qué pulsos entraron y su media de amplitud %, px, TTP y RT50). "Guardar tabla..." las incluye. La sub-pestaña **«Pulsos elegidos»** lista cada pulso elegido de cada video (instante, tipo, amplitud, TTP, RT50, duración) y se guarda con "Guardar pulsos...". En el gráfico, el menú **«Vista»** tiene, además de *Forma y amplitud*: **Forma normalizada** (la media de cada video dividida por su máximo: compara la subida y la relajación sin importar el tamaño), **TTP y RT50 de cada pulso** (punto lleno = medible; triángulo hueco = no medible a 30 fps, el valor real está por debajo; raya = media de los medibles) y **Amplitud pulso a pulso** (en orden de tiempo: ¿se mantiene o cae?).
+
 **Atajos de teclado (2026-10-11).** Ctrl+Enter analiza; Ctrl+1 / 2 / 3 cambian de pestaña. En Resultados: ← y → pasan a la contracción anterior o siguiente, D marca o desmarca dudosa, F abre el fotograma, Ctrl+C copia la ficha, Ctrl+F va al buscador, F5 actualiza la lista y Ctrl+S guarda el gráfico. Las letras y flechas no actúan mientras se escribe en un campo de texto.
 
 **Una carpeta entera de videos (2026-10-10).** En "o una carpeta entera" se elige una carpeta en vez de un video: se corren los pasos marcados sobre **todos** sus videos (`.mp4`, `.avi`, `.mov`), uno detrás del otro, con los mismos comandos de siempre. "Guardar resultados en" pasa a ser la carpeta madre (por defecto `data\processed_data`): adentro queda una subcarpeta por video, como siempre, más una tabla `resumen_carpeta_<fecha>.xlsx` (y `.csv`). Si un video falla, queda anotado en la tabla y se sigue con el siguiente. Ver 1b.
@@ -193,7 +197,7 @@ Video_476   (2165 fotogramas, 73.1 s, 30.00 fps)
     estimuladas: 6 | espontaneas: 0
 
   CONTRACTILIDAD (estimulados, 6 eventos)
-    amplitud: 0.64 % del grosor en reposo = 1.69 px  (IC 95 % de la mediana 0.6116-0.6614 %)
+    amplitud (mediana): 0.64 % del grosor en reposo = 1.69 px  (IC 95 % de la mediana 0.6116-0.6614 %)
     TTP (inicio -> pico): menos de 155 ms  (2.5 fotogramas)
     RT50 (pico -> 50 % de relajacion): menos de 167 ms  (2.5 fotogramas)
     (con menos de 5 fotogramas no se puede dar un valor, solo un maximo: la contraccion es mas rapida que la camara)
@@ -263,11 +267,23 @@ El estimulador dispara como un reloj (cada 10 s a 0.1 Hz); las contracciones esp
 ### `CONTRACTILIDAD`: las cifras a informar
 
 Si hay tren, son las de las **estimuladas**; si no, las de todos los eventos.
-- **`amplitud: 0.64 % del grosor en reposo`**: **la cifra principal.** Cuánto se desplaza el gel en cada contracción, como porcentaje de su grosor. Se puede comparar entre videos aunque tengan distinto aumento. Valores medidos: 0.4 % a 2.3 %. Al lado va lo mismo en px, del mismo grupo (solo comparable a igual aumento). **IC 95 % de la mediana** (2026-10-10): entre qué valores está la mediana con 95 % de confianza, por bootstrap (se remuestrean los eventos 2000 veces, con semilla fija: siempre da lo mismo). Con 5–6 eventos es grueso; sirve para ver si dos videos se distinguen. TTP y RT50, cuando son medibles, llevan el suyo. El rango intercuartil sigue en el Excel y con `--verbose`.
+- **`amplitud (mediana): 0.64 % del grosor en reposo`**: **la cifra principal** (la **mediana** de las contracciones del grupo; desde 2026-10-15 la consola, el informe y la ventana dicen "mediana" donde lo es, y "promedio" o "media" solo cuando es una media). Cuánto se desplaza el gel en cada contracción, como porcentaje de su grosor. Se puede comparar entre videos aunque tengan distinto aumento. Valores medidos: 0.4 % a 2.3 %. Al lado va lo mismo en px, del mismo grupo (solo comparable a igual aumento). **IC 95 % de la mediana** (2026-10-10): entre qué valores está la mediana con 95 % de confianza, por bootstrap (se remuestrean los eventos 2000 veces, con semilla fija: siempre da lo mismo). Con 5–6 eventos es grueso; sirve para ver si dos videos se distinguen. TTP y RT50, cuando son medibles, llevan el suyo. El rango intercuartil sigue en el Excel y con `--verbose`.
 - **`TTP (inicio -> pico)`**: cuánto tarda la contracción en llegar al máximo. **`RT50`**: cuánto tarda en relajarse a la mitad.
 - **`menos de 155 ms (2.5 fotogramas)`**: la subida ocurre en 2 o 3 cuadros de cámara, así que el programa **no da un valor inventado**, solo el máximo posible. Para dar un valor hacen falta al menos 5 fotogramas.
 - *Si preguntan "¿por qué no da el TTP?":* "la contracción es más rápida que la cámara (30 cuadros por segundo). Para medirlo habría que grabar a 200–300 cuadros por segundo".
 - En videos más lentos (466, 583, 491) sí sale un valor, por ejemplo `TTP: 570 ms (mediana de 2 medibles; intervalo [386, 1068] ms)`. El intervalo es el rango donde está el valor verdadero, considerando que la cámara muestrea cada 33 ms.
+
+### `BASAL` (desde 2026-10-15)
+
+    BASAL (0 a 10.0 s, antes del estimulo)
+      17 contraccion(es) en 10.0 s; amplitud mediana 0.71 %; frecuencia mediana 1.76 Hz (IQR 1.67-1.77); actividad basal 0.67 % del grosor
+
+Lo que pasa antes de que arranque el estimulador (protocolo de Tecnun: los primeros ~10 s). La basal va de 0 s hasta **el menor entre 10 s y el inicio de la primera estimulada**.
+- **Contracciones, frecuencia y amplitud:** las espontáneas que caen en la basal (frecuencia = mediana de las frecuencias instantáneas; IQR desde 4 contracciones; amplitud = mediana). Solo si el conteo del video es reportable; si no, dice **"no contable"**.
+- **Actividad basal:** cuánto se mueve la franja en la basal sin detectar nada: el valor que no supera el 95 % de los fotogramas (percentil 95 del movimiento sin deriva), en % del grosor. Video quieto: 0.02–0.2 %. Tejido que se mueve todo el tiempo: 068 da 2.1 %. Sirve aunque no se puedan contar contracciones.
+- Si una contracción está pegada al inicio del video, lo dice (su amplitud es menos segura; 063, la de 0.31 s).
+
+Va también a la hoja `basal_*` del Excel, al informe y a la ventana (Números y Comparar). Los resultados anteriores al 2026-10-15 no la tienen: aparece al rehacer solo el paso 2, que no cambia ningún otro número.
 
 ### `ESTIMULADOR` (solo si se pasó `--frecuencia-estimulo`)
 

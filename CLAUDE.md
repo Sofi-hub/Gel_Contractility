@@ -228,13 +228,16 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     interfaz.py + Analizar.bat      ventana para correr los pasos sin consola (no calcula nada propio)
     scripts/procesar_carpeta.py     una CARPETA entera (ventana o consola): mismos pasos por video + tabla resumen
     visor.py                        pestaña Resultados de la ventana: lista, numeros y grafico interactivo (solo LEE);
-                                    marcar "dudosa" (marcas_<carpeta>.json, aparte), fotograma del pico, exportar ficha
+                                    marcar "dudosa" (marcas_<carpeta>.json, aparte), fotograma del pico, exportar ficha;
+                                    sub-pestaña Pulsos: tabla por pulso, elegir pulsos y su MEDIA (seleccion_<carpeta>.json)
     src/excel.py                    lectura rapida de los Excel (python-calamine, opcional; solo ventana/informe/tabla)
-    comparar.py                     pestaña Comparar: 2+ resultados lado a lado, promedio superpuesto, amplitud con IC (solo LEE)
+    comparar.py                     pestaña Comparar: 2+ resultados lado a lado, promedio superpuesto, amplitud con IC (solo LEE);
+                                    o los N primeros estimulados / la selección guardada de cada uno, con su media
     tests/test_visor.py             la pestaña Resultados muestra lo de los Excel (ficha de cada contraccion)
     scripts/informe.py              paso 4: informe_<carpeta>.html de una pagina; solo LEE los Excel y figuras
     configuracion.ini               valores con que arranca la ventana (sin parametros del analisis, a proposito)
     tests/test_lote.py              la tabla de procesar_carpeta lee bien los Excel (no recalcula)
+    tests/test_basal.py             resumen de la basal (C8): conteo, frecuencia y actividad en 5 videos
     docs/                           documentación vigente; docs/historia/ = propuestas y diagnósticos de fases cerradas
     docs/pendientes.md              la lista ÚNICA de lo que falta
 

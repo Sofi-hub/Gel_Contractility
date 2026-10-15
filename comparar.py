@@ -19,9 +19,14 @@ from __future__ import annotations
 import threading
 from pathlib import Path
 
+import numpy as np
+
 import visor
 
 # colores distinguibles (mismo orden en la curva, la amplitud y el encabezado)
+VISTAS = ["Forma y amplitud", "Forma normalizada (cinética)",
+          "TTP y RT50 de cada pulso", "Amplitud pulso a pulso"]
+
 PALETA = ["#1f77b4", "#d62728", "#2ca02c", "#9467bd", "#ff7f0e",
           "#17becf", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22"]
 
@@ -75,13 +80,45 @@ class PestanaComparar:
         self.titulo.pack(anchor="w")
         self.estado = ttk.Label(der, text="", foreground="gray")
         self.estado.pack(side="bottom", anchor="w")
+        # qué pulsos se comparan: vale para la tabla, los pulsos y el gráfico
+        sel = ttk.Frame(der)
+        sel.pack(fill="x", pady=(4, 0))
+        ttk.Label(sel, text="Pulsos que se comparan:").pack(side="left")
+        self.v_modo = tk.StringVar(value=visor.MODOS_SELECCION["informado"])
+        cb = ttk.Combobox(sel, textvariable=self.v_modo, state="readonly", width=32,
+                          values=list(visor.MODOS_SELECCION.values()))
+        cb.pack(side="left", padx=4)
+        cb.bind("<<ComboboxSelected>>", lambda _e: self._rehacer())
+        ttk.Label(sel, text="N =").pack(side="left", padx=(6, 2))
+        self.v_n = tk.IntVar(value=3)
+        sp = ttk.Spinbox(sel, from_=1, to=50, width=3, textvariable=self.v_n, command=self._rehacer)
+        sp.pack(side="left")
+        sp.bind("<Return>", lambda _e: self._rehacer())
         # dos sub-pestañas: tabla o grafico (juntos, todo quedaba chico)
         self.sub = ttk.Notebook(der)
         self.sub.pack(fill="both", expand=True, pady=(4, 0))
         t_tab = ttk.Frame(self.sub, padding=(0, 6))
         t_graf = ttk.Frame(self.sub, padding=(0, 4))
+        t_pul = ttk.Frame(self.sub, padding=(0, 6))
         self.sub.add(t_tab, text="  Tabla  ")
+        self.sub.add(t_pul, text="  Pulsos elegidos  ")
         self.sub.add(t_graf, text="  Gráfico  ")
+        cp = ttk.Frame(t_pul)
+        cp.pack(fill="both", expand=True)
+        self.tab_pul = ttk.Treeview(cp, show="headings", height=10)
+        spy = ttk.Scrollbar(cp, orient="vertical", command=self.tab_pul.yview)
+        spx = ttk.Scrollbar(cp, orient="horizontal", command=self.tab_pul.xview)
+        self.tab_pul.configure(yscrollcommand=spy.set, xscrollcommand=spx.set)
+        self.tab_pul.grid(row=0, column=0, sticky="nsew")
+        spy.grid(row=0, column=1, sticky="ns")
+        spx.grid(row=1, column=0, sticky="ew")
+        cp.columnconfigure(0, weight=1)
+        cp.rowconfigure(0, weight=1)
+        bp = ttk.Frame(t_pul)
+        bp.pack(fill="x", pady=(6, 0))
+        ttk.Button(bp, text="Guardar pulsos...", command=self._guardar_pulsos).pack(side="left")
+        ttk.Label(bp, text="un renglón por pulso elegido de cada video (de la hoja cinetica)",
+                  foreground="gray").pack(side="left", padx=8)
         bt = ttk.Frame(t_tab)
         bt.pack(side="bottom", fill="x", pady=(6, 0))
         ttk.Button(bt, text="Guardar tabla...", command=self._guardar_tabla).pack(side="left")
@@ -102,7 +139,12 @@ class PestanaComparar:
         barra = ttk.Frame(t_graf)
         barra.pack(fill="x", pady=(2, 2))
         ttk.Button(barra, text="Guardar gráfico...", command=self._guardar_png).pack(side="left")
-        ttk.Label(barra, text="amplitud: de los Excel · curva promedio: solo dibujo",
+        ttk.Label(barra, text="Vista:").pack(side="left", padx=(12, 2))
+        self.v_vista = tk.StringVar(value=VISTAS[0])
+        cv = ttk.Combobox(barra, textvariable=self.v_vista, state="readonly", width=30, values=VISTAS)
+        cv.pack(side="left")
+        cv.bind("<<ComboboxSelected>>", lambda _e: self._dibujar())
+        ttk.Label(barra, text="curvas: solo dibujo · números: de los Excel",
                   foreground="gray").pack(side="left", padx=8)
         der = t_graf
 
@@ -176,10 +218,29 @@ class PestanaComparar:
             self.raiz.after(0, lambda: self._mostrar(rs, errores))
         threading.Thread(target=trabajo, daemon=True).start()
 
+    def _modo(self) -> tuple[str, int]:
+        inv = {v: k for k, v in visor.MODOS_SELECCION.items()}
+        try:
+            n = max(1, int(self.v_n.get()))
+        except Exception:
+            n = 3
+        return inv.get(self.v_modo.get(), "informado"), n
+
+    def _rehacer(self):
+        if self.rs:
+            self._mostrar(self.rs, [])
+
+    def _filas(self):
+        modo, n = self._modo()
+        filas = visor.tabla_comparar(self.rs)
+        if modo != "informado":
+            filas = filas + visor.tabla_seleccion(self.rs, modo, n)
+        return filas
+
     def _mostrar(self, rs, errores):
         self.rs = rs
         self.titulo.config(text=f"Comparando {len(rs)} resultados")
-        filas = visor.tabla_comparar(rs)
+        filas = self._filas()
         cols = ["m"] + [f"r{i}" for i in range(len(rs))]
         self.tabla.configure(columns=cols, height=len(filas))
         self.tabla.heading("m", text="")
@@ -190,11 +251,46 @@ class PestanaComparar:
         self.tabla.delete(*self.tabla.get_children())
         for a, vals in filas:
             self.tabla.insert("", "end", values=[a] + vals)
+        self._llenar_pulsos()
         self._dibujar()
         txt = "Listo." if not errores else "No pude leer: " + "; ".join(errores)
         if any(visor.ic_amplitud(r) is None and r.fila.get("reportable") for r in rs):
             txt += "  Punto hueco = resultado anterior al IC 95 % (se agrega al rehacer el paso 2)."
         self.estado.config(text=txt)
+
+    def _llenar_pulsos(self):
+        modo, n = self._modo()
+        df = visor.pulsos_comparar(self.rs, modo, n)
+        self._df_pul = df
+        cols = list(df.columns) if len(df) else ["resultado"]
+        self.tab_pul.configure(columns=cols)
+        for c in cols:
+            self.tab_pul.heading(c, text=c)
+            self.tab_pul.column(c, width=self._px(230 if c == "resultado" else 100),
+                                anchor="w" if c == "resultado" else "center", stretch=False)
+        self.tab_pul.delete(*self.tab_pul.get_children())
+        for _, f in df.iterrows():
+            self.tab_pul.insert("", "end", values=[f[c] for c in cols])
+
+    def _guardar_pulsos(self):
+        if not self.rs or getattr(self, "_df_pul", None) is None:
+            return
+        from tkinter import filedialog
+        f = filedialog.asksaveasfilename(defaultextension=".xlsx", initialdir=str(self.base),
+                                         initialfile="pulsos_comparados.xlsx",
+                                         filetypes=[("Excel", "*.xlsx"), ("CSV", "*.csv")])
+        if f:
+            if f.lower().endswith(".csv"):
+                self._df_pul.to_csv(f, index=False, encoding="utf-8-sig")
+            else:
+                self._df_pul.to_excel(f, index=False)
+            self.estado.config(text=f"Pulsos guardados en {f}")
+
+    def _eventos(self, r):
+        modo, n = self._modo()
+        if modo == "informado":
+            return [int(v) for v in r.cin["evento"][visor.eventos_principales(r)]] if r.cin is not None else []
+        return visor.eventos_para_comparar(r, modo, n)[0]
 
     def _dibujar(self):
         self.fig.clear()
@@ -202,17 +298,114 @@ class PestanaComparar:
         if not rs:
             self.canvas.draw_idle()
             return
+        vista = self.v_vista.get()
+        if vista == VISTAS[1]:
+            self._dibujar_normalizada()
+        elif vista == VISTAS[2]:
+            self._dibujar_ttp_rt50()
+        elif vista == VISTAS[3]:
+            self._dibujar_pulso_a_pulso()
+        else:
+            self._dibujar_forma()
+        self.fig.tight_layout()
+        self.canvas.draw_idle()
+
+    def _dibujar_normalizada(self):
+        """Media de los pulsos de cada video dividida por su máximo: compara la
+        FORMA (subida y bajada) sin que importe el tamaño. Dibujo."""
+        ax = self.fig.add_subplot(111)
+        for i, r in enumerate(self.rs):
+            lag, ys, ym = visor.pulsos_para_dibujar(r, self._eventos(r), half_s=1.0)
+            if lag is None or not np.isfinite(ym).any() or np.nanmax(ym) <= 0:
+                continue
+            ax.plot(1000 * lag, ym / np.nanmax(ym), color=PALETA[i % len(PALETA)], lw=1.8,
+                    marker=".", ms=3, label=f"{i + 1} · {r.carpeta.name} (media de {len(ys)})")
+        for y, lab in ((0.5, "50 %"), (0.1, "10 %")):
+            ax.axhline(y, color="#bbb", lw=0.7, ls="--")
+            ax.text(-990, y + 0.02, lab, fontsize=7, color="gray")
+        ax.axvline(0, color="#bbb", lw=0.5)
+        ax.set_xlim(-1000, 1000)
+        ax.set_xlabel("ms desde el pico")
+        ax.set_ylabel("fracción del máximo")
+        ax.set_title("Forma normalizada (media de los pulsos elegidos / su máximo): subida y relajación "
+                     "sin importar el tamaño · cada punto = 1 fotograma (33 ms)", fontsize=9)
+        ax.legend(fontsize=7, loc="upper right")
+        ax.grid(alpha=0.25)
+
+    def _dibujar_ttp_rt50(self):
+        """TTP y RT50 de cada pulso elegido (hoja cinetica). Lleno = medible;
+        triángulo hueco = solo cota (no medible a 30 fps: el valor real está por debajo)."""
+        axs = [self.fig.add_subplot(1, 2, k + 1) for k in range(2)]
+        for ax, m, nom in zip(axs, ("ttp", "rt50"), ("TTP (inicio → pico)", "RT50 (pico → 50 %)")):
+            for i, r in enumerate(self.rs):
+                col = PALETA[i % len(PALETA)]
+                v = visor.valores_pulsos(r, self._eventos(r))
+                if not len(v) or m + "_s" not in v:
+                    continue
+                x = i + np.linspace(-0.15, 0.15, len(v)) if len(v) > 1 else np.array([float(i)])
+                med = v[m + "_medible"].astype(bool).to_numpy()
+                ax.plot(x[med], 1000 * v[m + "_s"].to_numpy(float)[med], "o", color=col, ms=5)
+                ax.plot(x[~med], 1000 * v[m + "_max_s"].to_numpy(float)[~med], "v", mfc="white",
+                        color=col, ms=6)
+                d = visor.media_seleccion(r, v["evento"])
+                if d.get(m + "_n_medibles"):
+                    ax.hlines(1000 * d[m + "_s"], i - 0.25, i + 0.25, color=col, lw=2)
+            ax.set_xticks(range(len(self.rs)))
+            ax.set_xticklabels([str(i + 1) for i in range(len(self.rs))])
+            ax.set_xlim(-0.6, len(self.rs) - 0.4)
+            ax.set_ylim(bottom=0)
+            ax.set_xlabel("resultado (orden de la tabla)")
+            ax.set_ylabel("ms")
+            ax.set_title(nom, fontsize=9)
+            ax.grid(alpha=0.25, axis="y")
+        self.fig.suptitle("Cada pulso: ● medible · ▽ no medible a 30 fps (el valor real es MENOR que el "
+                          "triángulo) · raya = media de los medibles", fontsize=8, color="gray")
+
+    def _dibujar_pulso_a_pulso(self):
+        """Amplitud de cada pulso elegido en el orden en que ocurrieron (¿se cansa?)."""
+        ax = self.fig.add_subplot(111)
+        for i, r in enumerate(self.rs):
+            v = visor.valores_pulsos(r, self._eventos(r))
+            if not len(v):
+                continue
+            ax.plot(np.arange(1, len(v) + 1), v["amplitud_relativa_pct"], "o-",
+                    color=PALETA[i % len(PALETA)], ms=5, lw=1.2,
+                    label=f"{i + 1} · {r.carpeta.name}")
+        ax.set_xlabel("pulso elegido n.º (en orden de tiempo)")
+        ax.set_ylabel("amplitud (% del grosor)")
+        ax.set_ylim(bottom=0)
+        ax.xaxis.get_major_locator().set_params(integer=True)
+        ax.set_title("Amplitud de cada pulso elegido, en orden: ¿se mantiene o cae?", fontsize=9)
+        ax.legend(fontsize=7)
+        ax.grid(alpha=0.25)
+
+    def _dibujar_forma(self):
+        rs = self.rs
         gs = self.fig.add_gridspec(1, 3)
         ax = self.fig.add_subplot(gs[0, :2])
         ax2 = self.fig.add_subplot(gs[0, 2])
+        modo, nsel = self._modo()
         for i, r in enumerate(rs):
             col = PALETA[i % len(PALETA)]
-            lag, y, n = visor.promedio_para_dibujar(r)
             rep = bool(r.fila.get("reportable"))
-            if lag is not None:
-                grupo = r.fila.get("amplitud_grupo") or "todas"
-                lab = f"{i + 1} · {r.carpeta.name} (n={n}, {grupo if rep else 'NO reportable'})"
-                ax.plot(lag, y, color=col, lw=1.5 if rep else 1.0, ls="-" if rep else "--", label=lab)
+            if modo == "informado":
+                lag, y, n = visor.promedio_para_dibujar(r)
+                if lag is not None:
+                    grupo = r.fila.get("amplitud_grupo") or "todas"
+                    lab = f"{i + 1} · {r.carpeta.name} (n={n}, {grupo if rep else 'NO reportable'})"
+                    ax.plot(lag, y, color=col, lw=1.5 if rep else 1.0, ls="-" if rep else "--", label=lab)
+            else:
+                ev, txt = visor.eventos_para_comparar(r, modo, nsel)
+                lag, ys, ym = visor.pulsos_para_dibujar(r, ev)
+                if lag is not None:
+                    for _, y in ys:
+                        ax.plot(lag, y, color=col, lw=0.6, alpha=0.35)
+                    lab = (f"{i + 1} · {r.carpeta.name}: media de {len(ys)} ({txt})"
+                           + ("" if rep else " NO reportable"))
+                    ax.plot(lag, ym, color=col, lw=2.0, ls="-" if rep else "--", label=lab)
+                    d = visor.media_seleccion(r, ev)
+                    ax2.plot([i + 0.18], [d["amplitud_pct"]], "D", color=col, ms=5,
+                             mfc="white" if not rep else col, alpha=0.8)
             amp = r.fila.get("amplitud_pct") if rep else None
             if amp is not None:
                 ic = visor.ic_amplitud(r)
@@ -227,7 +420,9 @@ class PestanaComparar:
         ax.axvline(0, color="#bbb", lw=0.5)
         ax.set_xlabel("s desde el pico")
         ax.set_ylabel("% del grosor en reposo")
-        ax.set_title("Contracción promedio (dibujo, alineada en el pico)", fontsize=9)
+        ax.set_title("Contracción promedio (media; dibujo, alineada en el pico)" if modo == "informado"
+                     else "Pulsos elegidos (finos) y su media (gruesa), alineados en el pico",
+                     fontsize=9)
 
         ax.legend(fontsize=7, loc="upper left")
         ax.grid(alpha=0.25)
@@ -236,11 +431,10 @@ class PestanaComparar:
         ax2.set_xlim(-0.6, len(rs) - 0.4)
         ax2.set_ylim(bottom=0)
         ax2.set_xlabel("resultado (orden de la tabla)")
-        ax2.set_ylabel("amplitud (% del grosor)")
-        ax2.set_title("Amplitud informada ± IC 95 %\n(punto hueco: resultado sin IC)", fontsize=9)
+        ax2.set_ylabel("amplitud, mediana (% del grosor)")
+        ax2.set_title("Amplitud informada (mediana) ± IC 95 %\n(punto hueco: resultado sin IC)"
+                      + ("" if modo == "informado" else "\nrombo = media de los pulsos elegidos"), fontsize=9)
         ax2.grid(alpha=0.25, axis="y")
-        self.fig.tight_layout()
-        self.canvas.draw_idle()
 
     # ---------------- guardar ----------------
     def _guardar_tabla(self):
@@ -251,7 +445,9 @@ class PestanaComparar:
                                          initialfile="comparacion.xlsx",
                                          filetypes=[("Excel", "*.xlsx"), ("CSV", "*.csv")])
         if f:
-            visor.guardar_tabla_comparar(self.rs, Path(f))
+            modo, n = self._modo()
+            extra = visor.tabla_seleccion(self.rs, modo, n) if modo != "informado" else None
+            visor.guardar_tabla_comparar(self.rs, Path(f), extra)
             self.estado.config(text=f"Tabla guardada en {f}")
 
     def _guardar_png(self):

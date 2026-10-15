@@ -301,6 +301,78 @@ def _contar(v, fps, win_s, sep_s):
     return sel["n_eventos"] if sel["hay_meseta"] else None
 
 
+BASAL_MAX_S = 10.0   # protocolo de Tecnun: los primeros ~10 s son basales, sin estimulo
+
+
+def resumen_basal(t, r, ev, grosor_reposo, res) -> dict:
+    """C8 (2026-10-15). La basal va de 0 s hasta el menor entre 10 s y el inicio
+    de la primera estimulada. Si el conteo es reportable: cuantas contracciones
+    hay en la basal, su frecuencia (mediana; IQR desde 4) y su amplitud mediana.
+    Siempre: la ACTIVIDAD basal = percentil 95 de |senal sin deriva| en % del
+    grosor en reposo (no depende de detectar nada; sirve tambien con actividad
+    continua). Medido en los 11 videos: data/_mediciones_fases/c8_basal/."""
+    out = {}
+    fin, origen = BASAL_MAX_S, "0-10 s"
+    rit = res.get("ritmo") or {}
+    if rit.get("hay_estimulacion") and len(ev) and "grupo" in ev:
+        est = ev[ev["grupo"] == "estimulados"]
+        on = est["onset_s"].to_numpy(float)
+        t1 = float(np.nanmin(on)) if np.isfinite(on).any() else float(est["tiempo_s"].min())
+        if t1 < fin:
+            fin, origen = t1, "hasta la primera estimulada"
+    mb = (t < fin) & np.isfinite(r)
+    out["basal_fin_s"] = float(fin)
+    out["basal_definicion"] = origen
+    if mb.sum() < 10:
+        out["basal_resumen"] = "sin basal (el video empieza con el estimulo)"
+        return out
+    g = float(np.nanmedian(grosor_reposo[mb])) if grosor_reposo is not None else float("nan")
+    p95 = float(np.percentile(np.abs(r[mb]), 95))
+    out["basal_actividad_p95_px"] = p95
+    out["basal_actividad_p95_pct"] = 100.0 * p95 / g if g > 0 else float("nan")
+    if not res.get("conteo_reportable"):
+        out["basal_contable"] = False
+        out["basal_resumen"] = (f"no contable (conteo NO reportable); actividad basal "
+                                f"{out['basal_actividad_p95_pct']:.2f} % del grosor")
+        return out
+    eb = ev[ev["tiempo_s"] < fin] if len(ev) else ev
+    n = int(len(eb))
+    out["basal_contable"] = True
+    out["basal_n_contracciones"] = n
+    out["basal_instantes_s"] = ", ".join(f"{x:.2f}" for x in eb["tiempo_s"]) if n else ""
+    borde = np.asarray(res.get("_junto_al_borde", []), bool)
+    out["basal_junto_al_borde"] = int(borde[:n].sum()) if n and len(borde) >= n else 0
+    if n:
+        out["basal_amplitud_mediana_pct"] = float(np.nanmedian(eb["amplitud_relativa_pct"]))
+        out["basal_amplitud_mediana_px"] = float(np.nanmedian(eb["amplitud_px"]))
+    if n >= 2:
+        f_inst = 1.0 / np.diff(eb["tiempo_s"].to_numpy(float))
+        out["basal_frecuencia_mediana_Hz"] = float(np.median(f_inst))
+        if n >= 4:
+            q1, q3 = np.percentile(f_inst, [25, 75])
+            out["basal_frecuencia_iqr_Hz"] = f"{q1:.3g}-{q3:.3g}"
+    txt = f"{n} contraccion(es) en {fin:.1f} s"
+    if n:
+        txt += f"; amplitud mediana {out['basal_amplitud_mediana_pct']:.2f} %"
+    if n >= 2:
+        txt += f"; frecuencia mediana {out['basal_frecuencia_mediana_Hz']:.2f} Hz"
+        if "basal_frecuencia_iqr_Hz" in out:
+            txt += f" (IQR {out['basal_frecuencia_iqr_Hz']})"
+    txt += f"; actividad basal {out['basal_actividad_p95_pct']:.2f} % del grosor"
+    out["basal_resumen"] = txt
+    return out
+
+
+def imprimir_basal(a: dict) -> None:
+    if not a.get("basal_resumen"):
+        return
+    print()
+    print(f"  BASAL (0 a {a.get('basal_fin_s', 0):.1f} s, antes del estimulo)")
+    print(f"    {a['basal_resumen']}")
+    if a.get("basal_junto_al_borde"):
+        print(f"    ({a['basal_junto_al_borde']} pegada(s) al inicio del video: amplitud menos segura)")
+
+
 def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
              sep_s: float, half_s: float, separar: bool = True,
              min_captura: float = 0.75,
@@ -472,6 +544,7 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
     res.update({k: v for k, v in next(f for f in filas_cin if f["grupo"] == principal).items()
                 if k != "grupo"})
 
+
     # --- fotogramas sin medida ----------------------------------------------
     # Van al final para no reordenar las columnas existentes. Un fotograma NaN
     # (REJECTED) no se inventa ni anula el analisis (src/estadistica.py), pero
@@ -529,6 +602,9 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
     res["cociente_ruido_bordes"] = (float(max(rs_, ri_) / min(rs_, ri_))
                                     if np.isfinite(rs_) and np.isfinite(ri_) and min(rs_, ri_) > 0
                                     else float("nan"))
+    # --- C8 (2026-10-15): resumen de la BASAL --------------------------------
+    # Solo agrega claves basal_*; no cambia nada de lo anterior.
+    res.update(resumen_basal(t, r, ev, grosor_reposo, res))
     return res
 
 
@@ -701,7 +777,7 @@ def imprimir_cinetica(a: dict, detallado: bool = False) -> None:
                           f"intervalo mediano [{lo:.0f}, {hi:.0f}] ms (solo para auditar)")
         return
     if np.isfinite(a.get("amplitud_relativa_pct", np.nan)):
-        print(f"    amplitud: {a['amplitud_relativa_pct']:.2f} % del grosor en reposo"
+        print(f"    amplitud (mediana): {a['amplitud_relativa_pct']:.2f} % del grosor en reposo"
               + (f" = {a['amplitud_px']:.2f} px" if np.isfinite(a.get("amplitud_px", np.nan)) else "")
               + (f"  (IC 95 % de la mediana {a['amplitud_relativa_ic95_pct']} %)"
                  if a.get("amplitud_relativa_ic95_pct") else ""))
@@ -791,7 +867,7 @@ def graficar(resultados, out_png: Path, detallado: bool = False) -> None:
             ax2.set_ylabel("traslacion (px)", color="#1f77b4")
             n_tot = int(a.get("n_eventos") or 0)
             fuera = n_tot - int(a["_n_prom"])
-            ax2.set_title(f"promedio de {a['_n_prom']} de {n_tot} "
+            ax2.set_title(f"promedio (media) de {a['_n_prom']} de {n_tot} "
                           f"{'eventos' if reportable else 'candidatos (no reportable)'}"
                           + (f"\n({fuera} a menos de la semiventana de un extremo)" if fuera > 0 else ""),
                           fontsize=9)
@@ -1036,6 +1112,7 @@ def main():
                      min_frames_cinetica=a.min_frames_cinetica,
                      frecuencia_estimulo=a.frecuencia_estimulo)
         imprimir(nombre, r, detallado=a.verbose)
+        imprimir_basal(r)
         resultados.append((nombre, r))
 
     if a.frecuencia_estimulo:
@@ -1093,6 +1170,10 @@ def main():
                               "en_promedio": r["_en_promedio"],
                               "reportable": bool(r["conteo_reportable"])}
                              ).to_excel(w, sheet_name=f"eventos_{nombre[:18]}", index=False)
+            basal = {kk: vv for kk, vv in r.items() if kk.startswith("basal_")}
+            if basal:   # C8: hoja aparte, una fila por dato (tambien estan en resumen_*)
+                pd.DataFrame({"dato": list(basal), "valor": [str(x) for x in basal.values()]}
+                             ).to_excel(w, sheet_name=f"basal_{nombre[:20]}", index=False)
             if r.get("_cinetica") is not None and len(r["_cinetica"]):
                 r["_cinetica"].to_excel(w, sheet_name=f"cinetica_{nombre[:18]}", index=False)
                 r["_cinetica_grupos"].to_excel(w, sheet_name=f"cin_grupos_{nombre[:16]}", index=False)

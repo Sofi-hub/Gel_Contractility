@@ -13,6 +13,29 @@ Del "Pendiente de código" de `raritos.md`:
 
 Además: `--verbose` en los tres scripts, guía `docs/guia-salida-consola.md`.
 
+## 0. PRÓXIMO: pedidos de la reunión con el equipo (2026-10-15)
+
+Respuestas completas en `preguntas-reunion-equipo.md`. Resumen: todos los videos con voltaje en el nombre son a **0.1 Hz** (613 y 068 incluidos); permiso para pasar la frecuencia conocida en los videos difíciles ("no te mates buscándolo"); **el pico es el primer instante en que se llega al máximo**; la basal (0–10 s) sirve como período de espontáneas; quieren ver cada pulso y elegir cuáles promediar.
+
+**Regla de nombres (decidida por Franco):** "promedio" = **media**. Donde hoy se informa una mediana, decir **"mediana"**, nunca "promedio". La selección de pulsos de la ventana usa la **media** (más intuitiva con 3 pulsos) y lo dice.
+
+### Orden de trabajo
+**A. Ventana (no cambia ningún número del análisis; hacer directo y verificar)**
+1. **Textos:** revisar consola, Excel (nombres de columnas no), informe HTML, ventana y figuras: cada "promedio" que sea mediana pasa a decir "mediana"; la curva "contracción promedio" (es `nanmean`) puede decir "promedio (media)". Lista de lugares cambiados en el resumen final.
+2. **Tabla de pulsos individuales visible** en Resultados: una fila por contracción (n.º, instante, tipo, amplitud px y %, TTP, RT50, duración, dudosa), de la hoja `cinetica`. Clic en una fila = la misma ficha que el clic en el gráfico.
+3. **Elegir qué pulsos entran** (casillas en esa tabla y atajos: "3 primeros estimulados", "todos los estimulados", "ninguno"): muestra esos pulsos superpuestos y su **media** (amplitud %, px, TTP, RT50), rotulada "media de la selección: 3 de 6 pulsos". Excepción explícita a "la ventana no calcula": es solo la media de valores por pulso que ya están en el Excel; ningún número del análisis cambia. Se puede guardar la selección aparte (como las marcas dudosas) y exportar.
+4. **Comparar selecciones entre videos:** en Comparar, "los N primeros estimulados de cada uno" (N elegible), con sus pulsos superpuestos y la media de cada video.
+5. Tests en `test_visor.py` (la media de la selección coincide con la de la hoja `cinetica`; los Excel no se tocan).
+
+**B. Cambian números (medir, tabla, esperar el visto bueno de Franco)**
+6. **Pico = primer instante en que se llega al máximo** (H41, respuesta del equipo). Hay que definir "llegar al máximo" con ruido: proponer y medir variantes (p. ej. primer fotograma a ≤ 1 × ruido del máximo, o ≥ 95 % del máximo) en los 11 videos; tabla de TTP/RT50 antes/después. Medido antes con "comienzo de la meseta": 466 TTP 255 → 183 ms, RT50 158 → 223 ms; 583 TTP 258 → 189 ms, RT50 181 → 252 ms. En las rápidas (< 5 fotogramas) no debería cambiar nada (siguen siendo cotas). Vale también para las contracciones sostenidas (491).
+7. **Búsqueda dirigida a 0.1 Hz en 613 y 068** (y en cualquier video con voltaje en el nombre). Tabla: ¿aparece el tren?, eventos, captura, amplitud. Si se aprueba, actualizar `tests/referencia.py` y regenerar la referencia con `--aprobar`.
+
+**C. Nuevo (no cambia los números existentes)**
+8. **Resumen de la basal:** de 0 s hasta la primera estimulada (o 0–10 s si no hay tren). Si hay contracciones separadas: cuántas, frecuencia (mediana e IQR) y amplitud; si la actividad es continua: "no contable", con amplitud típica (% del grosor) y fracción del tiempo activa. Cuidado con `junto_al_borde` (la basal empieza en el borde del video). Hoja nueva en el Excel del reporte, línea en la consola, el informe y la ventana. Medir primero en los 11 videos y mostrar la tabla.
+9. **Después:** videos de frecuencia (304, 341, 491): respuesta a cada tren de 1 s → curva amplitud vs frecuencia. Falta confirmar el orden de las frecuencias dentro de cada video.
+10. **Videos nuevos** de otra estudiante: cuando lleguen, correrlos con la carpeta entera; ver si alguno sirve de control de luz (comparar con MuscleMotion).
+
 ## A. Depende del equipo (reunión 2026-10-08)
 Las preguntas están en `docs/preguntas-reunion-equipo.md`. Lo central:
 1. Frecuencia y estado del estimulador en cada RARITO (613, 068, 304, 341) y en 491 (36 Hz, ¿tétanos?).

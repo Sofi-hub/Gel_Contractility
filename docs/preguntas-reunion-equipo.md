@@ -78,3 +78,14 @@ E. ¿Qué entregaba MuscleMotion que usaban (número de picos, amplitud, tiempos
 - **Espontánea:** basta un resumen de la ventana 0–10 s (cuántas, amplitud), no la medida de actividad completa (C1 baja de prioridad).
 - **TTP/RT50 en muestras rápidas:** seguirán sin poder medirse a 30 fps.
 - Sin respuesta todavía: pregunta 13 (qué es "el pico" en una meseta), 613 y 068.
+
+## Respuestas de la reunión (2026-10-15, contadas por Franco)
+
+- **Todos los videos con voltaje en el nombre se estimularon a 0.1 Hz** (incluidos 613 "40V" y 068 "5V"). Algunos videos (los de frecuencia) tienen cambios de frecuencia.
+- **Videos difíciles:** "no te mates buscándolo". Hay permiso para **pasar la frecuencia conocida** y hacer la búsqueda dirigida, más sensible (068, 613, 341, 304).
+- **Pregunta 13 (H41): el pico es el PRIMER instante en que se llega al máximo** (comienzo de la meseta), también en las contracciones sostenidas. Cambia TTP y RT50 en las muestras lentas: hay que medirlo y aprobarlo antes de implementarlo.
+- **Basal (0–10 s):** casi seguro sin estimulados; sirve como período de espontáneas. Estaría bueno caracterizarla; no pidieron parámetros concretos.
+- **Ventana:** les gustó (individuales y promedios). Pedidos:
+  - que la información de **cada pulso** sea más visible (Franco);
+  - **elegir qué pulsos entran** (por ejemplo, los 3 primeros estimulados) y ver su promedio y los pulsos individuales, porque no siempre pueden garantizar que se registraron los 6;
+  - **comparar esa selección entre dos videos** (los 3 primeros de cada uno).

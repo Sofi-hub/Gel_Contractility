@@ -60,7 +60,8 @@ class PestanaComparar:
         self.lista.pack(fill="both", expand=True)
         self.lista.bind("<Double-1>", lambda _e: self.comparar())
         bot = ttk.Frame(izq)
-        bot.pack(fill="x", pady=(6, 0))
+        # abajo de todo y reservado antes que la lista (si no, la lista lo tapaba)
+        bot.pack(side="bottom", fill="x", pady=(6, 6), before=self.lista)
         ttk.Button(bot, text="Comparar", style="Accent.TButton",
                    command=self.comparar).pack(side="left")
         ttk.Button(bot, text="Actualizar", command=self.refrescar).pack(side="left", padx=4)

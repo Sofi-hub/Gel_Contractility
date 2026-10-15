@@ -1,6 +1,7 @@
 """Cuánto tarda cada parte de main.py en ESTA máquina (pendientes B3a).
 
-    python data/_mediciones_fases/tiempos_main/medir_tiempos.py --video "<ruta al video>"
+    python data/_mediciones_fases/tiempos_main/medir_tiempos.py
+    (usa Video_prueba.mp4 de data/raw_videos; otro video: --video "ruta")
 
 No cambia nada ni guarda resultados: repite, cronometrando, los mismos pasos
 que hace process_video (mismas funciones) y al final imprime una tabla para
@@ -36,11 +37,19 @@ def cron(nombre, f, filas):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--video", required=True)
+    ap.add_argument("--video", default=None,
+                    help="video a medir (sin esto: Video_prueba.mp4, buscado en data/raw_videos)")
     ap.add_argument("--procesos", type=int, nargs="+", default=[1, 2],
                     help="con cuántos procesos medir los fotogramas (default: 1 y 2)")
     a = ap.parse_args()
     v = a.video
+    if not v:
+        cand = sorted((RAIZ / "data" / "raw_videos").rglob("Video_prueba.mp4"))
+        if not cand:
+            sys.exit("No encuentro Video_prueba.mp4 en data/raw_videos: pasá --video <ruta>")
+        v = str(cand[0])
+    if not Path(v).is_file():
+        sys.exit(f"No encuentro el video: {v}")
     filas = [("cargar librerías (numpy, opencv, sklearn...)", T_IMPORT)]
     print(f"Video: {v}\n  {'cargar librerías':<55s} {T_IMPORT:7.1f} s", flush=True)
     cfg = PipelineConfig()

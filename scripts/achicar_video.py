@@ -7,7 +7,7 @@ el análisis: el original queda igual.
 
     python scripts/achicar_video.py --video "data/raw_videos/Videos_Andres/40V/1.mp4"
 
-Escribe data/raw_videos/_copias_chicas/<carpeta>_<video>_x<factor>.mp4 (gris,
+Escribe data/raw_videos/_copias_chicas/<carpeta>_<video>_x<porcentaje>.mp4 (x50 = mitad) (gris,
 mismo fps). Por defecto factor 0.5 (4K -> 1920x1080) y los primeros 70 s.
 """
 from __future__ import annotations
@@ -37,7 +37,7 @@ def main():
     w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) * a.factor) // 2 * 2
     h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) * a.factor) // 2 * 2
     nombre = f"{v.parent.name}_{v.stem}" if v.stem.isdigit() else v.stem
-    out = Path(a.salida) if a.salida else RAIZ / "data" / "raw_videos" / "_copias_chicas" / f"{nombre}_x{a.factor:g}.mp4"
+    out = Path(a.salida) if a.salida else RAIZ / "data" / "raw_videos" / "_copias_chicas" / f"{nombre}_x{round(100 * a.factor)}.mp4"
     out.parent.mkdir(parents=True, exist_ok=True)
     vw = cv2.VideoWriter(str(out), cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h), False)
     n, t0, maxn = 0, time.time(), int(a.segundos * fps)

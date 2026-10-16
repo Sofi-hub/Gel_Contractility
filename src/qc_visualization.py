@@ -219,8 +219,12 @@ def save_diagnostics(df: pd.DataFrame, output_path, summary: dict | None = None,
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    _write_xlsx(df, output_path.with_suffix(".xlsx"), summary, extra_sheets)
-    return output_path.with_suffix(".xlsx")
+    # 2026-10-16: no usar with_suffix: con un punto en el nombre ("..._x0.5")
+    # cortaba el nombre y el paso 2 no encontraba la serie.
+    destino = (output_path if output_path.suffix.lower() == ".xlsx"
+               else output_path.parent / (output_path.name + ".xlsx"))
+    _write_xlsx(df, destino, summary, extra_sheets)
+    return destino
 
 
 def _write_xlsx(df: pd.DataFrame, path, summary: dict | None = None,

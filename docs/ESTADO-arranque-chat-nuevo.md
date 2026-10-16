@@ -8,22 +8,19 @@ Actualizado 2026-10-11. Sirve para dos cosas: es el resumen del estado actual, y
 
 ```
 Continuamos gel_contractility (Tecnun), con el código.
-ANTES DE EMPEZAR leé del proyecto CLAUDE.md, claude/ESTADO-arranque-chat-nuevo.md y claude/pendientes.md. Leé el código desde mi carpeta (repo git): C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility. Traé los videos solo si una tarea lo pide.
+ANTES DE EMPEZAR leé del proyecto CLAUDE.md, claude/ESTADO-arranque-chat-nuevo.md y claude/pendientes.md (sección 0). Leé el código desde mi carpeta (repo git): C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility. Leé también data/_mediciones_fases/andres/LEEME.md. Traé los videos solo si una tarea lo pide, y NUNCA los originales de Andrés (520 MB, 4K): usá copias chicas hechas con scripts/achicar_video.py y no cargues un video entero en memoria.
 
-Reglas de siempre: medir y proponer primero, explicarme en simple, respuestas cortas, comandos de git juntos al final. Los documentos viven en docs/ del repo, con copia de los vigentes en el proyecto: si cambiás uno, actualizá los dos y verificá que lo que copiás a mi carpeta llegó bien (re-traerlo y comparar; una vez la copia quedó vieja aunque la herramienta dijo que había escrito). Verificación de cada cambio: tests (incluidos test_lote y test_visor), `python tests/test_regresion.py` y, si se toca ROI, bordes o RANSAC, `--completo`. Las versiones fijas están en requirements.txt.
+Reglas de siempre: medir y proponer primero, explicarme en simple, respuestas cortas, comandos de git juntos al final. Los documentos viven en docs/ del repo, con copia de los vigentes en el proyecto: si cambiás uno, actualizá los dos y verificá que lo que copiás a mi carpeta llegó bien (re-traerlo y comparar). Verificación de cada cambio: todos los tests (incluidos test_lote, test_visor, test_basal y test_orientacion), `python tests/test_regresion.py` y, si se toca ROI, bordes, RANSAC o la lectura del video, `--completo`. Versiones fijas en requirements.txt.
 
-Modo de trabajo: resolver lo que MENOS atención mía requiera.
+Modo de trabajo: resolver lo que MENOS atención mía requiera, sin gastar de más (si algo no avanza, pará y preguntame).
 * Si un cambio NO cambia ningún número (o solo agrega diagnósticos o mejora la ventana), hacelo directo, verificalo y copialo; contame al final.
 * Si cambia un número informado, medilo y dejame la propuesta con la tabla; no lo implementes sin mi visto bueno.
-* Mediciones largas: de fondo, revisarlas cada ~10 min; scripts y tablas en data/_mediciones_fases/<tema>/ con un LEEME.md.
+* Mediciones: scripts y tablas en data/_mediciones_fases/<tema>/ con un LEEME.md.
 * Al final, un resumen corto: qué se hizo, qué quedó esperando mi decisión, y los comandos de git.
 
-Dónde quedamos (2026-10-15): la ventana (Analizar / Resultados / Comparar) está probada en Windows y al equipo le gustó. main.py bajó de ~90 a ~50 s sin cambiar números. Hubo reunión con el equipo de Tecnun: respuestas en docs/preguntas-reunion-equipo.md (todos los videos con voltaje en el nombre son a 0.1 Hz; permiso para pasar la frecuencia conocida; el pico es el PRIMER instante en que se llega al máximo; la basal 0–10 s sirve para caracterizar espontáneas; quieren ver cada pulso y elegir cuáles promediar). Regla de nombres: "promedio" = media; donde es mediana, decir "mediana".
+Dónde quedamos (2026-10-16): hecho y aprobado: ventana (pulsos, selección y su media, Comparar con vistas de cinética), basal (C8), B6 (pico = primer fotograma >= 95 % del máximo), rotación automática para gel vertical. Los 11 resultados de processed_data están rehechos. Videos nuevos de Andrés (data/raw_videos/Videos_Andres/{10V,20V,40V}/{1,2,3}.mp4): 4K, gel vertical, borde = rampa granulada; el método por bordes NO los mide (0 eventos). Medido por textura (correlación de fase, sin bordes) en 40V/1: hay respuesta cada 10 s, ~1.9 px.
 
-Objetivo de este chat: la sección 0 de docs/pendientes.md, en este orden:
-A. Ventana (sin cambiar números, hacer directo): 1) textos promedio/mediana; 2) tabla de pulsos individuales visible; 3) elegir pulsos (p. ej. los 3 primeros estimulados) y ver su media; 4) comparar selecciones entre videos; 5) tests.
-B. Cambian números (medir y traerme la tabla, no implementar sin mi visto bueno): 6) pico = primer instante en que se llega al máximo (proponer cómo definirlo con ruido); 7) búsqueda dirigida a 0.1 Hz en 613 y 068.
-C. Nuevo: 8) resumen de la basal (medir en los 11 y mostrar la tabla primero). Después: videos de frecuencia y los videos nuevos de otra estudiante.
+Objetivo de este chat: decidir conmigo y, si lo apruebo, implementar una medición por desplazamiento de textura para estos videos (validada con un sintético de desplazamiento conocido y contra center_px en los 11 de referencia). Después: correr la carpeta de Andrés, y los videos de frecuencia (304, 341, 491).
 ```
 
 ---

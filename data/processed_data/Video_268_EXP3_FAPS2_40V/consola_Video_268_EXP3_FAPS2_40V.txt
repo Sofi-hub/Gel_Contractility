@@ -1,0 +1,33 @@
+==========================================================================
+Video_268_EXP3_FAPS2_40V   (2283 fotogramas, 77.1 s, 30.00 fps)
+  las contracciones mueven la franja hacia ABAJO en la imagen
+  ruido de fondo de la senal: 0.049 px
+
+  RESULTADO: 6 contracciones  (conteo confiable)
+    umbral: 12.5 x ruido, dentro de la zona estable k = 5.8-24.4, con 0 falsos de control
+    momentos (s): 12.67, 22.66, 32.66, 42.67, 52.67, 62.67
+    tiempo tipico entre eventos: 10.000 s  (0.1000 Hz)
+    amplitud mediana (todos los eventos): 1.547 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [6 de 6 pulsos, p = 0.001]
+    periodo: 10.00132 +- 0.00230 s  (0.09999 Hz) | capturados 100% | tren de 12.6 a 62.6 s
+    estimuladas: 6 | espontaneas: 0
+
+  CONTRACTILIDAD (estimulados, 6 eventos)
+    amplitud (mediana): 0.57 % del grosor en reposo = 1.55 px  (IC 95 % de la mediana 0.5491-0.603 %)
+    TTP (inicio -> pico): menos de 101 ms  (2 fotogramas)
+    RT50 (pico -> 50 % de relajacion): menos de 100 ms  (2 fotogramas)
+    (con menos de 5 fotogramas no se puede dar un valor, solo un maximo: la contraccion es mas rapida que la camara)
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    0 contraccion(es) en 10.0 s; actividad basal 0.04 % del grosor
+
+  ESTIMULADOR (Video_268_EXP3_FAPS2_40V): configurado 0.1 Hz, medido 0.09999 +- 0.000023 Hz -> indistinguible de lo configurado
+
+Archivos en /mnt/user-data/outputs/pd/Video_268_EXP3_FAPS2_40V:
+  contracciones_Video_268_EXP3_FAPS2_40V.xlsx
+  05_estabilidad_umbral_Video_268_EXP3_FAPS2_40V.png
+  09_contracciones_Video_268_EXP3_FAPS2_40V.png
+  10_ritmo_Video_268_EXP3_FAPS2_40V.png
+  11_cinetica_Video_268_EXP3_FAPS2_40V.png

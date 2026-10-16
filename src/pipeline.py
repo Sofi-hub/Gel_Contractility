@@ -85,6 +85,11 @@ class PipelineConfig:
     # correcto cuando la grabacion perdio frames (ver read_pts_seconds).
     base_tiempo: str = "pts"
 
+    # --- orientación (2026-10-15) ---
+    # None = automática (io_utils.elegir_rotacion sobre el mapa de máximos);
+    # 0, 90 o 270 = girar cada fotograma esos grados (horario) antes de todo.
+    rotacion: int | None = None
+
     # --- calibración y preproceso ---
     px_to_mm: float = 1.0        # mm por píxel. Calibrar con retícula.
     use_clahe: bool = True
@@ -231,7 +236,7 @@ def _procesar_fotogramas(video_path, x_positions, top_guess, bottom_guess, confi
     y eso costaba tanto como lo que se ganaba: en la notebook de Franco, 1 y 2
     procesos tardaban lo mismo (62 s). El calculo de cada fotograma es el mismo:
     el resultado es identico bit a bit con cualquier numero de procesos."""
-    frames = io_utils.frame_generator(video_path)
+    frames = io_utils.frame_generator(video_path, rotacion=getattr(config, "rotacion", 0) or 0)
     if n_procesos <= 1:
         for idx, frame in frames:
             yield idx, process_frame(frame, x_positions, top_guess, bottom_guess, config)
@@ -301,6 +306,24 @@ def process_video(
     # Una sola lectura para los timestamps y el mapa de maximos (antes eran
     # dos lecturas completas del video; el resultado es identico).
     pts, max_proj = io_utils.read_pts_and_max_projection(video_path, stride=5)
+    # Orientación: el máximo píxel a píxel no depende de girar antes o después,
+    # así que se decide y se gira sobre el mapa ya calculado.
+    cociente_or = io_utils.cociente_orientacion(max_proj)
+    if config.rotacion is None:
+        rot, _, dudosa = io_utils.elegir_rotacion(max_proj)
+        rot_modo = "automatica"
+    else:   # fijada a mano, o ya elegida en una pasada anterior (B1: reproceso a +-30)
+        rot, dudosa = int(config.rotacion) % 360, False
+        rot_modo = getattr(config, "_rotacion_modo", None) or "manual"
+    config.rotacion = rot          # la usan los fotogramas (y los procesos en paralelo)
+    config._rotacion_modo = rot_modo
+    max_proj = io_utils.rotar(max_proj, rot)
+    if verbose and rot:
+        print(f"  El gel está VERTICAL en el video: cada fotograma se gira {rot}° "
+              f"(cociente de orientación {cociente_or:.2f}; < 1 = vertical).")
+    if verbose and dudosa:
+        print(f"  AVISO: no está claro si el gel está horizontal o vertical (cociente "
+              f"{cociente_or:.2f}). Revisar 00_roi_profile; se puede fijar con --rotar 0 o 90.")
     n_pts = len(pts)
     dur_pts = float(pts[-1] - pts[0]) if n_pts > 1 else float("nan")
 
@@ -383,6 +406,10 @@ def process_video(
     df.attrs["fps_segun_pts"] = fps_pts
     df.attrs["n_huecos_pts"] = n_huecos
     df.attrs["dt_identicos_frac"] = dt_identicos
+    df.attrs["rotacion"] = rot
+    df.attrs["rotacion_modo"] = rot_modo
+    df.attrs["cociente_orientacion"] = cociente_or
+    df.attrs["orientacion_dudosa"] = dudosa
 
     # ERROR DE MODELO (Fase 4, H24): cuanto se aparta la parabola del borde
     # de forma ESTABLE. Para cada columna, la mediana en el tiempo de su

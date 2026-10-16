@@ -1,0 +1,32 @@
+==========================================================================
+Video_466_EXP5_FAPS4_40V   (2076 fotogramas, 71.7 s, 30.00 fps)
+  las contracciones mueven la franja hacia ABAJO en la imagen
+  ruido de fondo de la senal: 0.182 px
+
+  RESULTADO: 5 contracciones  (conteo confiable)
+    umbral: 11.4 x ruido, dentro de la zona estable k = 6.4-20.2, con 0 falsos de control
+    momentos (s): 14.24, 24.32, 34.28, 44.34, 54.28
+    tiempo tipico entre eventos: 10.012 s  (0.0999 Hz)
+    amplitud mediana (todos los eventos): 4.358 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [5 de 5 pulsos, p = 0.001]
+    periodo: 10.00184 +- 0.00542 s  (0.09998 Hz) | capturados 100% | tren de 14.0 a 54.0 s
+    estimuladas: 5 | espontaneas: 0
+
+  CONTRACTILIDAD (estimulados, 5 eventos)
+    amplitud (mediana): 2.16 % del grosor en reposo = 4.36 px  (IC 95 % de la mediana 1.925-2.321 %)
+    TTP (inicio -> pico): 183 ms  (mediana de 5 medibles; intervalo [137, 365] ms; IC 95 % 152-292 ms)
+    RT50 (pico -> 50 % de relajacion): 226 ms  (mediana de 4 medibles; intervalo [33, 260] ms; IC 95 % 158-292 ms)
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    0 contraccion(es) en 10.0 s; actividad basal 0.21 % del grosor
+
+  ESTIMULADOR (Video_466_EXP5_FAPS4_40V): configurado 0.1 Hz, medido 0.09998 +- 0.000054 Hz -> indistinguible de lo configurado
+
+Archivos en /mnt/user-data/outputs/pd/Video_466_EXP5_FAPS4_40V:
+  contracciones_Video_466_EXP5_FAPS4_40V.xlsx
+  05_estabilidad_umbral_Video_466_EXP5_FAPS4_40V.png
+  09_contracciones_Video_466_EXP5_FAPS4_40V.png
+  10_ritmo_Video_466_EXP5_FAPS4_40V.png
+  11_cinetica_Video_466_EXP5_FAPS4_40V.png

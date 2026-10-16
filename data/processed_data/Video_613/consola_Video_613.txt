@@ -1,0 +1,29 @@
+==========================================================================
+Video_613   (2179 fotogramas, 73.8 s, 30.00 fps)
+  los eventos mueven la franja hacia ABAJO en la imagen
+  ruido de fondo de la senal: 0.029 px
+  nota: 1 evento(s) muy cerca del principio o del final del video: su linea de base es menos precisa (columna 'junto_al_borde' de la hoja eventos_*).
+
+  RESULTADO: NO REPORTABLE -> no hay meseta en el escaneo de k.
+    Hay 24 candidatos, pero el control con la senal invertida no permite separarlos del ruido o la vibracion.
+    Los tiempos de abajo son para revisar el video, NO para informar.
+    momentos (s): 0.39, 1.39, 2.05, 2.89, 3.09, 3.93, 4.30, 10.99, 53.89, 54.12, 64.89, 65.75, 65.95, 66.26, 66.39, 67.49, 67.59, 68.55, 70.16, 70.39, 70.59, 70.82, 71.72, 71.85
+    tiempo tipico entre eventos: 0.667 s  (1.5000 Hz)
+    amplitud mediana (todos los eventos): 0.320 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda libre: no se encontro un tren periodico que se distinga del azar  [4 de 6 pulsos, p = 0.897]
+    estimuladas: 0 | espontaneas: 24   (candidatos: no se informa)
+
+  CONTRACTILIDAD (todos, 24 eventos)
+    no se informa: el conteo no es reportable.
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    no contable (conteo NO reportable); actividad basal 0.10 % del grosor
+
+Archivos en /mnt/user-data/outputs/pd/Video_613:
+  contracciones_Video_613.xlsx
+  05_estabilidad_umbral_Video_613.png
+  09_contracciones_Video_613.png
+  10_ritmo_Video_613.png
+  11_cinetica_Video_613.png

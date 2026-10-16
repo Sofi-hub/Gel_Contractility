@@ -1,0 +1,36 @@
+==========================================================================
+Video_063_CTRL1_5V   (1848 fotogramas, 61.8 s, 30.00 fps)
+  las contracciones mueven la franja hacia ABAJO en la imagen
+  ruido de fondo de la senal: 0.024 px
+  nota: 1 evento(s) muy cerca del principio o del final del video: su linea de base es menos precisa (columna 'junto_al_borde' de la hoja eventos_*).
+
+  RESULTADO: 6 contracciones  (conteo confiable)
+    umbral: 11.4 x ruido, dentro de la zona estable k = 9.4-13.8, con 0 falsos de control
+    (hay otra zona estable con 5 eventos en k = 15.2-24.4: se usa la de umbral mas bajo)
+    momentos (s): 0.31, 11.91, 21.91, 31.91, 41.91, 51.91
+    tiempo tipico entre eventos: 10.000 s  (0.1000 Hz)
+    amplitud mediana (todos los eventos): 1.590 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [5 de 5 pulsos, p = 0.001]
+    periodo: 9.99812 +- 0.00304 s  (0.10002 Hz) | capturados 100% | tren de 11.9 a 51.9 s
+    estimuladas: 5 | espontaneas: 1
+
+  CONTRACTILIDAD (estimulados, 5 eventos)
+    amplitud (mediana): 0.56 % del grosor en reposo = 1.59 px  (IC 95 % de la mediana 0.523-0.5827 %)
+    TTP (inicio -> pico): menos de 100 ms  (2 fotogramas)
+    RT50 (pico -> 50 % de relajacion): menos de 100 ms  (2 fotogramas)
+    (con menos de 5 fotogramas no se puede dar un valor, solo un maximo: la contraccion es mas rapida que la camara)
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    1 contraccion(es) en 10.0 s; amplitud mediana 0.13 %; actividad basal 0.02 % del grosor
+    (1 pegada(s) al inicio del video: amplitud menos segura)
+
+  ESTIMULADOR (Video_063_CTRL1_5V): configurado 0.1 Hz, medido 0.10002 +- 0.000030 Hz -> indistinguible de lo configurado
+
+Archivos en /mnt/user-data/outputs/pd/Video_063_CTRL1_5V:
+  contracciones_Video_063_CTRL1_5V.xlsx
+  05_estabilidad_umbral_Video_063_CTRL1_5V.png
+  09_contracciones_Video_063_CTRL1_5V.png
+  10_ritmo_Video_063_CTRL1_5V.png
+  11_cinetica_Video_063_CTRL1_5V.png

@@ -15,10 +15,45 @@ import cv2
 import numpy as np
 
 
+# ---- orientación del gel (2026-10-15, videos de Andrés: gel VERTICAL) ----
+# Todo el pipeline supone el gel HORIZONTAL (bordes arriba y abajo de cada
+# columna). Si en el video está vertical, cada fotograma se gira 90° apenas se
+# lee y el resto no cambia. Con rotacion = 0 no se toca nada (mismo objeto: los
+# 11 videos de referencia dan idéntico bit a bit).
+ROTACIONES = {0: None, 90: cv2.ROTATE_90_CLOCKWISE, 270: cv2.ROTATE_90_COUNTERCLOCKWISE}
+
+
+def rotar(img: np.ndarray, rotacion: int) -> np.ndarray:
+    """Gira la imagen `rotacion` grados en sentido horario (0, 90 o 270)."""
+    if not rotacion:
+        return img
+    return cv2.rotate(img, ROTACIONES[int(rotacion)])
+
+
+def cociente_orientacion(img: np.ndarray) -> float:
+    """Variación del perfil promedio a lo largo de y dividida por la de x.
+    Gel horizontal: > 1 (medido en los 11 videos: 3.0-13.8). Vertical: < 1
+    (los mismos girados: 0.07-0.33; captura de Andrés: 0.05).
+    data/_mediciones_fases/orientacion/."""
+    g = img.astype(float)
+    py, px = g.mean(axis=1), g.mean(axis=0)
+    vy = np.percentile(py, 95) - np.percentile(py, 5)
+    vx = np.percentile(px, 95) - np.percentile(px, 5)
+    return float(vy / max(vx, 1e-9))
+
+
+def elegir_rotacion(max_proj: np.ndarray) -> tuple[int, float, bool]:
+    """(rotación en grados, cociente, dudosa). Se gira si el cociente es < 1.
+    'dudosa' si está entre 0.5 y 2 (ningún video medido cae ahí)."""
+    c = cociente_orientacion(max_proj)
+    return (90 if c < 1.0 else 0), c, bool(0.5 <= c <= 2.0)
+
+
 def frame_generator(
     video_path: str | Path,
     start_frame: int = 0,
     end_frame: Optional[int] = None,
+    rotacion: int = 0,
 ) -> Generator[tuple[int, np.ndarray], None, None]:
     """
     Generador perezoso de frames en escala de grises.
@@ -49,7 +84,7 @@ def frame_generator(
                 break
             if frame.ndim == 3:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            yield idx, frame
+            yield idx, rotar(frame, rotacion)
             idx += 1
     finally:
         cap.release()

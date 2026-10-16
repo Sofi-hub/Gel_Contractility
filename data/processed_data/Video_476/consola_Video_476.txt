@@ -1,0 +1,33 @@
+==========================================================================
+Video_476   (2165 fotogramas, 73.1 s, 30.00 fps)
+  las contracciones mueven la franja hacia ABAJO en la imagen
+  ruido de fondo de la senal: 0.115 px
+
+  RESULTADO: 6 contracciones  (conteo confiable)
+    umbral: 9.4 x ruido, dentro de la zona estable k = 7.1-12.5, con 0 falsos de control
+    momentos (s): 11.32, 21.40, 31.36, 41.39, 51.36, 61.36
+    tiempo tipico entre eventos: 9.998 s  (0.1000 Hz)
+    amplitud mediana (todos los eventos): 1.691 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [6 de 6 pulsos, p = 0.001]
+    periodo: 10.00051 +- 0.00260 s  (0.09999 Hz) | capturados 100% | tren de 11.3 a 61.3 s
+    estimuladas: 6 | espontaneas: 0
+
+  CONTRACTILIDAD (estimulados, 6 eventos)
+    amplitud (mediana): 0.64 % del grosor en reposo = 1.69 px  (IC 95 % de la mediana 0.6116-0.6614 %)
+    TTP (inicio -> pico): menos de 155 ms  (2 fotogramas)
+    RT50 (pico -> 50 % de relajacion): menos de 167 ms  (3.5 fotogramas)
+    (con menos de 5 fotogramas no se puede dar un valor, solo un maximo: la contraccion es mas rapida que la camara)
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    0 contraccion(es) en 10.0 s; actividad basal 0.10 % del grosor
+
+  ESTIMULADOR (Video_476): configurado 0.1 Hz, medido 0.09999 +- 0.000026 Hz -> indistinguible de lo configurado
+
+Archivos en /mnt/user-data/outputs/pd/Video_476:
+  contracciones_Video_476.xlsx
+  05_estabilidad_umbral_Video_476.png
+  09_contracciones_Video_476.png
+  10_ritmo_Video_476.png
+  11_cinetica_Video_476.png

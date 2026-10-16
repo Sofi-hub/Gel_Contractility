@@ -639,6 +639,11 @@ def fotograma(r: Resultado, i: int):
         raise RuntimeError(f"No pude leer el fotograma {nro} de {video.name}")
     if img.ndim == 3:
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    from src.io_utils import rotar        # 2026-10-15: el mismo giro que usó main.py
+    try:
+        img = rotar(img, int(float(r.serie_meta.get("rotacion (grados)", 0) or 0)))
+    except (TypeError, ValueError):
+        pass
     x0 = float(r.serie_meta.get("ROI x_start", 0))
     x1 = float(r.serie_meta.get("ROI x_end", img.shape[1]))
     return img, x0, x1, float(fila["y_top_px"]), float(fila["y_bottom_px"]), nro

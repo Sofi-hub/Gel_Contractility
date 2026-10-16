@@ -1,0 +1,36 @@
+==========================================================================
+Video_prueba   (2007 fotogramas, 67.5 s, 30.00 fps)
+  las contracciones mueven la franja hacia ABAJO en la imagen
+  ruido de fondo de la senal: 0.085 px
+  nota: 2 evento(s) muy cerca del principio o del final del video: su linea de base es menos precisa (columna 'junto_al_borde' de la hoja eventos_*).
+
+  RESULTADO: 29 contracciones  (conteo confiable)
+    umbral: 9.4 x ruido, dentro de la zona estable k = 5.3-15.2, con 0 falsos de control
+    momentos (s): 0.34, 0.91, 1.47, 2.04, 2.60, 3.17, 3.74, 4.31, 4.87, 5.45, 5.97, 6.57, 7.28, 7.67, 8.28, 9.34, 9.94, 10.54, 11.67, 14.94, 15.28, 15.55, 15.84, 16.30, 24.94, 34.94, 44.94, 54.94, 64.94
+    tiempo tipico entre eventos: 0.573 s  (1.7442 Hz)
+    amplitud mediana (todos los eventos): 2.094 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [6 de 6 pulsos, p = 0.001]
+    periodo: 10.00043 +- 0.00230 s  (0.10000 Hz) | capturados 100% | tren de 14.9 a 64.9 s
+    sacado del tren: el de 4.82 s (corrido -58 ms y amplitud 2.10 px contra 6.81 px del tren)
+    estimuladas: 6 | espontaneas: 23
+
+  CONTRACTILIDAD (estimulados, 6 eventos)
+    amplitud (mediana): 2.31 % del grosor en reposo = 6.81 px  (IC 95 % de la mediana 2.258-2.384 %)
+    TTP (inicio -> pico): menos de 101 ms  (2 fotogramas)
+    RT50 (pico -> 50 % de relajacion): menos de 101 ms  (2 fotogramas)
+    (con menos de 5 fotogramas no se puede dar un valor, solo un maximo: la contraccion es mas rapida que la camara)
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    17 contraccion(es) en 10.0 s; amplitud mediana 0.71 %; frecuencia mediana 1.76 Hz (IQR 1.67-1.77); actividad basal 0.67 % del grosor
+    (2 pegada(s) al inicio del video: amplitud menos segura)
+
+  ESTIMULADOR (Video_prueba): configurado 0.1 Hz, medido 0.10000 +- 0.000023 Hz -> indistinguible de lo configurado
+
+Archivos en /mnt/user-data/outputs/pd/Video_prueba:
+  contracciones_Video_prueba.xlsx
+  05_estabilidad_umbral_Video_prueba.png
+  09_contracciones_Video_prueba.png
+  10_ritmo_Video_prueba.png
+  11_cinetica_Video_prueba.png

@@ -7,6 +7,10 @@
   {
    "fecha": "2026-10-10",
    "motivo": "B1: ventana automatica; 304 pasa a +-15"
+  },
+  {
+   "fecha": "2026-10-15",
+   "motivo": "B6 (2026-10-15, aprobado por Franco): pico = primer fotograma >= 95% del maximo; cambia TTP/RT50 de 466, 583 y 491"
   }
  ],
  "videos": {
@@ -211,8 +215,8 @@
    "n_estimulados": 5,
    "periodo_s": 10.00184,
    "periodo_err_s": 0.00542,
-   "ttp_s": 0.25498901098900717,
-   "rt50_s": 0.19203693931397936
+   "ttp_s": 0.18333996342021308,
+   "rt50_s": 0.2264475189478592
   },
   "Video_583_EXP6_CTRL4_40V": {
    "roi": [
@@ -251,8 +255,8 @@
    "n_estimulados": 6,
    "periodo_s": 10.00024,
    "periodo_err_s": 0.0023,
-   "ttp_s": 0.2578112034419462,
-   "rt50_s": 0.18102789816328269
+   "ttp_s": 0.18902327859586698,
+   "rt50_s": 0.2524442389397539
   },
   "Video_491_EXP5_CTRL1_36HZ": {
    "roi": [
@@ -283,8 +287,8 @@
    "n_estimulados": null,
    "periodo_s": null,
    "periodo_err_s": null,
-   "ttp_s": 0.5698358797361323,
-   "rt50_s": 0.4665204478323792
+   "ttp_s": 0.5565025464027968,
+   "rt50_s": 0.47985378116571464
   },
   "Video_476": {
    "roi": [

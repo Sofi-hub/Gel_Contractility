@@ -1,0 +1,29 @@
+==========================================================================
+Video_341   (1833 fotogramas, 61.6 s, 30.00 fps)
+  los eventos mueven la franja hacia ARRIBA en la imagen
+  ruido de fondo de la senal: 0.103 px
+  nota: 2 evento(s) muy cerca del principio o del final del video: su linea de base es menos precisa (columna 'junto_al_borde' de la hoja eventos_*).
+
+  RESULTADO: NO REPORTABLE -> no hay meseta en el escaneo de k.
+    Hay 22 candidatos, pero el control con la senal invertida no permite separarlos del ruido o la vibracion.
+    Los tiempos de abajo son para revisar el video, NO para informar.
+    momentos (s): 0.57, 0.88, 1.41, 1.71, 2.29, 2.81, 3.37, 3.64, 4.17, 4.44, 4.97, 5.77, 7.31, 7.82, 36.01, 36.35, 38.35, 39.01, 40.64, 41.27, 43.55, 46.68
+    tiempo tipico entre eventos: 0.567 s  (1.7647 Hz)
+    amplitud mediana (todos los eventos): 0.996 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda libre: no se encontro un tren periodico que se distinga del azar  [7 de 9 pulsos, p = 0.967]
+    estimuladas: 0 | espontaneas: 22   (candidatos: no se informa)
+
+  CONTRACTILIDAD (todos, 22 eventos)
+    no se informa: el conteo no es reportable.
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    no contable (conteo NO reportable); actividad basal 0.39 % del grosor
+
+Archivos en /mnt/user-data/outputs/pd/Video_341:
+  contracciones_Video_341.xlsx
+  05_estabilidad_umbral_Video_341.png
+  09_contracciones_Video_341.png
+  10_ritmo_Video_341.png
+  11_cinetica_Video_341.png

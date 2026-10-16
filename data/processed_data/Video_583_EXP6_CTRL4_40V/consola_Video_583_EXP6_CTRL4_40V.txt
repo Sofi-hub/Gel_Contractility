@@ -1,0 +1,32 @@
+==========================================================================
+Video_583_EXP6_CTRL4_40V   (2236 fotogramas, 75.3 s, 30.00 fps)
+  las contracciones mueven la franja hacia ABAJO en la imagen
+  ruido de fondo de la senal: 0.072 px
+
+  RESULTADO: 6 contracciones  (conteo confiable)
+    umbral: 16.7 x ruido, dentro de la zona estable k = 12.5-24.4, con 0 falsos de control
+    momentos (s): 11.22, 21.29, 31.29, 41.25, 51.26, 61.25
+    tiempo tipico entre eventos: 10.002 s  (0.1000 Hz)
+    amplitud mediana (todos los eventos): 3.095 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [6 de 6 pulsos, p = 0.001]
+    periodo: 10.00024 +- 0.00230 s  (0.10000 Hz) | capturados 100% | tren de 11.0 a 61.0 s
+    estimuladas: 6 | espontaneas: 0
+
+  CONTRACTILIDAD (estimulados, 6 eventos)
+    amplitud (mediana): 1.31 % del grosor en reposo = 3.10 px  (IC 95 % de la mediana 1.258-1.329 %)
+    TTP (inicio -> pico): 189 ms  (mediana de 6 medibles; intervalo [129, 335] ms; IC 95 % 157-192 ms)
+    RT50 (pico -> 50 % de relajacion): 252 ms  (mediana de 6 medibles; intervalo [99, 301] ms; IC 95 % 248-282 ms)
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    0 contraccion(es) en 10.0 s; actividad basal 0.08 % del grosor
+
+  ESTIMULADOR (Video_583_EXP6_CTRL4_40V): configurado 0.1 Hz, medido 0.10000 +- 0.000023 Hz -> indistinguible de lo configurado
+
+Archivos en /mnt/user-data/outputs/pd/Video_583_EXP6_CTRL4_40V:
+  contracciones_Video_583_EXP6_CTRL4_40V.xlsx
+  05_estabilidad_umbral_Video_583_EXP6_CTRL4_40V.png
+  09_contracciones_Video_583_EXP6_CTRL4_40V.png
+  10_ritmo_Video_583_EXP6_CTRL4_40V.png
+  11_cinetica_Video_583_EXP6_CTRL4_40V.png

@@ -1,0 +1,15 @@
+==========================================================================
+Video_068_hw30   (1843 fotogramas, 62.5 s, 30.00 fps)
+  los eventos mueven la franja hacia ARRIBA en la imagen
+  ruido de fondo de la senal: 3.669 px
+
+  RESULTADO: NO REPORTABLE -> no hay meseta en el escaneo de k.
+    Con el umbral de auditoria no queda ningun candidato.
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    no contable (conteo NO reportable); actividad basal 2.09 % del grosor
+
+Archivos en /mnt/user-data/outputs/pd/Video_068_hw30:
+  contracciones_Video_068_hw30.xlsx
+  05_estabilidad_umbral_Video_068_hw30.png
+  09_contracciones_Video_068_hw30.png

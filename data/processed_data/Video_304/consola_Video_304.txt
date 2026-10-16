@@ -1,0 +1,15 @@
+==========================================================================
+Video_304   (2233 fotogramas, 75.5 s, 30.00 fps)
+  los eventos mueven la franja hacia ABAJO en la imagen
+  ruido de fondo de la senal: 0.415 px
+
+  RESULTADO: NO REPORTABLE -> no hay meseta en el escaneo de k.
+    Con el umbral de auditoria no queda ningun candidato.
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    no contable (conteo NO reportable); actividad basal 0.39 % del grosor
+
+Archivos en /mnt/user-data/outputs/pd/Video_304:
+  contracciones_Video_304.xlsx
+  05_estabilidad_umbral_Video_304.png
+  09_contracciones_Video_304.png

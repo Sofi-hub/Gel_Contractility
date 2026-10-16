@@ -14,8 +14,11 @@ Sea A = r[pico] la amplitud (la misma `amplitud_px` que ya se reporta: la
 linea de base es la mediana movil que quita la deriva).
 
   onset   primer cruce del 10 % de A caminando HACIA ATRAS desde el pico.
+  pico    (B6, 2026-10-15) el PRIMER fotograma que llega al 95 % de A, en el
+          tramo continuo que termina en el maximo (antes: el fotograma mas
+          alto, que en una meseta lo decidia el ruido).
   TTP     t(pico) - t(onset).
-  RT50    t(cruce del 50 % de A despues del pico) - t(pico). Es el tiempo hasta
+  RT50    t(cruce del 50 % de A despues del maximo) - t(pico). Es el tiempo hasta
           caer a la MITAD DE LA AMPLITUD, como lo define el paper (eLife). No es
           "la mitad de la duracion de la relajacion", que es lo que calculaba
           `Half_Relax_Time` en Contraction_Analysis.mlx (ver
@@ -86,6 +89,10 @@ NIVEL_ONSET = 0.10     # fraccion de A que define onset y offset
 NIVEL_RT = 0.50        # fraccion de A que define RT50
 Z_PICO = 2.0           # fotogramas a menos de Z_PICO*ruido del maximo = meseta del pico
 MIN_FRAMES = 5         # fotogramas minimos para que TTP / RT50 sean medibles
+NIVEL_PICO = 0.95      # B6 (2026-10-15, aprobado): el pico es el PRIMER fotograma
+                       # que llega al 95 % del maximo (respuesta del equipo: "el
+                       # primer instante en que se llega al maximo"). Medido en
+                       # data/_mediciones_fases/b6_pico_primer_instante/.
 
 
 def _cruce_atras(r: np.ndarray, p: int, nivel: float, lim: int):
@@ -177,17 +184,29 @@ def cinetica_eventos(t: np.ndarray, r: np.ndarray, picos: np.ndarray, ruido: flo
 
         p_lo, p_hi = _meseta_pico(r, p, A - Z_PICO * ruido, lo + 1, hi - 1)
         f["meseta_pico_frames"] = int(p_hi - p_lo + 1)
+        # B6: instante del pico para TTP y RT50 = primer fotograma del tramo
+        # continuo >= 95 % de A que termina en el maximo. La amplitud sigue
+        # siendo el maximo (A = r[p]) y frame_pico/tiempo_s siguen siendo el
+        # fotograma mas alto (alineacion de dibujos, ficha).
+        q = p
+        while q - 1 > lo and np.isfinite(r[q - 1]) and r[q - 1] >= NIVEL_PICO * A:
+            q -= 1
+        p_lo = min(p_lo, q)
+        f["frame_llega_max"] = int(q)
+        f["tiempo_llega_max_s"] = float(t[q])
+        # el 5 % de la amplitud es menor que 2 ruidos: el fotograma lo decide el ruido
+        f["pico_dudoso_por_ruido"] = bool((1 - NIVEL_PICO) * A < Z_PICO * ruido)
 
         # --- subida: onset y TTP ----------------------------------------
         on = _cruce_atras(r, p, NIVEL_ONSET * A, lo)
         if on is not None:
             t_on = _interp(t, r, on, on + 1, NIVEL_ONSET * A)
             f["onset_s"] = t_on
-            f["ttp_frames"] = int(p - on)
-            f["ttp_s"] = float(t[p] - t_on)
+            f["ttp_frames"] = int(q - on)
+            f["ttp_s"] = float(t[q] - t_on)
             f["ttp_min_s"] = max(0.0, float(t[max(p_lo - 1, 0)] - t[on + 1]))
             f["ttp_max_s"] = float(t[min(p_hi + 1, n - 1)] - t[on])
-            f["ttp_medible"] = bool(p - on >= min_frames)
+            f["ttp_medible"] = bool(q - on >= min_frames)
         else:
             f.update(onset_s=np.nan, ttp_frames=np.nan, ttp_s=np.nan,
                      ttp_min_s=np.nan, ttp_max_s=np.nan, ttp_medible=False)
@@ -196,11 +215,11 @@ def cinetica_eventos(t: np.ndarray, r: np.ndarray, picos: np.ndarray, ruido: flo
         j50 = _cruce_adelante(r, p, NIVEL_RT * A, hi)
         if j50 is not None:
             t50 = _interp(t, r, j50 - 1, j50, NIVEL_RT * A)
-            f["rt50_frames"] = int(j50 - p)
-            f["rt50_s"] = float(t50 - t[p])
+            f["rt50_frames"] = int(j50 - q)
+            f["rt50_s"] = float(t50 - t[q])
             f["rt50_min_s"] = max(0.0, float(t[j50 - 1] - t[min(p_hi + 1, n - 1)]))
             f["rt50_max_s"] = float(t[j50] - t[max(p_lo - 1, 0)])
-            f["rt50_medible"] = bool(j50 - p >= min_frames)
+            f["rt50_medible"] = bool(j50 - q >= min_frames)
         else:
             f.update(rt50_frames=np.nan, rt50_s=np.nan, rt50_min_s=np.nan,
                      rt50_max_s=np.nan, rt50_medible=False)
@@ -217,6 +236,7 @@ def cinetica_eventos(t: np.ndarray, r: np.ndarray, picos: np.ndarray, ruido: flo
 
     cols = ["evento", "frame_pico", "tiempo_s", "amplitud_px", "grosor_reposo_px",
             "amplitud_relativa_pct", "meseta_pico_frames",
+            "frame_llega_max", "tiempo_llega_max_s", "pico_dudoso_por_ruido",
             "onset_s", "ttp_frames", "ttp_s", "ttp_min_s", "ttp_max_s", "ttp_medible",
             "rt50_frames", "rt50_s", "rt50_min_s", "rt50_max_s", "rt50_medible",
             "offset_s", "duracion_frames", "duracion_s"]

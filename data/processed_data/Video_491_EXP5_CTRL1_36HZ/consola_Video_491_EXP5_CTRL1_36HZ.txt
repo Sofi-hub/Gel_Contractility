@@ -1,0 +1,24 @@
+==========================================================================
+Video_491_EXP5_CTRL1_36HZ   (1846 fotogramas, 62.2 s, 30.00 fps)
+  las contracciones mueven la franja hacia ARRIBA en la imagen
+  ruido de fondo de la senal: 0.068 px
+
+  RESULTADO: 2 contracciones  (conteo confiable)
+    umbral: 10.4 x ruido, dentro de la zona estable k = 7.8-13.8, con 0 falsos de control
+    momentos (s): 13.01, 33.96
+    tiempo tipico entre eventos: 20.950 s  (0.0477 Hz)
+    amplitud mediana (todos los eventos): 1.015 px
+
+  CONTRACTILIDAD (todos, 2 eventos)
+    amplitud (mediana): 0.40 % del grosor en reposo = 1.02 px
+    TTP (inicio -> pico): 557 ms  (mediana de 2 medibles; intervalo [386, 1068] ms)
+    RT50 (pico -> 50 % de relajacion): 480 ms  (mediana de 2 medibles; intervalo [0, 648] ms)
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    0 contraccion(es) en 10.0 s; actividad basal 0.07 % del grosor
+
+Archivos en /mnt/user-data/outputs/pd/Video_491_EXP5_CTRL1_36HZ:
+  contracciones_Video_491_EXP5_CTRL1_36HZ.xlsx
+  05_estabilidad_umbral_Video_491_EXP5_CTRL1_36HZ.png
+  09_contracciones_Video_491_EXP5_CTRL1_36HZ.png
+  11_cinetica_Video_491_EXP5_CTRL1_36HZ.png

@@ -205,6 +205,8 @@ def parse_args():
                         "para comparar desp_vert_px con center_px.")
     p.add_argument("--stride", type=int, default=1, help="Procesar 1 de cada N cuadros.")
     p.add_argument("--max-frames", type=int, default=None)
+    p.add_argument("--rotar", default="auto", choices=["auto", "0", "90", "270"],
+                   help="Como en main.py: girar los fotogramas para que el gel quede horizontal.")
     p.add_argument("--verbose", action="store_true",
                    help="Imprime tambien la tabla por canal, la zona y el detalle de |dI|. "
                         "Todo queda igual en movimiento_<video>.xlsx.")
@@ -227,6 +229,11 @@ def main():
     # fotograma / fps declarado el error llegaba a 0.33 s a mitad del video.
     # Timestamps y mapa de maximos en una sola lectura (como main.py).
     pts, max_proj = io_utils.read_pts_and_max_projection(a.video, stride=5)
+    # 2026-10-15: gel vertical -> girar, con la misma regla que main.py
+    rot = io_utils.elegir_rotacion(max_proj)[0] if a.rotar == "auto" else int(a.rotar)
+    max_proj = io_utils.rotar(max_proj, rot)
+    if rot:
+        print(f"  gel vertical: cada fotograma se gira {rot}°")
     roi = preprocessing.auto_detect_roi(
         max_proj, thickness_tolerance=a.roi_tolerance,
         min_gradient_for_roi=a.roi_min_gradient, max_thickness_slope=a.roi_max_slope,
@@ -274,7 +281,7 @@ def main():
     ref_axial = None
     ref_vert = None
     rows = []
-    for idx, frame in io_utils.frame_generator(a.video):
+    for idx, frame in io_utils.frame_generator(a.video, rotacion=rot):
         if idx % a.stride != 0:
             continue
         if a.max_frames is not None and len(rows) >= a.max_frames:

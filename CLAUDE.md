@@ -24,6 +24,9 @@ automatizada, reproducible y **verificable**, a partir de video de microscopía.
 4. **Cuatro series temporales, no una.** `y_top_px`, `y_bottom_px`,
    `thickness_px` (la resta) y `center_px` (el promedio).
 5. **Eje temporal desde los timestamps del contenedor**, no `fotograma / fps`.
+   **Orientación (2026-10-15):** todo supone el gel horizontal; si en el video está
+   vertical (videos de Andrés), cada fotograma se gira 90° al leerlo (`--rotar auto`,
+   default; regla medida en `data/_mediciones_fases/orientacion/`).
 6. **Detección de eventos** sobre `center_px`, con elección automática del
    umbral dentro de la meseta y control de falsos positivos.
 7. **Separación de estimuladas y espontáneas** por enganche de fase
@@ -120,7 +123,10 @@ muestras rápidas.** En tres de los cinco videos la contracción entera dura 2
 fotogramas y la subida 1. Ahí sólo se puede afirmar una cota (`TTP < 100 ms`:
 tres intervalos de muestreo, porque el pico verdadero puede estar un fotograma
 después del muestreado; la versión anterior decía 67 ms y era demasiado
-optimista), no un valor. Implementado en `src/cinetica.py`: el reporte da el
+optimista), no un valor. Implementado en `src/cinetica.py`. **El pico (B6, 2026-10-15, aprobado):** para
+TTP y RT50 es el **primer fotograma que llega al 95 % del máximo** (el equipo: "el
+primer instante en que se llega al máximo"); antes era el fotograma más alto, que
+en una meseta lo decidía el ruido (466 TTP 255 → 183 ms). El reporte da el
 valor sólo si la subida (o la bajada al 50 %) abarca ≥ 5 fotogramas, y si no,
 sólo la cota. Para medirlo hacen falta 200–300 fps. Ver
 `docs/metricas-cinetica-TTP-RT50.md`.
@@ -237,6 +243,7 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     scripts/informe.py              paso 4: informe_<carpeta>.html de una pagina; solo LEE los Excel y figuras
     configuracion.ini               valores con que arranca la ventana (sin parametros del analisis, a proposito)
     tests/test_lote.py              la tabla de procesar_carpeta lee bien los Excel (no recalcula)
+    tests/test_orientacion.py       gel vertical: rotación automática, mismo resultado que horizontal
     tests/test_basal.py             resumen de la basal (C8): conteo, frecuencia y actividad en 5 videos
     docs/                           documentación vigente; docs/historia/ = propuestas y diagnósticos de fases cerradas
     docs/pendientes.md              la lista ÚNICA de lo que falta

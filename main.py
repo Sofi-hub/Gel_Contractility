@@ -97,6 +97,10 @@ def parse_args():
                         "1 -> 108 s, 2 -> 102 s, 4 -> 102 s, 7 -> 127 s; lo que tarda es "
                         "leer el video, que va en serie. 1 = en serie. El resultado es "
                         "identico con cualquier valor; solo cambia la velocidad.")
+    p.add_argument("--rotar", default="auto", choices=["auto", "0", "90", "270"],
+                   help="Girar cada fotograma (grados, horario) para que el gel quede "
+                        "horizontal. 'auto' (default) lo decide solo: gira 90 si el gel "
+                        "está vertical en el video (videos de Andrés, 2026-10-15).")
     p.add_argument("--plot", action="store_true", help="Genera la curva de grosor vs tiempo")
 
     g = p.add_argument_group("muestreo y deteccion de borde")
@@ -191,6 +195,7 @@ def main():
         use_clahe=not args.no_clahe,
         savgol_window=args.savgol_window,
         low_quality_frac=args.low_quality_frac,
+        rotacion=None if args.rotar == "auto" else int(args.rotar),
     )
 
     print(f"Procesando {args.video} ...")
@@ -248,6 +253,9 @@ def main():
         "n_columnas usadas": q.get("n_columnas_usadas"),
         "roi_min_columnas": args.roi_min_columnas,
         "outlier_frac medio": round(float(df["outlier_frac"].mean()), 4),
+        "rotacion (grados)": df.attrs.get("rotacion", 0),
+        "rotacion eleccion": df.attrs.get("rotacion_modo"),
+        "cociente de orientacion": round(float(df.attrs.get("cociente_orientacion", float("nan"))), 3),
         "half_window": config.half_window,
         "half_window eleccion": hw_motivo,
         "fotogramas con bordes en el limite (%)": round(100 * lim, 2),

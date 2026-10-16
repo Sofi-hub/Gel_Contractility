@@ -143,6 +143,8 @@ Dónde quedó todo:
 - `serie_temporal_<video>.xlsx`: la posición de los dos bordes del gel en cada fotograma.
 - `00_roi_profile_...png`: la figura de la zona elegida.
 
+**Gel vertical (2026-10-15).** Si el gel está vertical en el video, `main.py` lo detecta solo y dice `El gel está VERTICAL en el video: cada fotograma se gira 90°`. Todo lo demás (zona, bordes, figuras) se ve ya girado: "arriba/abajo" pasa a ser "izquierda/derecha" del video. Si avisa que no está claro, se fija a mano con `--rotar 0` o `--rotar 90`.
+
 ### Avisos posibles de `main.py` (solo aparecen si hay que hacer algo)
 
 | aviso | qué significa | qué hacer |

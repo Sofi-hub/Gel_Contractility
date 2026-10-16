@@ -135,9 +135,9 @@ def procesar(videos: list[Path], salida: Path, pasos: set[int], frecuencias: str
     for i, video in enumerate(videos, 1):
         if detener():
             break
-        carpeta = salida / video.stem
+        carpeta = salida / interfaz.nombre_resultado(video)
         escribir(f"\n=================== [{i}/{len(videos)}] {video.name} ===================\n")
-        fila = {"video": video.name, "carpeta": str(carpeta)}
+        fila = {"video": interfaz.nombre_resultado(video) + video.suffix, "carpeta": str(carpeta)}
         log: list[str] = []
 
         def esc(linea, _log=log):
@@ -155,7 +155,7 @@ def procesar(videos: list[Path], salida: Path, pasos: set[int], frecuencias: str
             fila["estado"] = "ERROR: " + str(e).splitlines()[0]
         texto = "".join(log)
         if carpeta.is_dir():
-            cons = carpeta / f"consola_{video.stem}.txt"
+            cons = carpeta / f"consola_{interfaz.nombre_resultado(video)}.txt"
             if pasos & {1, 2, 3}:          # solo el informe: no pisar la consola guardada
                 cons.write_text(texto, encoding="utf-8")
             elif cons.is_file():

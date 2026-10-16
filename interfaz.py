@@ -97,8 +97,17 @@ def aplicar_tema(root, oscuro: bool = False) -> bool:
         return False
 
 
+def nombre_resultado(video) -> str:
+    """Nombre de la carpeta de resultados de un video. Si el archivo se llama
+    solo con un número (videos de Andrés: 10V/1.mp4, 20V/1.mp4, ...), se le
+    antepone la carpeta donde está ("40V_1"); si no, todos irían a "1" y se
+    pisarían. Los nombres de siempre (Video_063_...) no cambian."""
+    v = Path(video)
+    return f"{v.parent.name}_{v.stem}" if v.stem.isdigit() and v.parent.name else v.stem
+
+
 def carpeta_por_defecto(video: str) -> Path:
-    return Path(CONFIG["carpeta_resultados"]) / Path(video).stem
+    return Path(CONFIG["carpeta_resultados"]) / nombre_resultado(video)
 
 
 def armar_comandos(video: str, carpeta: str, paso1: bool, paso2: bool, paso3: bool,

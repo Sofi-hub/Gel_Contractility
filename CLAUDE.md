@@ -30,11 +30,13 @@ automatizada, reproducible y **verificable**, a partir de video de microscopía.
 6. **Detección de eventos** sobre `center_px`, con elección automática del
    umbral dentro de la meseta y control de falsos positivos.
 7. **Separación de estimuladas y espontáneas** por enganche de fase
+   (`src/rhythm_split.py`).
 8. **Opción `--metodo textura` (2026-10-16).** Para videos donde el borde no es un
    escalón nítido (Andrés): `center_px` se mide por el corrimiento de la textura de la
    franja, sin bordes; grosor aproximado y constante. El default sigue siendo bordes.
-   Validación y límites: `data/_mediciones_fases/textura/LEEME.md`.
-   (`src/rhythm_split.py`).
+   Videos de más de 1920 px (4K) se miden achicados a la mitad (2026-10-17: ~1 h por
+   video en 4K) y se informan en px del original. Validación y límites:
+   `data/_mediciones_fases/textura/LEEME.md`.
 
 ## Los cinco hallazgos que definen el método — NO revertirlos
 

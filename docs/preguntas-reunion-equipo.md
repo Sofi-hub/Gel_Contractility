@@ -89,3 +89,14 @@ E. ¿Qué entregaba MuscleMotion que usaban (número de picos, amplitud, tiempos
   - que la información de **cada pulso** sea más visible (Franco);
   - **elegir qué pulsos entran** (por ejemplo, los 3 primeros estimulados) y ver su promedio y los pulsos individuales, porque no siempre pueden garantizar que se registraron los 6;
   - **comparar esa selección entre dos videos** (los 3 primeros de cada uno).
+
+## Preguntas nuevas (2026-10-17, videos de Andrés)
+
+Contexto: los 9 videos de Andrés (4K, mucho zoom, gel vertical) no se pueden medir por bordes; por textura sí (4 de 9 reportables y respuesta visible cada 10 s en casi todos). Detalle: `data/_mediciones_fases/textura/LEEME.md`.
+
+1. **¿Los próximos videos van a ser como los de Andrés (4K, mucho zoom, gel vertical) o como los de antes?** Define cuánto conviene invertir en el método por textura.
+2. **¿A cuántos fotogramas por segundo graba la cámara de Andrés?** En los 9 videos el período del estímulo sale 10.10 s en vez de 10.00 (−1 %). Lo más probable es la cámara (~29.7 fps reales aunque el archivo diga 30), no el estimulador. ¿Se puede conseguir el archivo original de la cámara, con los tiempos reales?
+3. **Si durante una grabación alguien toca o sacude el equipo, ¿descartan ese video o lo usan igual?** (10V_3 tiene una sacudida a los ~15 s; 20V_1, temblores continuos).
+   - Si lo usan igual: ¿se puede dejar algo fijo con textura dentro de la imagen, para distinguir una sacudida del microscopio de un movimiento del tejido?
+4. **Videos de frecuencia (304 "1_2HZ", 341 "5_10HZ", 491 "36HZ"):** el protocolo general ya lo pasó Cami (40 V; trenes de 1 s a 1–5, 10, 20, 30 y 36 Hz con 10 s de descanso). ¿Qué frecuencias tiene cada uno de estos tres videos, en qué orden y cuándo empieza el primer tren?
+5. **Para comparar voltajes, ¿les alcanza con 1 o 2 videos limpios por voltaje, o necesitan los 3?** Hoy por textura son reportables 10V_1, 20V_3, 40V_1 y 40V_3. Si necesitan los 3, conviene implementar la "respuesta forzada" (medir en cada instante esperado de estímulo, contra controles).

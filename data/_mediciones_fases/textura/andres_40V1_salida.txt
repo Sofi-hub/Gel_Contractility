@@ -1,0 +1,34 @@
+rot 90, franja y 345-1621, x 270-810, grosor 982 px, respuesta mediana 1.04
+==========================================================================
+andres   (1957 fotogramas, 65.2 s, 30.00 fps)
+  los eventos mueven la franja hacia ARRIBA en la imagen
+  ruido de fondo de la senal: 0.026 px
+  AVISO: el conteo cambia segun la ventana usada para quitar la deriva (1.5 s: 6 | 2 s: 5 | 3 s: 5).
+
+  RESULTADO: NO REPORTABLE -> el conteo depende de la ventana del detrend (1.5 s: 6 | 2 s: 5 | 3 s: 5).
+    Hay 5 candidatos, pero el control con la senal invertida no permite separarlos del ruido o la vibracion.
+    Los tiempos de abajo son para revisar el video, NO para informar.
+    momentos (s): 16.80, 26.90, 37.03, 47.10, 57.23
+    tiempo tipico entre eventos: 10.117 s  (0.0988 Hz)
+    amplitud mediana (todos los eventos): 0.778 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [5 de 5 pulsos, p = 0.001]
+    periodo: 10.10106 +- 0.00304 s  (0.09900 Hz) | capturados 100% | tren de 16.7 a 57.1 s
+    estimuladas: 5 | espontaneas: 0   (candidatos: no se informa)
+
+  CONTRACTILIDAD (estimulados, 5 eventos)
+    no se informa: el conteo no es reportable.
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    no contable (conteo NO reportable); actividad basal 0.01 % del grosor
+
+  ESTIMULADOR (andres): configurado 0.1 Hz, medido 0.09900 +- 0.000030 Hz -> desvio sistematico de -1.00 %. Es chico y muy significativo: lo mas probable es la base de tiempo del video, no el equipo (se corrio main.py con --base-tiempo pts?)
+
+Archivos en /tmp/claude-0/sp/andres:
+  contracciones_andres.xlsx
+  05_estabilidad_umbral_andres.png
+  09_contracciones_andres.png
+  10_ritmo_andres.png
+  11_cinetica_andres.png
+ 

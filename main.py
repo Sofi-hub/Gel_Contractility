@@ -102,6 +102,16 @@ def parse_args():
                         "horizontal. 'auto' (default) lo decide solo: gira 90 si el gel "
                         "está vertical en el video (videos de Andrés, 2026-10-15).")
     p.add_argument("--plot", action="store_true", help="Genera la curva de grosor vs tiempo")
+    p.add_argument("--metodo", default="bordes", choices=["bordes", "textura"],
+                   help="'bordes' (default, el validado): posicion de los dos bordes. "
+                        "'textura': corrimiento de la textura de la franja, sin bordes, "
+                        "para videos donde el borde no es nitido (videos de Andres). "
+                        "center_px pasa a ser la posicion de la franja por textura y el "
+                        "grosor es aproximado (constante). Ver src/textura.py.")
+    p.add_argument("--resolucion-completa", action="store_true",
+                   help="Solo con --metodo textura: no achicar los videos de mas de 1920 px "
+                        "(4K). Mucho mas lento (~1 h o mas por video); sirve para comparar "
+                        "contra la medicion achicada.")
 
     g = p.add_argument_group("muestreo y deteccion de borde")
     g.add_argument("--n-columns", type=int, default=60,
@@ -170,8 +180,108 @@ def parse_args():
     return p.parse_args()
 
 
+def main_textura(args):
+    """--metodo textura (2026-10-16): misma serie_temporal, sin bordes."""
+    import numpy as np
+    from src import io_utils, textura
+    from src.pipeline import UMBRAL_DT_IDENTICOS
+
+    print(f"Procesando {args.video} ... (metodo: TEXTURA, sin bordes)")
+    pts, max_proj = io_utils.read_pts_and_max_projection(args.video, stride=5)
+    cociente = io_utils.cociente_orientacion(max_proj)
+    if args.rotar == "auto":
+        rot, _, dudosa = io_utils.elegir_rotacion(max_proj)
+        rot_modo = "automatica"
+    else:
+        rot, dudosa, rot_modo = int(args.rotar), False, "manual"
+    if rot:
+        print(f"  El gel está VERTICAL en el video: cada fotograma se gira {rot}° "
+              f"(cociente de orientación {cociente:.2f}; < 1 = vertical).")
+    if dudosa:
+        print(f"  AVISO: no está claro si el gel está horizontal o vertical (cociente "
+              f"{cociente:.2f}). Revisar 00_franja_textura; se puede fijar con --rotar 0 o 90.")
+    m = textura.medir(args.video, rot, resolucion_completa=args.resolucion_completa)
+    n = len(m["dy"])
+    meta = io_utils.get_video_metadata(args.video)
+    fps = args.fps or (meta["fps"] if meta["fps"] > 0 else 30.0)
+    usar_pts = args.base_tiempo == "pts" and len(pts) == n and n > 1
+    t = (pts - pts[0]) if usar_pts else np.arange(n) / fps
+    dts = np.diff(pts) if len(pts) > 2 else np.array([np.nan])
+    dt_med = float(np.median(dts))
+    dt_ident = float(np.mean(np.abs(dts - dt_med) < 1e-6)) if len(pts) > 2 else float("nan")
+
+    c = m["centro_ref"] + m["dy"]
+    g = m["grosor_px"]
+    df = pd.DataFrame({
+        "frame": np.arange(n), "time_s": t, "center_px": c,
+        "thickness_px": g, "thickness_mm": g * args.px_to_mm,
+        "y_top_px": c - g / 2, "y_bottom_px": c + g / 2,
+        "corrimiento_textura_px": m["dy"], "respuesta_correlacion": m["respuesta"],
+        "frame_quality": "OK",
+    })
+    summary = {
+        "video": args.video,
+        "metodo": "textura",
+        "frames totales": n,
+        "frames rechazados": 0,
+        "frames baja calidad": 0,
+        "fps usado": round(1.0 / dt_med, 5) if usar_pts else round(float(fps), 5),
+        "fps declarado por el archivo": round(float(meta["fps"]), 5),
+        "base de tiempo": "pts" if usar_pts else "frames",
+        "duracion segun PTS (s)": round(float(pts[-1] - pts[0]), 4) if len(pts) > 1 else None,
+        "px_to_mm": args.px_to_mm,
+        "grosor medio (px)": round(g, 3),
+        "grosor aproximado": "si: ancho de la franja a media altura de brillo en la referencia",
+        "rotacion (grados)": rot,
+        "rotacion eleccion": rot_modo,
+        "cociente de orientacion": round(cociente, 3),
+        "textura franja y (px)": f"{m['y0']}-{m['y1']}",
+        "textura zona comparada y (px)": f"{m['zona_y'][0]}-{m['zona_y'][1]}",
+        "textura columnas x (px)": f"{m['x0']}-{m['x1']}",
+        "ROI x_start": m["x0"],
+        "ROI x_end": m["x1"],
+        "ROI metodo": "textura (mitad central)",
+        "textura fotogramas de referencia": textura.N_REF,
+        "textura suavizado sigma (px)": textura.SIGMA,
+        "textura margen (fraccion del grosor)": textura.MARGEN,
+        "textura escala (1 = tamano original)": round(float(m["escala"]), 4),
+        "textura respuesta mediana": round(float(np.median(m["respuesta"])), 3),
+        "timestamps identicos (%)": round(100 * dt_ident, 1) if dt_ident == dt_ident else None,
+        **_trazabilidad(),
+    }
+    if dt_ident == dt_ident and dt_ident >= UMBRAL_DT_IDENTICOS:
+        print(f"  AVISO: los intervalos entre fotogramas son todos iguales "
+              f"({100*dt_ident:.0f}%): es probable que el archivo no traiga los tiempos reales "
+              f"de la camara. Si se perdieron fotogramas, no se puede saber y el eje de "
+              f"tiempo los ignora. Conviene pedir el video original.")
+    if m["escala"] < 1:
+        print(f"  video grande: se mide achicado x{m['escala']:.2f} (mucho mas rapido); "
+              f"todo se informa en pixeles del video original.")
+    print(f"  franja del gel: filas {m['y0']}-{m['y1']}, columnas {m['x0']}-{m['x1']} "
+          f"(grosor aprox. {g:.0f} px)")
+    print(f"  corrimiento por textura: rango {np.ptp(m['dy']):.2f} px en {n} fotogramas")
+
+    out_dir = Path(args.output_dir) if args.output_dir else video_output_dir(args.video)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    video_name = Path(args.video).stem
+    archivos = []
+    try:
+        archivos.append(textura.graficar_franja(
+            m, out_dir / f"00_franja_textura_{video_name}.png", video_name).name)
+    except Exception as e:
+        print(f"  (no se pudo graficar la franja: {e})")
+    saved = save_diagnostics(df, out_dir / f"serie_temporal_{video_name}", summary=summary)
+    archivos.insert(0, Path(saved).name)
+    print(f"Fotogramas: {n} | metodo textura (sin bordes: no hay fotogramas descartados)")
+    print(f"Archivos en {out_dir}:")
+    for a_ in archivos:
+        print(f"  {a_}")
+
+
 def main():
     args = parse_args()
+    if args.metodo == "textura":
+        return main_textura(args)
 
     config = PipelineConfig(
         n_columns=args.n_columns,

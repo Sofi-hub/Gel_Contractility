@@ -1,0 +1,30 @@
+Video_466_EXP5_FAPS4_40V.mp4: franja y 345-632, grosor 221 px
+  amplitud real -> medida (pico)   cociente
+  +0.25 ->  +0.209   0.834
+  +0.50 ->  +0.459   0.919
+  +1.00 ->  +1.025   1.025
+  +2.00 ->  +1.962   0.981
+  +4.00 ->  +4.005   1.001
+  -1.00 ->  -0.994   0.994
+  ruido (MAD fuera de pulsos): 0.0150 px
+  error RMS en toda la serie: 0.0211 px
+Video_063_CTRL1_5V.mp4: franja y 273-656, grosor 295 px
+  amplitud real -> medida (pico)   cociente
+  +0.25 ->  +0.042   0.167
+  +0.50 ->  +0.192   0.384
+  +1.00 ->  +1.018   1.018
+  +2.00 ->  +1.993   0.997
+  +4.00 ->  +4.006   1.001
+  -1.00 ->  -1.025   1.025
+  ruido (MAD fuera de pulsos): 0.0073 px
+  error RMS en toda la serie: 0.0728 px
+40V_1_x0.5.mp4: franja y 345-1621, grosor 982 px
+  amplitud real -> medida (pico)   cociente
+  +0.25 ->  +0.230   0.919
+  +0.50 ->  +0.532   1.065
+  +1.00 ->  +1.022   1.022
+  +2.00 ->  +1.969   0.985
+  +4.00 ->  +4.003   1.001
+  -1.00 ->  -1.019   1.019
+  ruido (MAD fuera de pulsos): 0.0071 px
+  error RMS en toda la serie: 0.0381 px

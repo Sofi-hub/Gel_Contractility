@@ -30,6 +30,10 @@ automatizada, reproducible y **verificable**, a partir de video de microscopía.
 6. **Detección de eventos** sobre `center_px`, con elección automática del
    umbral dentro de la meseta y control de falsos positivos.
 7. **Separación de estimuladas y espontáneas** por enganche de fase
+8. **Opción `--metodo textura` (2026-10-16).** Para videos donde el borde no es un
+   escalón nítido (Andrés): `center_px` se mide por el corrimiento de la textura de la
+   franja, sin bordes; grosor aproximado y constante. El default sigue siendo bordes.
+   Validación y límites: `data/_mediciones_fases/textura/LEEME.md`.
    (`src/rhythm_split.py`).
 
 ## Los cinco hallazgos que definen el método — NO revertirlos
@@ -209,6 +213,7 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     src/edge_detection.py    borde subpíxel por columna
     src/robust_fitting.py    RANSAC grado 2 (propio, igual al de sklearn), umbral adaptativo
     src/io_utils.py          lectura de video + timestamps (read_pts_seconds)
+    src/textura.py           OPCION main.py --metodo textura: corrimiento de la franja sin bordes (videos de Andres)
     src/pipeline.py          orquestador -> 4 series por fotograma
     src/rhythm_split.py      estimuladas vs espontáneas (enganche de fase)
     src/cinetica.py          TTP, RT50, onset/offset y amplitud relativa, con cotas
@@ -245,6 +250,7 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     tests/test_lote.py              la tabla de procesar_carpeta lee bien los Excel (no recalcula)
     tests/test_orientacion.py       gel vertical: rotación automática, mismo resultado que horizontal
     tests/test_basal.py             resumen de la basal (C8): conteo, frecuencia y actividad en 5 videos
+    tests/test_textura.py           --metodo textura: corrimiento conocido (sintetico), main.py, reporte y comandos
     docs/                           documentación vigente; docs/historia/ = propuestas y diagnósticos de fases cerradas
     docs/pendientes.md              la lista ÚNICA de lo que falta
 

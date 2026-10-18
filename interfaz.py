@@ -112,8 +112,10 @@ def carpeta_por_defecto(video: str) -> Path:
 
 def armar_comandos(video: str, carpeta: str, paso1: bool, paso2: bool, paso3: bool,
                    frecuencias: str = "",
-                   verbose: bool = False, paso4: bool = False) -> list[tuple[str, list[str]]]:
-    """Devuelve [(titulo, comando), ...] o levanta ValueError con un mensaje claro."""
+                   verbose: bool = False, paso4: bool = False,
+                   metodo: str = "bordes") -> list[tuple[str, list[str]]]:
+    """Devuelve [(titulo, comando), ...] o levanta ValueError con un mensaje claro.
+    metodo: 'bordes' (default) o 'textura' (main.py --metodo textura, 2026-10-16)."""
     py = sys.executable
     carpeta = Path(carpeta) if carpeta else (carpeta_por_defecto(video) if video else None)
     if not (paso1 or paso2 or paso3 or paso4):
@@ -138,11 +140,18 @@ def armar_comandos(video: str, carpeta: str, paso1: bool, paso2: bool, paso3: bo
         except ValueError:
             raise ValueError(f"Frecuencia no valida: '{f}'. Ejemplo: 0.1  (o 0.1 0.2)")
     extra = ["--verbose"] if verbose else []
+    if metodo not in ("bordes", "textura"):
+        raise ValueError(f"Metodo no valido: {metodo}")
+    if paso3 and metodo == "textura":
+        raise ValueError("El paso 3 (confirmar con un segundo metodo) es para el metodo de "
+                         "bordes: con textura ya se mide sin bordes. Desmarca el paso 3.")
 
     cmds = []
     if paso1:
         c = [py, "-u", str(RAIZ / "main.py"), "--video", str(video),
              "--output-dir", str(carpeta), "--base-tiempo", "pts"]
+        if metodo == "textura":
+            c += ["--metodo", "textura"]
         cmds.append(("Paso 1: medir el gel en cada fotograma", c + extra))
     if paso2:
         c = [py, "-u", str(RAIZ / "scripts" / "contraction_report.py"), "--input", str(serie)]
@@ -161,7 +170,8 @@ def armar_comandos(video: str, carpeta: str, paso1: bool, paso2: bool, paso3: bo
 
 def armar_comando_carpeta(carpeta_videos: str, salida: str, paso1: bool, paso2: bool,
                           paso3: bool, frecuencias: str = "",
-                          verbose: bool = False, paso4: bool = False) -> list[tuple[str, list[str]]]:
+                          verbose: bool = False, paso4: bool = False,
+                          metodo: str = "bordes") -> list[tuple[str, list[str]]]:
     """Una CARPETA entera: corre scripts/procesar_carpeta.py, que para cada video
     usa armar_comandos/correr (lo mismo de arriba) y arma la tabla resumen."""
     if not (paso1 or paso2 or paso3 or paso4):
@@ -182,6 +192,10 @@ def armar_comando_carpeta(carpeta_videos: str, salida: str, paso1: bool, paso2: 
         c += ["--frecuencia-estimulo", frecuencias.strip()]
     if verbose:
         c.append("--verbose")
+    if metodo == "textura":
+        if paso3:
+            raise ValueError("El paso 3 es para el metodo de bordes: desmarcalo con textura.")
+        c += ["--metodo", "textura"]
     return [("Carpeta entera: todos los videos y una tabla resumen", c)]
 
 
@@ -348,6 +362,7 @@ def main():
     v_lote = tk.StringVar()
     v_p1, v_p2, v_p3, v_p4 = (tk.BooleanVar(value=n in CONFIG["pasos"]) for n in (1, 2, 3, 4))
     v_verbose = tk.BooleanVar(value=CONFIG["detalle"])
+    v_metodo = tk.StringVar(value="bordes")
     carpeta_tocada = {"si": False}
 
     def poner_video(ruta: str):
@@ -439,6 +454,13 @@ def main():
               style="Ayuda.TLabel").pack(anchor="w", pady=(0, 6))
     ttk.Checkbutton(opc, variable=v_verbose,
                     text="Mostrar detalle técnico (--verbose)").pack(anchor="w", pady=2)
+    fila_m = ttk.Frame(opc)
+    fila_m.pack(fill="x", pady=2)
+    ttk.Label(fila_m, text="Método de medición").pack(side="left")
+    ttk.Combobox(fila_m, textvariable=v_metodo, values=("bordes", "textura"), width=9,
+                 state="readonly").pack(side="left", padx=8)
+    ttk.Label(opc, text="bordes = el validado  ·  textura = sin bordes, para bordes poco "
+                        "nítidos (videos de Andrés)", style="Ayuda.TLabel").pack(anchor="w")
 
     botones = ttk.Frame(tab1)
     botones.pack(fill="x", pady=(2, 10))
@@ -535,11 +557,11 @@ def main():
             if lote:
                 cmds = armar_comando_carpeta(lote, v_carpeta.get().strip(), v_p1.get(),
                                              v_p2.get(), v_p3.get(), v_freq.get(),
-                                             v_verbose.get(), v_p4.get())
+                                             v_verbose.get(), v_p4.get(), v_metodo.get())
             else:
                 cmds = armar_comandos(v_video.get().strip().strip('"'), v_carpeta.get().strip(),
                                       v_p1.get(), v_p2.get(), v_p3.get(), v_freq.get(),
-                                      v_verbose.get(), v_p4.get())
+                                      v_verbose.get(), v_p4.get(), v_metodo.get())
         except ValueError as e:
             messagebox.showwarning("Falta algo", str(e))
             return

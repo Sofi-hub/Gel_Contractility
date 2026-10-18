@@ -130,7 +130,8 @@ def avisos_de(texto: str) -> list[str]:
 
 
 def procesar(videos: list[Path], salida: Path, pasos: set[int], frecuencias: str = "",
-             verbose: bool = False, escribir=print, detener=lambda: False) -> list[dict]:
+             verbose: bool = False, escribir=print, detener=lambda: False,
+             metodo: str = "bordes") -> list[dict]:
     filas = []
     for i, video in enumerate(videos, 1):
         if detener():
@@ -146,7 +147,7 @@ def procesar(videos: list[Path], salida: Path, pasos: set[int], frecuencias: str
         try:
             # el informe (paso 4) se arma DESPUES de guardar la consola: asi incluye los avisos
             cmds = (interfaz.armar_comandos(str(video), str(carpeta), 1 in pasos, 2 in pasos,
-                                            3 in pasos, frecuencias, verbose)
+                                            3 in pasos, frecuencias, verbose, metodo=metodo)
                     if pasos & {1, 2, 3} else [])
             ok = interfaz.correr(cmds, esc, detener) if cmds else True
             fila["estado"] = "OK" if ok else "ERROR"
@@ -213,6 +214,9 @@ def main():
                         "'1 2 3 4', o '2 4' sobre series ya hechas")
     p.add_argument("--frecuencia-estimulo", default=cfg["frecuencia"],
                    help="Igual que en contraction_report (vacio = no se sabe)")
+    p.add_argument("--metodo", default="bordes", choices=["bordes", "textura"],
+                   help="Como se mide el paso 1 (main.py --metodo). 'textura' = sin bordes, "
+                        "para bordes poco nitidos (videos de Andres)")
     p.add_argument("--recursivo", action="store_true", help="Buscar videos tambien en subcarpetas")
     p.add_argument("--verbose", action="store_true")
     a = p.parse_args()
@@ -226,7 +230,8 @@ def main():
         sys.exit(f"No hay videos (.mp4/.avi/.mov) en {carpeta}")
     print(f"{len(videos)} video(s) en {carpeta}")
     filas = procesar(videos, Path(a.salida), pasos, a.frecuencia_estimulo, a.verbose,
-                     escribir=lambda s: print(s, end="" if s.endswith("\n") else "\n", flush=True))
+                     escribir=lambda s: print(s, end="" if s.endswith("\n") else "\n", flush=True),
+                     metodo=a.metodo)
     xlsx = guardar_tabla(filas, Path(a.salida))
     print("\n=================== RESUMEN DE LA CARPETA ===================")
     print(tabla_texto(filas))

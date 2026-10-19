@@ -155,6 +155,18 @@ def main():
         if c[0][1][-2:] != ["--metodo", "textura"]:
             fallos.append("armar_comando_carpeta no pasa --metodo textura")
 
+    # 4. aviso de respuesta chica (2026-10-19; solo texto, no cambia numeros)
+    sys.path.insert(0, str(RAIZ / "scripts"))
+    import contraction_report as cr
+    casos = [  # (reportable, amp px, ruido px, aviso?)  medidos: 20V_3, 10V_1, 40V_3
+        (True, 1.64, 0.059, False), (True, 1.16, 0.058, True), (True, 0.76, 0.081, True),
+        (True, 2.0, 0.3, True), (False, 0.5, 0.1, False)]
+    for rep, amp, ru, esp in casos:
+        av = cr.aviso_textura_chica({"conteo_reportable": rep, "amplitud_px": amp, "ruido_canal_px": ru})
+        if bool(av) != esp:
+            fallos.append(f"aviso textura chica: {amp} px / ruido {ru} -> {bool(av)} (esperado {esp})")
+    print("  aviso de respuesta chica: " + ("OK" if not any("aviso" in f for f in fallos) else "FALLA"))
+
     if fallos:
         print("FALLA:\n  " + "\n  ".join(fallos))
         sys.exit(1)

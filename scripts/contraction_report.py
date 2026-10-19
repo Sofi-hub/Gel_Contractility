@@ -1049,6 +1049,45 @@ def _leer(path: str) -> pd.DataFrame:
     return pd.read_csv(p) if p.suffix == ".csv" else pd.read_excel(p, sheet_name="diagnostics")
 
 
+# 2026-10-19 (solo aviso, no cambia ningun numero): con --metodo textura, una respuesta
+# chica no es firme. Medido en data/_mediciones_fases/textura_resolucion/: en 10V_1
+# (~1 px) la amplitud cambia 16 % entre achicado y 4K, y en 40V_3 (~0.8 px, ~9 x ruido)
+# el veredicto cambia; en un sintetico, 0.5-1 px se miden con error de hasta 10-20 %.
+# Con >= 1.5 px y >= 10 x ruido (20V_3, 40V_1, 10V_3) achicado y 4K dan lo mismo (0-2 %).
+TEXTURA_AMP_FIRME_PX = 1.5
+TEXTURA_AMP_FIRME_RUIDO = 10.0
+
+
+def _metodo_serie(path: str) -> str:
+    """'textura' o 'bordes', segun la hoja resumen de la serie (si no se sabe: 'bordes')."""
+    p = Path(path)
+    if p.suffix != ".xlsx":
+        return "bordes"
+    try:
+        h = pd.read_excel(p, sheet_name="resumen")
+        meta = dict(zip(h.iloc[:, 0].astype(str), h.iloc[:, 1]))
+        return str(meta.get("metodo", "bordes")).strip().lower()
+    except Exception:
+        return "bordes"
+
+
+def aviso_textura_chica(a: dict) -> str:
+    """Texto del aviso (vacio si no corresponde). Solo para series medidas por textura."""
+    if not a.get("conteo_reportable"):
+        return ""
+    amp = float(a.get("amplitud_px", np.nan))
+    ruido = float(a.get("ruido_canal_px", np.nan))
+    if not (np.isfinite(amp) and np.isfinite(ruido) and ruido > 0):
+        return ""
+    veces = amp / ruido
+    if amp >= TEXTURA_AMP_FIRME_PX and veces >= TEXTURA_AMP_FIRME_RUIDO:
+        return ""
+    return (f"respuesta chica para el metodo de textura ({amp:.2f} px, {veces:.0f} x el ruido; "
+            f"firme desde {TEXTURA_AMP_FIRME_PX:g} px y {TEXTURA_AMP_FIRME_RUIDO:g} x ruido): "
+            f"la amplitud puede variar ~15-20 % y el veredicto puede cambiar con la resolucion "
+            f"(--resolucion-completa). Informarla con cautela.")
+
+
 def parse_args():
     p = argparse.ArgumentParser(
         description="Detecta contracciones sobre center_px y mide el adelgazamiento "
@@ -1113,6 +1152,13 @@ def main():
                      frecuencia_estimulo=a.frecuencia_estimulo)
         imprimir(nombre, r, detallado=a.verbose)
         imprimir_basal(r)
+        ruta_serie = a.input if not resultados else a.compare
+        if _metodo_serie(ruta_serie) == "textura":
+            av = aviso_textura_chica(r)
+            r["aviso_textura_chica"] = av
+            if av:
+                print()
+                print(f"  AVISO: {av}")
         resultados.append((nombre, r))
 
     if a.frecuencia_estimulo:

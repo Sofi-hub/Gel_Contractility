@@ -96,6 +96,30 @@ No calcula nada propio: para cada video corre los pasos de arriba y después **l
 
 ---
 
+## 1c. Videos con el borde poco nítido: `--metodo textura` (2026-10-16)
+
+Para videos donde el método de bordes da 0 eventos porque el borde no es un escalón nítido (los 4K de Andrés). Mide el corrimiento de la textura de la franja, sin bordes. El paso 2 es el mismo. En la ventana: "Método de medición: textura". El paso 3 no se usa con textura.
+
+```
+python main.py --video "data\raw_videos\Videos_Andres\40V\1.mp4" --metodo textura --output-dir "data\processed_data\40V_1"
+python scripts\procesar_carpeta.py --carpeta "data\raw_videos\Videos_Andres" --recursivo --metodo textura --frecuencia-estimulo 0.1
+```
+
+Lo que imprime el paso 1 con textura:
+
+| renglón | qué significa |
+|---|---|
+| `Procesando ... (metodo: TEXTURA, sin bordes)` | se usa textura, no bordes |
+| `El gel está VERTICAL ... se gira 90°` | igual que con bordes |
+| `video grande: se mide achicado x0.50` | video de más de 1920 px (4K): se mide a la mitad, mucho más rápido; todo se informa en píxeles del original. `--resolucion-completa` lo evita (~16–23 min por video en la notebook, medido 2026-10-17) |
+| `AVISO: los intervalos entre fotogramas son todos iguales` | el archivo no trae los tiempos reales de la cámara (pasa en los de Andrés): el período puede salir corrido (~10.10 s en vez de 10.00) |
+| `franja del gel: filas ..., columnas ... (grosor aprox. N px)` | dónde se midió y el grosor aproximado (ancho de la franja a media altura de brillo), con el que se calcula el % |
+| `corrimiento por textura: rango X px` | cuánto se movió la franja en todo el video |
+
+**Aviso del paso 2 con textura (2026-10-19):** `AVISO: respuesta chica para el metodo de textura (X px, N x el ruido ...)`. Sale debajo de BASAL cuando el conteo es reportable pero la amplitud es menor que 1.5 px o menor que 10 veces el ruido. Quiere decir que la amplitud puede variar ~15–20 % y el veredicto puede cambiar con la resolución (medido: 10V_1 y 40V_3 lo dan; 20V_3 y 40V_1 no). No cambia ningún número; se informa con cautela. También queda en la columna `aviso_textura_chica` de la hoja `resumen_*`.
+
+Figura de control: `00_franja_textura_<video>.png`. Límites y validación: `data/_mediciones_fases/textura/LEEME.md`.
+
 ## 2. Paso 1: `main.py`
 
 ### Ejemplo limpio (Video_476)

@@ -59,6 +59,7 @@ import matplotlib.pyplot as plt
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src import rhythm_split as rs
 from src import cinetica as cin
+from src.forzada import respuesta_forzada
 # MAD, mediana movil y busqueda de picos viven en src/estadistica.py y toleran
 # fotogramas sin medida (NaN). Se re-exportan con el mismo nombre porque el
 # cuaderno y otros scripts llaman a `cr.mad` y `cr.detrend_median`.
@@ -1088,6 +1089,38 @@ def aviso_textura_chica(a: dict) -> str:
             f"(--resolucion-completa). Informarla con cautela.")
 
 
+def _forzada(df: pd.DataFrame, r: dict, frecuencia: float) -> dict:
+    """RESPUESTA FORZADA (src/forzada.py, 2026-10-19): solo con --frecuencia-estimulo
+    y conteo NO REPORTABLE. No cambia ningun otro numero."""
+    rit = r.get("ritmo") or {}
+    tren = bool(rit.get("hay_estimulacion"))
+    T = float(rit["periodo_s"]) if tren else 1.0 / float(frecuencia)
+    t = df["time_s"].to_numpy(float)
+    c = df["center_px"].to_numpy(float)
+    g = float(np.nanmedian(df["thickness_px"].to_numpy(float))) if "thickness_px" in df else float("nan")
+    m = respuesta_forzada(t, c, g, T, buscar=not tren)
+    m["forzada_periodo_origen"] = "tren medido" if tren else f"1/{frecuencia:g} Hz +-2 %"
+    return m
+
+
+def imprimir_forzada(r: dict) -> None:
+    if "forzada_p" not in r:
+        return
+    print()
+    print(f"  RESPUESTA FORZADA (al reloj del estimulador; NO es un conteo)")
+    print(f"    periodo {r['forzada_periodo_s']:.2f} s ({r['forzada_periodo_origen']}) | "
+          f"senal plegada: SNR {r['forzada_snr']:.1f} contra {r['forzada_snr_control_max']:.1f} "
+          f"del mejor de 40 periodos de control, p = {r['forzada_p']:.3f}")
+    if r["forzada_hay_respuesta"]:
+        print(f"    HAY respuesta al estimulo: {r['forzada_n_responden']} de {r['forzada_n_pulsos']} "
+              f"pulsos por encima de los controles ({r['forzada_control_p95_px']:.2f} px)")
+        print(f"    amplitud (mediana de los pulsos): {r['forzada_amplitud_pct']:.3f} % del grosor "
+              f"= {r['forzada_amplitud_px']:.2f} px  (franja hacia {r['forzada_sentido'].upper()})")
+        print("    (no cuenta contracciones ni da TTP/RT50; el conteo sigue NO REPORTABLE)")
+    else:
+        print("    no hay respuesta al estimulo distinguible de los controles.")
+
+
 def parse_args():
     p = argparse.ArgumentParser(
         description="Detecta contracciones sobre center_px y mide el adelgazamiento "
@@ -1159,6 +1192,9 @@ def main():
             if av:
                 print()
                 print(f"  AVISO: {av}")
+        if a.frecuencia_estimulo and not r.get("conteo_reportable"):
+            r.update(_forzada(df, r, a.frecuencia_estimulo[0]))
+            imprimir_forzada(r)
         resultados.append((nombre, r))
 
     if a.frecuencia_estimulo:
@@ -1194,6 +1230,9 @@ def main():
             fila = {kk: vv for kk, vv in r.items()
                     if not kk.startswith("_") and kk not in ("estabilidad", "tiempos_s")}
             pd.DataFrame([fila]).to_excel(w, sheet_name=f"resumen_{nombre[:18]}", index=False)
+            if r.get("_forzada_pulsos"):
+                pd.DataFrame(r["_forzada_pulsos"], columns=["instante_s", "amplitud_px", "responde"]
+                             ).to_excel(w, sheet_name=f"forzada_{nombre[:18]}", index=False)
             rit = r.get("ritmo")
             if rit is not None:
                 rit["resumen_grupos"].to_excel(w, sheet_name=f"ritmo_{nombre[:19]}", index=False)

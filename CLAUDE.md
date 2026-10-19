@@ -34,9 +34,15 @@ automatizada, reproducible y **verificable**, a partir de video de microscopía.
 8. **Opción `--metodo textura` (2026-10-16).** Para videos donde el borde no es un
    escalón nítido (Andrés): `center_px` se mide por el corrimiento de la textura de la
    franja, sin bordes; grosor aproximado y constante. El default sigue siendo bordes.
-   Videos de más de 1920 px (4K) se miden achicados a la mitad (2026-10-17: ~1 h por
-   video en 4K) y se informan en px del original. Validación y límites:
-   `data/_mediciones_fases/textura/LEEME.md`.
+   Videos de más de 1920 px (4K) se miden achicados a la mitad (en 4K completo, 16–23
+   min por video) y se informan en px del original. Validación y límites:
+   `data/_mediciones_fases/textura/LEEME.md`. Con respuestas < 1.5 px o < 10 × ruido la
+   amplitud por textura varía ~15–20 % (achicado contra 4K): el paso 2 lo avisa.
+9. **Respuesta forzada (2026-10-19, `src/forzada.py`).** Solo con `--frecuencia-estimulo`
+   y conteo NO REPORTABLE: ¿la franja se mueve en los instantes del estimulador más que
+   en cualquier otro momento? Señal plegada al período contra 40 períodos de control
+   (p ≤ 0.05) y amplitud mediana por pulso contra instantes sin pulso. **No es un
+   conteo** y no cambia el veredicto. Validación: `data/_mediciones_fases/respuesta_forzada/`.
 
 ## Los cinco hallazgos que definen el método — NO revertirlos
 
@@ -216,6 +222,7 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     src/robust_fitting.py    RANSAC grado 2 (propio, igual al de sklearn), umbral adaptativo
     src/io_utils.py          lectura de video + timestamps (read_pts_seconds)
     src/textura.py           OPCION main.py --metodo textura: corrimiento de la franja sin bordes (videos de Andres)
+    src/forzada.py           respuesta FORZADA al reloj del estimulador (solo si el conteo es NO REPORTABLE)
     src/pipeline.py          orquestador -> 4 series por fotograma
     src/rhythm_split.py      estimuladas vs espontáneas (enganche de fase)
     src/cinetica.py          TTP, RT50, onset/offset y amplitud relativa, con cotas
@@ -253,6 +260,7 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     tests/test_orientacion.py       gel vertical: rotación automática, mismo resultado que horizontal
     tests/test_basal.py             resumen de la basal (C8): conteo, frecuencia y actividad en 5 videos
     tests/test_textura.py           --metodo textura: corrimiento conocido (sintetico), main.py, reporte y comandos
+    tests/test_forzada.py           respuesta forzada: pulsos de 3 y 5 x ruido se ven; ruido y sacudidas no
     docs/                           documentación vigente; docs/historia/ = propuestas y diagnósticos de fases cerradas
     docs/pendientes.md              la lista ÚNICA de lo que falta
 

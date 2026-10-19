@@ -311,6 +311,21 @@ Lo que pasa antes de que arranque el estimulador (protocolo de Tecnun: los prime
 
 Va también a la hoja `basal_*` del Excel, al informe y a la ventana (Números y Comparar). Los resultados anteriores al 2026-10-15 no la tienen: aparece al rehacer solo el paso 2, que no cambia ningún otro número.
 
+### `RESPUESTA FORZADA` (desde 2026-10-19; solo con `--frecuencia-estimulo` y conteo NO REPORTABLE)
+
+    RESPUESTA FORZADA (al reloj del estimulador; NO es un conteo)
+      periodo 10.09 s (1/0.1 Hz +-2 %) | senal plegada: SNR 12.6 contra 7.1 del mejor de 40 periodos de control, p = 0.024
+      HAY respuesta al estimulo: 6 de 6 pulsos por encima de los controles (0.26 px)
+      amplitud (mediana de los pulsos): 0.022 % del grosor = 0.44 px  (franja hacia ABAJO)
+
+Cuando no se pueden contar las contracciones (ruido, sacudidas), pero se sabe cada cuánto dispara el estimulador, se mira la señal **en los instantes del estimulador** y se compara con momentos sin estímulo.
+- **¿Hay respuesta?** Se superponen todos los ciclos (la señal "plegada" al período) y se mira cuánto sobresale el pico (SNR). Lo mismo con 40 períodos falsos. `p = 0.024` es el mínimo posible: ninguno de los 40 falsos sobresale tanto. Hay respuesta si p ≤ 0.05.
+- **Período:** el del tren si se encontró; si no, el de la frecuencia configurada ±2 % (los videos de Andrés dan 10.10 s).
+- **Pulsos que responden:** cuántos pulsos superan el percentil 95 de la misma medida hecha en instantes sin pulso.
+- **Amplitud:** mediana de los pulsos, en % del grosor y px. Cerca del límite (pulsos de ~3 × el ruido) sale ~10–30 % alta.
+- **No es un conteo:** no ve espontáneas, no da TTP ni RT50 y el RESULTADO sigue NO REPORTABLE. Los pulsos quedan en la hoja `forzada_*`.
+- Si dice `no hay respuesta al estimulo distinguible de los controles` (613, 068): no hay respuesta medible a esa frecuencia.
+
 ### `ESTIMULADOR` (solo si se pasó `--frecuencia-estimulo`)
 
 ```

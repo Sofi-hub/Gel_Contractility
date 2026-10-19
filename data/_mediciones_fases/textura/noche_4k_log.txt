@@ -1,0 +1,286 @@
+Inicio s b 17/10/2026 22:10:49,97 
+ 
+===== 40V_1  (inicio 22:10:49,99) ===== 
+Procesando data\raw_videos\Videos_Andres\40V\1.mp4 ... (metodo: TEXTURA, sin bordes)
+  El gel está VERTICAL en el video: cada fotograma se gira 90° (cociente de orientación 0.05; < 1 = vertical).
+  AVISO: los intervalos entre fotogramas son todos iguales (100%): es probable que el archivo no traiga los tiempos reales de la camara. Si se perdieron fotogramas, no se puede saber y el eje de tiempo los ignora. Conviene pedir el video original.
+  franja del gel: filas 688-3243, columnas 540-1620 (grosor aprox. 1965 px)
+  corrimiento por textura: rango 2.34 px en 1957 fotogramas
+Fotogramas: 1957 | metodo textura (sin bordes: no hay fotogramas descartados)
+Archivos en data\processed_data\_4k_completo\40V_1:
+  serie_temporal_1.xlsx
+  00_franja_textura_1.png
+==========================================================================
+40V_1   (1957 fotogramas, 65.2 s, 30.00 fps)
+  los eventos mueven la franja hacia ARRIBA en la imagen
+  ruido de fondo de la senal: 0.054 px
+  AVISO: el conteo cambia segun la ventana usada para quitar la deriva (1.5 s: 6 | 2 s: 5 | 3 s: 5).
+
+  RESULTADO: NO REPORTABLE -> el conteo depende de la ventana del detrend (1.5 s: 6 | 2 s: 5 | 3 s: 5).
+    Hay 5 candidatos, pero el control con la senal invertida no permite separarlos del ruido o la vibracion.
+    Los tiempos de abajo son para revisar el video, NO para informar.
+    momentos (s): 16.80, 26.90, 37.03, 47.10, 57.23
+    tiempo tipico entre eventos: 10.117 s  (0.0988 Hz)
+    amplitud mediana (todos los eventos): 1.634 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [5 de 5 pulsos, p = 0.001]
+    periodo: 10.10131 +- 0.00304 s  (0.09900 Hz) | capturados 100% | tren de 16.7 a 57.1 s
+    estimuladas: 5 | espontaneas: 0   (candidatos: no se informa)
+
+  CONTRACTILIDAD (estimulados, 5 eventos)
+    no se informa: el conteo no es reportable.
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    no contable (conteo NO reportable); actividad basal 0.01 % del grosor
+
+  ESTIMULADOR (40V_1): configurado 0.1 Hz, medido 0.09900 +- 0.000030 Hz -> desvio sistematico de -1.00 %. Es chico y muy significativo: lo mas probable es la base de tiempo del video, no el equipo (se corrio main.py con --base-tiempo pts?)
+
+Archivos en data\processed_data\_4k_completo\40V_1:
+  contracciones_40V_1.xlsx
+  05_estabilidad_umbral_40V_1.png
+  09_contracciones_40V_1.png
+  10_ritmo_40V_1.png
+  11_cinetica_40V_1.png
+A = data\processed_data\40V_1  (escala 0.5)
+B = data\processed_data\_4k_completo\40V_1  (escala 1)
+serie (sin deriva): correlación 0.9966; diferencia RMS 0.0152 px, máx 0.1311 px
+grosor aproximado: A 1966.0 px, B 1965.0 px
+eventos                A 5   B 5
+reportable             A True   B False
+ruido (px)             A 0.05308650650859444   B 0.05424553745314479
+amplitud (px)          A 1.670193617174164   B 1.634185927689032
+amplitud (% grosor)    A 0.08495389710957088   B 0.08316467825389474
+k                      A 16.68   B 16.68
+eventos emparejados (±0.3 s): 5 de A 5 / B 5
+    16.80 s   A 1.800 px   B 1.783 px   A/B 1.010
+    26.90 s   A 1.632 px   B 1.556 px   A/B 1.049
+    37.03 s   A 1.669 px   B 1.634 px   A/B 1.021
+    47.10 s   A 1.748 px   B 1.730 px   A/B 1.010
+    57.23 s   A 1.670 px   B 1.623 px   A/B 1.029
+  40V_1 terminado a las 22:26:49,72 
+ 
+===== 20V_3  (inicio 22:26:49,77) ===== 
+Procesando data\raw_videos\Videos_Andres\20V\3.mp4 ... (metodo: TEXTURA, sin bordes)
+  El gel está VERTICAL en el video: cada fotograma se gira 90° (cociente de orientación 0.06; < 1 = vertical).
+  AVISO: los intervalos entre fotogramas son todos iguales (100%): es probable que el archivo no traiga los tiempos reales de la camara. Si se perdieron fotogramas, no se puede saber y el eje de tiempo los ignora. Conviene pedir el video original.
+  franja del gel: filas 689-3244, columnas 540-1620 (grosor aprox. 1965 px)
+  corrimiento por textura: rango 2.56 px en 1975 fotogramas
+Fotogramas: 1975 | metodo textura (sin bordes: no hay fotogramas descartados)
+Archivos en data\processed_data\_4k_completo\20V_3:
+  serie_temporal_3.xlsx
+  00_franja_textura_3.png
+==========================================================================
+20V_3   (1975 fotogramas, 65.8 s, 30.00 fps)
+  las contracciones mueven la franja hacia ARRIBA en la imagen
+  ruido de fondo de la senal: 0.066 px
+
+  RESULTADO: 6 contracciones  (conteo confiable)
+    umbral: 16.7 x ruido, dentro de la zona estable k = 12.5-22.2, con 0 falsos de control
+    momentos (s): 9.40, 19.53, 29.63, 39.70, 49.87, 59.97
+    tiempo tipico entre eventos: 10.100 s  (0.0990 Hz)
+    amplitud mediana (todos los eventos): 1.602 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [6 de 6 pulsos, p = 0.001]
+    periodo: 10.09962 +- 0.00230 s  (0.09901 Hz) | capturados 100% | tren de 9.3 a 59.8 s
+    estimuladas: 6 | espontaneas: 0
+
+  CONTRACTILIDAD (estimulados, 6 eventos)
+    amplitud (mediana): 0.08 % del grosor en reposo = 1.60 px  (IC 95 % de la mediana 0.07863-0.08897 %)
+    TTP (inicio -> pico): menos de 167 ms  (2.5 fotogramas)
+    RT50 (pico -> 50 % de relajacion): 151 ms  (mediana de 5 medibles; intervalo [50, 200] ms; IC 95 % 145-174 ms)
+    (con menos de 5 fotogramas no se puede dar un valor, solo un maximo: la contraccion es mas rapida que la camara)
+
+  BASAL (0 a 9.3 s, antes del estimulo)
+    0 contraccion(es) en 9.3 s; actividad basal 0.01 % del grosor
+
+  ESTIMULADOR (20V_3): configurado 0.1 Hz, medido 0.09901 +- 0.000023 Hz -> desvio sistematico de -0.99 %. Es chico y muy significativo: lo mas probable es la base de tiempo del video, no el equipo (se corrio main.py con --base-tiempo pts?)
+
+Archivos en data\processed_data\_4k_completo\20V_3:
+  contracciones_20V_3.xlsx
+  05_estabilidad_umbral_20V_3.png
+  09_contracciones_20V_3.png
+  10_ritmo_20V_3.png
+  11_cinetica_20V_3.png
+A = data\processed_data\20V_3  (escala 0.5)
+B = data\processed_data\_4k_completo\20V_3  (escala 1)
+serie (sin deriva): correlación 0.9955; diferencia RMS 0.0198 px, máx 0.1457 px
+grosor aproximado: A 1964.0 px, B 1965.0 px
+eventos                A 6   B 6
+reportable             A True   B True
+ruido (px)             A 0.05883078608810701   B 0.06581790429609004
+amplitud (px)          A 1.641635518376006   B 1.601766401979944
+amplitud (% grosor)    A 0.08358632985621212   B 0.08151482961729994
+k                      A 16.68   B 16.68
+eventos emparejados (±0.3 s): 6 de A 6 / B 6
+     9.40 s   A 1.721 px   B 1.696 px   A/B 1.014
+    19.53 s   A 1.589 px   B 1.534 px   A/B 1.036
+    29.63 s   A 1.820 px   B 1.800 px   A/B 1.011
+    39.70 s   A 1.678 px   B 1.644 px   A/B 1.020
+    49.87 s   A 1.605 px   B 1.556 px   A/B 1.032
+    59.97 s   A 1.605 px   B 1.559 px   A/B 1.029
+  20V_3 terminado a las 22:49:38,69 
+ 
+===== 10V_1  (inicio 22:49:38,73) ===== 
+Procesando data\raw_videos\Videos_Andres\10V\1.mp4 ... (metodo: TEXTURA, sin bordes)
+  El gel está VERTICAL en el video: cada fotograma se gira 90° (cociente de orientación 0.07; < 1 = vertical).
+  AVISO: los intervalos entre fotogramas son todos iguales (100%): es probable que el archivo no traiga los tiempos reales de la camara. Si se perdieron fotogramas, no se puede saber y el eje de tiempo los ignora. Conviene pedir el video original.
+  franja del gel: filas 689-3244, columnas 540-1620 (grosor aprox. 1965 px)
+  corrimiento por textura: rango 1.62 px en 2031 fotogramas
+Fotogramas: 2031 | metodo textura (sin bordes: no hay fotogramas descartados)
+Archivos en data\processed_data\_4k_completo\10V_1:
+  serie_temporal_1.xlsx
+  00_franja_textura_1.png
+==========================================================================
+10V_1   (2031 fotogramas, 67.7 s, 30.00 fps)
+  las contracciones mueven la franja hacia ARRIBA en la imagen
+  ruido de fondo de la senal: 0.071 px
+
+  RESULTADO: 7 contracciones  (conteo confiable)
+    umbral: 5.8 x ruido, dentro de la zona estable k = 4.8-6.4, con 0 falsos de control
+    (hay otra zona estable con 6 eventos en k = 7.1-11.4: se usa la de umbral mas bajo)
+    momentos (s): 1.43, 13.53, 23.60, 33.70, 43.83, 53.90, 64.03
+    tiempo tipico entre eventos: 10.117 s  (0.0988 Hz)
+    amplitud mediana (todos los eventos): 0.975 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [6 de 6 pulsos, p = 0.001]
+    periodo: 10.09716 +- 0.00230 s  (0.09904 Hz) | capturados 100% | tren de 13.4 a 63.9 s
+    estimuladas: 6 | espontaneas: 1
+
+  CONTRACTILIDAD (estimulados, 6 eventos)
+    amplitud (mediana): 0.05 % del grosor en reposo = 0.98 px  (IC 95 % de la mediana 0.04572-0.05237 %)
+    TTP (inicio -> pico): menos de 183 ms  (3 fotogramas)
+    RT50 (pico -> 50 % de relajacion): 144 ms  (mediana de 3 medibles; intervalo [33, 200] ms; IC 95 % 136-185 ms)
+    (con menos de 5 fotogramas no se puede dar un valor, solo un maximo: la contraccion es mas rapida que la camara)
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    1 contraccion(es) en 10.0 s; amplitud mediana 0.02 %; actividad basal 0.01 % del grosor
+
+  ESTIMULADOR (10V_1): configurado 0.1 Hz, medido 0.09904 +- 0.000023 Hz -> desvio sistematico de -0.96 %. Es chico y muy significativo: lo mas probable es la base de tiempo del video, no el equipo (se corrio main.py con --base-tiempo pts?)
+
+Archivos en data\processed_data\_4k_completo\10V_1:
+  contracciones_10V_1.xlsx
+  05_estabilidad_umbral_10V_1.png
+  09_contracciones_10V_1.png
+  10_ritmo_10V_1.png
+  11_cinetica_10V_1.png
+A = data\processed_data\10V_1  (escala 0.5)
+B = data\processed_data\_4k_completo\10V_1  (escala 1)
+serie (sin deriva): correlación 0.9852; diferencia RMS 0.0241 px, máx 0.1979 px
+grosor aproximado: A 1966.0 px, B 1965.0 px
+eventos                A 6   B 7
+reportable             A True   B True
+ruido (px)             A 0.0584937293398194   B 0.07147642840119038
+amplitud (px)          A 1.164118254331015   B 0.9830190641080208
+amplitud (% grosor)    A 0.05921252565264573   B 0.05002641547623515
+k                      A 11.392   B 5.846
+eventos emparejados (±0.3 s): 6 de A 6 / B 7
+    13.53 s   A 1.182 px   B 1.025 px   A/B 1.153
+    23.57 s   A 0.996 px   B 0.879 px   A/B 1.132
+    33.70 s   A 1.168 px   B 0.991 px   A/B 1.178
+    43.83 s   A 1.113 px   B 0.918 px   A/B 1.213
+    53.90 s   A 1.207 px   B 1.033 px   A/B 1.168
+    64.03 s   A 1.160 px   B 0.975 px   A/B 1.190
+  10V_1 terminado a las 23:05:33,58 
+ 
+===== 40V_3  (inicio 23:05:33,62) ===== 
+Procesando data\raw_videos\Videos_Andres\40V\3.mp4 ... (metodo: TEXTURA, sin bordes)
+  El gel está VERTICAL en el video: cada fotograma se gira 90° (cociente de orientación 0.07; < 1 = vertical).
+  AVISO: los intervalos entre fotogramas son todos iguales (100%): es probable que el archivo no traiga los tiempos reales de la camara. Si se perdieron fotogramas, no se puede saber y el eje de tiempo los ignora. Conviene pedir el video original.
+  franja del gel: filas 303-3268, columnas 540-1620 (grosor aprox. 2281 px)
+  corrimiento por textura: rango 1.59 px en 2051 fotogramas
+Fotogramas: 2051 | metodo textura (sin bordes: no hay fotogramas descartados)
+Archivos en data\processed_data\_4k_completo\40V_3:
+  serie_temporal_3.xlsx
+  00_franja_textura_3.png
+==========================================================================
+40V_3   (2051 fotogramas, 68.3 s, 30.00 fps)
+  los eventos mueven la franja hacia ABAJO en la imagen
+  ruido de fondo de la senal: 0.090 px
+
+  RESULTADO: NO REPORTABLE -> no hay meseta en el escaneo de k.
+    Con el umbral de auditoria no queda ningun candidato.
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    no contable (conteo NO reportable); actividad basal 0.01 % del grosor
+
+Archivos en data\processed_data\_4k_completo\40V_3:
+  contracciones_40V_3.xlsx
+  05_estabilidad_umbral_40V_3.png
+  09_contracciones_40V_3.png
+Traceback (most recent call last):
+  File "C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility\data\_mediciones_fases\textura\comparar_resolucion.py", line 76, in <module>
+    main()
+  File "C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility\data\_mediciones_fases\textura\comparar_resolucion.py", line 42, in main
+    (da, ma, ra, ea), (db, mb, rb, eb) = leer(a), leer(b)
+                                                  ^^^^^^^
+  File "C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility\data\_mediciones_fases\textura\comparar_resolucion.py", line 36, in leer
+    ev = next(v for k, v in hc.items() if k.startswith("eventos"))
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+StopIteration
+  40V_3 terminado a las 23:23:20,29 
+ 
+===== 10V_3  (inicio 23:23:20,33) ===== 
+Procesando data\raw_videos\Videos_Andres\10V\3.mp4 ... (metodo: TEXTURA, sin bordes)
+  El gel está VERTICAL en el video: cada fotograma se gira 90° (cociente de orientación 0.06; < 1 = vertical).
+  AVISO: los intervalos entre fotogramas son todos iguales (100%): es probable que el archivo no traiga los tiempos reales de la camara. Si se perdieron fotogramas, no se puede saber y el eje de tiempo los ignora. Conviene pedir el video original.
+  franja del gel: filas 396-3378, columnas 540-1620 (grosor aprox. 2294 px)
+  corrimiento por textura: rango 9.76 px en 2070 fotogramas
+Fotogramas: 2070 | metodo textura (sin bordes: no hay fotogramas descartados)
+Archivos en data\processed_data\_4k_completo\10V_3:
+  serie_temporal_3.xlsx
+  00_franja_textura_3.png
+==========================================================================
+10V_3   (2070 fotogramas, 69.0 s, 30.00 fps)
+  los eventos mueven la franja hacia ARRIBA en la imagen
+  ruido de fondo de la senal: 0.387 px
+
+  RESULTADO: NO REPORTABLE -> no hay meseta en el escaneo de k.
+    Hay 8 candidatos, pero el control con la senal invertida no permite separarlos del ruido o la vibracion.
+    Los tiempos de abajo son para revisar el video, NO para informar.
+    momentos (s): 10.70, 15.43, 15.80, 20.90, 30.93, 41.10, 51.20, 61.27
+    tiempo tipico entre eventos: 10.033 s  (0.0997 Hz)
+    amplitud mediana (todos los eventos): 5.644 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [6 de 6 pulsos, p = 0.001]
+    periodo: 10.09959 +- 0.00230 s  (0.09901 Hz) | capturados 100% | tren de 10.5 a 61.0 s
+    estimuladas: 6 | espontaneas: 2   (candidatos: no se informa)
+
+  CONTRACTILIDAD (estimulados, 6 eventos)
+    no se informa: el conteo no es reportable.
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    no contable (conteo NO reportable); actividad basal 0.04 % del grosor
+
+  ESTIMULADOR (10V_3): configurado 0.1 Hz, medido 0.09901 +- 0.000023 Hz -> desvio sistematico de -0.99 %. Es chico y muy significativo: lo mas probable es la base de tiempo del video, no el equipo (se corrio main.py con --base-tiempo pts?)
+
+Archivos en data\processed_data\_4k_completo\10V_3:
+  contracciones_10V_3.xlsx
+  05_estabilidad_umbral_10V_3.png
+  09_contracciones_10V_3.png
+  10_ritmo_10V_3.png
+  11_cinetica_10V_3.png
+A = data\processed_data\10V_3  (escala 0.5)
+B = data\processed_data\_4k_completo\10V_3  (escala 1)
+serie (sin deriva): correlación 0.9976; diferencia RMS 0.0706 px, máx 0.2464 px
+grosor aproximado: A 2294.0 px, B 2294.0 px
+eventos                A 8   B 8
+reportable             A False   B False
+ruido (px)             A 0.3762922950575215   B 0.387216795534814
+amplitud (px)          A 5.883773057943472   B 5.869021926289975
+amplitud (% grosor)    A 0.2564853120289221   B 0.2558422810065377
+k                      A 8.559   B 8.559
+eventos emparejados (±0.3 s): 8 de A 8 / B 8
+    10.70 s   A 4.817 px   B 4.889 px   A/B 0.985
+    15.43 s   A 3.533 px   B 3.716 px   A/B 0.951
+    15.80 s   A 3.885 px   B 3.949 px   A/B 0.984
+    20.90 s   A 5.792 px   B 5.793 px   A/B 1.000
+    30.93 s   A 5.617 px   B 5.496 px   A/B 1.022
+    41.10 s   A 5.976 px   B 5.945 px   A/B 1.005
+    51.20 s   A 6.177 px   B 6.175 px   A/B 1.000
+    61.27 s   A 6.305 px   B 6.328 px   A/B 0.996
+  10V_3 terminado a las 23:41:13,30 
+Fin s b 17/10/2026 23:41:13,32 

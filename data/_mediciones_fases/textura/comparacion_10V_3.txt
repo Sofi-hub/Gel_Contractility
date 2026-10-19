@@ -1,0 +1,19 @@
+A = data\processed_data\10V_3  (escala 0.5)
+B = data\processed_data\_4k_completo\10V_3  (escala 1)
+serie (sin deriva): correlación 0.9976; diferencia RMS 0.0706 px, máx 0.2464 px
+grosor aproximado: A 2294.0 px, B 2294.0 px
+eventos                A 8   B 8
+reportable             A False   B False
+ruido (px)             A 0.3762922950575215   B 0.387216795534814
+amplitud (px)          A 5.883773057943472   B 5.869021926289975
+amplitud (% grosor)    A 0.2564853120289221   B 0.2558422810065377
+k                      A 8.559   B 8.559
+eventos emparejados (±0.3 s): 8 de A 8 / B 8
+    10.70 s   A 4.817 px   B 4.889 px   A/B 0.985
+    15.43 s   A 3.533 px   B 3.716 px   A/B 0.951
+    15.80 s   A 3.885 px   B 3.949 px   A/B 0.984
+    20.90 s   A 5.792 px   B 5.793 px   A/B 1.000
+    30.93 s   A 5.617 px   B 5.496 px   A/B 1.022
+    41.10 s   A 5.976 px   B 5.945 px   A/B 1.005
+    51.20 s   A 6.177 px   B 6.175 px   A/B 1.000
+    61.27 s   A 6.305 px   B 6.328 px   A/B 0.996

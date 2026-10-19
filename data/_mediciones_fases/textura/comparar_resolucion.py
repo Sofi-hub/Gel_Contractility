@@ -33,7 +33,7 @@ def leer(carpeta: Path):
     if c is not None:
         hc = pd.read_excel(c, sheet_name=None)
         res = next(v for k, v in hc.items() if k.startswith("resumen")).iloc[0]
-        ev = next(v for k, v in hc.items() if k.startswith("eventos"))
+        ev = next((v for k, v in hc.items() if k.startswith("eventos")), None)  # sin eventos: no hay hoja
     return df, meta, res, ev
 
 
@@ -58,7 +58,9 @@ def main():
                          ("ruido (px)", "ruido_canal_px"), ("amplitud (px)", "amplitud_px"),
                          ("amplitud (% grosor)", "amplitud_relativa_pct"), ("k", "k_usado")):
             p(f"{nom:22s} A {ra.get(col)}   B {rb.get(col)}")
-        ta, tb = ea["tiempo_s"].to_numpy(float), eb["tiempo_s"].to_numpy(float)
+        vacio = np.array([], float)
+        ta = ea["tiempo_s"].to_numpy(float) if ea is not None else vacio
+        tb = eb["tiempo_s"].to_numpy(float) if eb is not None else vacio
         pares = [(i, int(np.argmin(np.abs(tb - x)))) for i, x in enumerate(ta)
                  if len(tb) and np.min(np.abs(tb - x)) < 0.3]
         p(f"eventos emparejados (±0.3 s): {len(pares)} de A {len(ta)} / B {len(tb)}")

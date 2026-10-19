@@ -1,0 +1,11 @@
+A = data/processed_data/40V_3  (escala 0.5)
+B = data/processed_data/_4k_completo/40V_3  (escala 1)
+serie (sin deriva): correlación 0.9798; diferencia RMS 0.0228 px, máx 0.2162 px
+grosor aproximado: A 2280.0 px, B 2281.0 px
+eventos                A 6   B 0
+reportable             A True   B False
+ruido (px)             A 0.08065114771494163   B 0.08979858457674349
+amplitud (px)          A 0.7631565084154772   B None
+amplitud (% grosor)    A 0.03347177668488935   B None
+k                      A 4.832   B 8.559
+eventos emparejados (±0.3 s): 0 de A 6 / B 0

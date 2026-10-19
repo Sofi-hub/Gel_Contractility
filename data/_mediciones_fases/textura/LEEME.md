@@ -61,7 +61,7 @@ Imagen real corrida en Fourier, con ruido σ 2 y compresión mp4. Cociente medid
   - A media resolución ya estaba medido: es exactamente la copia x0.5 de 40V/1 (ruido 0.018 px, las 5 contracciones).
   - `tests/test_textura.py` tiene un sintético "grande" (960 px) medido achicado: pendiente medido/real 1.01 y grosor correcto.
 - **Límite visto:** con una franja de menos de ~100 filas en la imagen medida (sintético de 180×240), la correlación de fase pierde el entero y la serie se va (también sin achicar). No pasa en ningún video real (la franja más chica es 466: 287 filas).
-- **Control pendiente (Franco, una noche):** medir 1 o 2 videos con `main.py --metodo textura --resolucion-completa` y compararlos con la corrida normal (achicada) usando `comparar_resolucion.py` (los comandos están en su encabezado). Sirve para confirmar con un video real que achicar no cambia los resultados.
+- **Control pendiente (Franco, una noche):** `noche_4k.bat` (doble clic) mide 40V_1, 20V_3, 10V_1, 40V_3 y 10V_3 a resolución completa y compara cada uno con su corrida normal (`comparar_resolucion.py`). Resultados en `data/processed_data/_4k_completo/` y `comparacion_<video>.txt`; todo lo impreso en `noche_4k_log.txt`.
 
 ## 5. Carpeta de Andrés, 4K con `--metodo textura` (2026-10-17, corrida en la notebook, achicado x0.5)
 
@@ -80,3 +80,23 @@ Imagen real corrida en Fourier, con ruido σ 2 y compresión mp4. Cociente medid
 - **Respuesta al estímulo en casi todos.** 4 de 9 son reportables. A ojo, en la figura hay respuesta cada 10 s también en 10V_2, 10V_3, 20V_1 y 40V_2. Lo que los deja afuera es el ruido o una sacudida, no que falten las respuestas.
 - **Período 10.10 s en todos (−1 %).** Los timestamps de estos archivos son inventados (100 % de intervalos iguales). O la cámara graba a ~29.7 fps aunque declare 30, o el estimulador está a 0.099 Hz: **preguntar a Andrés**.
 - **Siguiente paso posible:** para los que tienen respuesta débil o ruidosa, la "respuesta forzada" (medir en cada instante esperado de pulso, contra controles) que ya estaba anotada como idea en `pendientes.md`.
+
+## 6. Control de una noche: 4K completo contra achicado x0.5 (2026-10-17, revisado 2026-10-19)
+
+`noche_4k.bat` (log en `noche_4k_log.txt`; comparaciones en `comparacion_<video>.txt`). Cada video tardó **16–23 min** a resolución completa (no ~1 h: la hora era antes de suavizar solo la franja). La comparación de 40V_3 falló (sin eventos en 4K no hay hoja `eventos`): `comparar_resolucion.py` arreglado y `comparacion_40V_3.txt` rehecho desde los Excel.
+
+| video | eventos x0.5 → 4K | reportable x0.5 → 4K | ampl. px x0.5 → 4K | ampl. % x0.5 → 4K | ruido px | correlación de la serie |
+|---|---|---|---|---|---|---|
+| 40V_1 | 5 → 5 (mismos instantes) | sí → **no** | 1.67 → 1.63 (−2 %) | 0.085 → 0.083 | 0.053 → 0.054 | 0.997 |
+| 20V_3 | 6 → 6 (mismos) | sí → sí | 1.64 → 1.60 (−2 %) | 0.084 → 0.082 | 0.059 → 0.066 | 0.996 |
+| 10V_1 | 6 → 7 (+1 basal a 1.43 s) | sí → sí | 1.16 → 0.98 (**−16 %**) | 0.059 → 0.050 | 0.058 → 0.071 | 0.985 |
+| 40V_3 | 6 → **0** | sí → **no** (sin meseta) | 0.76 → — | 0.033 → — | 0.081 → 0.090 | 0.980 |
+| 10V_3 | 8 → 8 (mismos) | no → no | 5.88 → 5.87 (0 %) | 0.256 → 0.256 | 0.376 → 0.387 | 0.998 |
+
+- **Los videos con respuesta clara (≥ 1.5 px) dan lo mismo:** 20V_3, 40V_1 y 10V_3 tienen los mismos eventos en el mismo instante y la amplitud cambia 0–2 % (dentro del ±5 % del sintético).
+- **40V_1 cambia el veredicto, no los números:** en 4K el conteo depende de la ventana del detrend (1.5 s: 6; 2 y 3 s: 5) y queda NO REPORTABLE; achicado, al revés que en la copia del §3. Está en el límite.
+- **40V_3 (respuesta de ~0.7 px, 8–9 × ruido) es frágil:** achicado tenía una meseta angosta (k = 4.4–5.8, ×1.32, apenas sobre el mínimo ×1.25); en 4K el ruido sube 11 % y los últimos 3 pulsos salen 15–30 % más chicos, y la meseta desaparece. **Su "reportable" no es robusto.**
+- **10V_1: la amplitud cambia 13–21 % en cada uno de los 6 pulsos, siempre para el mismo lado** (achicado > 4K). Está en la serie misma (medido directo sobre `center_px`, sin el detrend del reporte), no en la detección. No se sabe cuál está más cerca de la verdad. En 4K además aparece una contracción basal a 1.43 s y la meseta elegida pasa a la de k más bajo (7 eventos); los 6 estimulados son los mismos.
+- **Conclusión:** achicar x0.5 no cambia nada en las respuestas claras; en las respuestas de ~1 px o menos (10V_1, 40V_3) cambia la amplitud hasta ~16 % o el veredicto. Para esos, el número informado tiene una incertidumbre de método mayor que su IC. **Propuesta (sin implementar):** no cambiar el default (x0.5); avisar en la consola cuando la amplitud medida achicada sea < ~1.5 px de original (o < ~10 × ruido) y recomendar `--resolucion-completa` o no informar la amplitud. Opcional: un sintético 4K con 0.5–1 px de corrimiento medido a las dos resoluciones para ver cuál se acerca más a la verdad.
+
+- **Seguimiento (2026-10-19):** sintético de corrimiento conocido a las dos resoluciones (`../textura_resolucion/`): desde 2 px las dos aciertan; con 0.5–1 px las dos se equivocan hasta 10–20 % y el sintético no reproduce el sentido de 10V_1. **No se sabe cuál es la correcta.** Hecho: aviso `respuesta chica para el metodo de textura` en el paso 2 (< 1.5 px o < 10 × ruido; no cambia números).

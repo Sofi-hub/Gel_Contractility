@@ -12,9 +12,17 @@ En orden cronológico:
 | `reproceso-bateria-v4.md` | 2026-09-29 | reproceso con ROI forzada; se confirma el fps real de 30 |
 | `cambios-roi-y-k.md` | 2026-09-29 | ancho mínimo de la ROI sin depender del largo del gel; `k` automático por meseta |
 | `guia-revision-codigo.md` | 2026-09-30 | cómo se organizó la revisión de todo el código |
-| `hallazgos-revision-codigo.md` | 2026-09-30 → 10-07 | los hallazgos H1–H55 de la revisión y su implementación (el detalle de cada H que se cita en otros documentos) |
+| ~~`hallazgos-revision-codigo.md`~~ (borrado el 2026-10-10; está en el historial de git; lo abierto, en `pendientes.md`) | 2026-09-30 → 10-07 | los hallazgos H1–H55 de la revisión y su implementación (el detalle de cada H que se cita en otros documentos) |
 | `glosario-revision-codigo.md` | 2026-09-30 | glosario para leer los hallazgos |
 | `propuesta-fase-2-2.md` | 2026-10-01 | qué es un evento: altura y prominencia, ventana del detrend automática (Video_prueba 28 → 29) |
 | `propuesta-fase-3-ritmo-cinetica.md` | 2026-10-07 | tren buscado por la frecuencia configurada, instante = inicio, cinética por grupo |
 | `propuesta-fase-3-resto.md` | 2026-10-08 | columnas adaptables, rescate con cintura, una sola métrica (la traslación) |
 | `propuesta-fase-4.md` | 2026-10-07 | outliers solo como diagnóstico, `motion_check` arreglado, sexto evento de 063 real, ráfaga de 583 = vibración |
+
+## Agregados el 2026-10-26 (revisión de la forma de trabajar)
+
+- `pendientes-hasta-2026-10-26.md`: la lista de pendientes completa hasta esa fecha (con todo lo hecho y medido).
+- `estado-hasta-2026-10-26.md`: el ESTADO largo anterior (prompt viejo, historia detallada, límites).
+- `claude-md-notas-2026-10.md`: notas históricas sacadas de `CLAUDE.md` (texto tal cual).
+- `RARITOS_resultados_y_preguntas.docx/.pdf`: el documento para Cami (2026-10-08; sus respuestas llegaron el 2026-10-14) con los resultados de
+  los RARITOS y las preguntas (las respuestas están en `../preguntas-reunion-equipo.md`).

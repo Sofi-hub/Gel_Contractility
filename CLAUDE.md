@@ -57,14 +57,8 @@ El grosor **sigue midiéndose**, porque es la variable biomecánicamente
 interesante, pero promediando eventos alineados en el tiempo, no evento a
 evento.
 
-> **Fase 4 (2026-10-07): verificado por un método independiente.** La traslación
-> medida por correlación de intensidad (sin bordes, `motion_check` arreglado)
-> coincide con `center_px` en magnitud: 0.96 en Video_prueba, 0.99 en 063, 0.88 en
-> 466 y 0.82 en 476 (las dos últimas, de la tanda EXP5, sin explicar).
-> **2026-10-10 (D1):** medido evento por evento (la pendiente de `motion_check` se
-> achica con el ruido), 476 da 0.99; 268, 466 y 491 dan 0.86–0.88 y el resto
-> 0.96–0.99. No es cosa de EXP5. Desde entonces `motion_check` juzga el tamaño
-> contracción por contracción. Detalle en `docs/pendientes.md` D1.
+> Confirmado por un método independiente (`motion_check`, por intensidad): 0.86–0.99
+> contracción por contracción en los reportables (D1). Historia: `docs/historia/claude-md-notas-2026-10.md`.
 
 > **Fase 3 (2026-10-08): una sola métrica de contractilidad, la traslación.** Se
 > reporta la amplitud de `center_px` como **% del grosor en reposo** (cifra
@@ -76,12 +70,8 @@ evento.
 > solo tiene más SNR que el centro es porque el **otro** borde es más ruidoso
 > (H54), no porque mida otra cosa: no se pondera el centro.
 
-> **CORRECCIÓN (2026-09-30).** La versión anterior de este documento decía que
-> "sólo el 13–19 % de ese movimiento es cambio de grosor" y que el cociente era
-> el mismo en todos los videos. Medido sobre seis: **depende del video**. 18 %
-> en Video_prueba y 13 % en Video_063, pero 1–2 % y **no significativo**
-> (1.0–1.1 σ) en Video_268 y Video_583. El argumento se sostiene —de hecho se
-> refuerza—, pero el número no es una constante del montaje.
+> El cociente cambio de grosor / traslación **depende del video** (18 % en Video_prueba, 1–2 % y no
+> significativo en 268 y 583): no es una constante del montaje.
 
 **2. Estimuladas vs espontáneas: por enganche de fase, no por amplitud ni por
 ventana temporal.** El estimulador dispara en `t = fase + n·T`; las espontáneas
@@ -153,15 +143,10 @@ aumento. No proponer calibrarlo salvo que el usuario lo pida.
 
 ## Contexto: para quién es y qué es la carpeta `OK`
 
-El trabajo es para que **la Universidad de Tecnun** mida contracciones en sus células. El equipo usa MuscleMotion y a veces
-tiene errores; este proyecto busca un método propio, más robusto y verificable. La carpeta
-`data/raw_videos/OK-20260904T142817Z-1-001/OK/` (la misma donde están los videos crudos) tiene **los videos que cumplen los
-requerimientos de Tecnun** (no hay un criterio técnico escrito), cada uno con una subcarpeta `<video>_-Contr-Results` con la salida
-de MuscleMotion: `contraction.txt` (contracción), `speed-of-contraction.txt` (velocidad de contracción), `Overview-results.txt`,
-`Log_file.txt` y tres `.jpg`. **"OK" no significa que MuscleMotion haya medido bien** (ver `docs/comparacion-musclemotion.md`).
-Hay otra carpeta hermana, `RARITOS-…/RARITOS/`, con los videos que MuscleMotion maneja mal: procesados el 2026-10-07
-(resultados en `docs/raritos.md`).
-Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
+Para Tecnun, que usa MuscleMotion (mide intensidad y falla a veces). `data/raw_videos/OK-…/OK/` = videos que
+cumplen sus requisitos, con la salida de MuscleMotion al lado ("OK" no quiere decir que MuscleMotion midió bien);
+`RARITOS-…/RARITOS/` = los que MuscleMotion maneja mal (`docs/raritos.md`). Detalle:
+`docs/contexto-tecnun-y-musclemotion.md` y `docs/comparacion-musclemotion.md`.
 
 ## Stack Tecnológico
 
@@ -215,6 +200,35 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
   contracción (Video_491, eventos de ~1 s). Detalle en
   `docs/historia/propuesta-fase-2-2.md`.
 
+## Modo de trabajo (acordado con Franco, 2026-10-26)
+
+**Regla de cambios**
+- **No cambia ningún número informado** (diagnósticos, ventana, textos, docs, limpieza): se hace, se corre
+  `verificar.bat` y se commitea en la notebook **sin push**; al final, un resumen corto (qué cambió, resultado
+  de `verificar.bat`, cómo deshacerlo).
+- **Cambia un número informado:** se mide, se deja la tabla antes/después y **se espera el visto bueno** de
+  Franco. Nunca se implementa antes.
+- Varias propuestas a decidir van juntas en una lista numerada, para aprobar de una vez.
+- Si algo no avanza, parar y preguntar.
+
+**Dónde va cada tarea.** Franco tiene poca experiencia con Claude Code: **cada vez que surja una tarea, decirle
+explícitamente dónde conviene hacerla.**
+- **→ Claude Code** (en la notebook, con la carpeta del repo abierta): todo lo que toca o corre archivos del repo:
+  código, tests y `verificar.bat`, correr `main.py`/reporte/carpetas o videos, mediciones nuevas, editar
+  documentos del repo, commits, probar la ventana en Windows.
+- **→ Chat** (claude.ai / Cowork): pensar y decidir, explicar resultados en simple, preparar preguntas o mails
+  para el equipo, revisar una tabla o una figura que Franco pega. Lo que no necesita la carpeta.
+- Si la tarea surge en un chat y va a Claude Code, **entregar un prompt listo para pegar**, específico y preciso,
+  con este formato:
+
+      Tarea: <una frase>.
+      Contexto: <por qué; qué se decidió; documento o LEEME de referencia>.
+      Archivos: <cuáles leer y cuáles tocar>. No tocar: <lo que no se toca>.
+      ¿Cambia números informados?: <no / sí -> solo medir y dejar la tabla, sin implementar>.
+      Pasos: 1. ... 2. ... 3. ...
+      Verificar: verificar.bat (y "completo" si se toca ROI, bordes, RANSAC o la lectura del video).
+      Entregar: <qué archivos o tabla>; commit sin push con el mensaje "<...>"; resumen corto al final.
+
 ## Estructura y comandos
 
     src/preprocessing.py     CLAHE + auto-ROI (gauge region) + rescate por barrido
@@ -240,6 +254,7 @@ Detalle en `docs/contexto-tecnun-y-musclemotion.md`.
     tests/test_roi.py               elección de ROI: columnas adaptables, piso 40, rescate con cintura
     tests/test_diagnosticos.py      motion_check (corrimiento conocido), signal_check, junto_al_borde
     tests/test_ransac.py            el RANSAC propio da lo mismo que el de sklearn (grados 1-3)
+    tests/correr_todo.py + verificar.bat   TODOS los tests y la regresión, con tiempos y OK/FALLA final
     tests/test_regresion.py         REGRESIÓN de los 11 videos contra tests/referencia_regresion.json
                                     (--completo: además Video_prueba y 063 desde el video)
     tests/referencia.py             lista de videos de referencia, con sus argumentos, y la "huella"
@@ -299,8 +314,11 @@ lleva `--half-window`: 068 y 341 pasan solos a ±30; 304 queda en ±15). La frec
 **no está confirmada** por el equipo (la midió el propio pipeline); se mantiene
 para la regresión, y en videos nuevos no se pasa salvo que el equipo la confirme.
 
-**Verificar un cambio:** `python tests/test_regresion.py` (segundos) y, si se tocó
-ROI, bordes o RANSAC, `--completo`. Si el cambio es intencional y aprobado:
+**El cuaderno se guarda SIN salidas** (en Jupyter/VS Code: "Clear All Outputs" antes de commitear): con
+los gráficos adentro pesaba 2.4 MB y cada versión engordaba el historial (sin salidas: 100 KB; 2026-10-26).
+
+**Verificar un cambio:** `verificar.bat` (todos los tests + `tests/test_regresion.py`; = `python tests/correr_todo.py`)
+y, si se tocó ROI, bordes o RANSAC, `verificar.bat completo`. Si el cambio es intencional y aprobado:
 `python tests/generar_referencia.py --aprobar "motivo"`. **No guardar en
 `processed_data` salidas del cuaderno**: el `contracciones.xlsx` (nombre viejo) de Video_prueba
 apareció reescrito con `win_s` fijo de 2 s (28 eventos; probablemente el

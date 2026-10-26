@@ -1,5 +1,9 @@
 # Métricas de cinética de contracción (TTP, RT50): viabilidad
 
+> **Ojo (2026-10-26):** los TTP/RT50 de 466, 583 y 491 de este documento son anteriores a B6 (2026-10-15,
+> pico = primer fotograma ≥ 95 % del máximo). Los vigentes: 466 183/226 ms, 583 189/252 ms, 491 557/480 ms
+> (`docs/ESTADO-arranque-chat-nuevo.md`; medición en `data/_mediciones_fases/b6_pico_primer_instante/`).
+
 Fecha 2026-09-30. Evaluación del pedido del equipo de portar las métricas del
 script `Contraction_Analysis.mlx` (Andrés Felipe Zemanate-Largo) al pipeline.
 

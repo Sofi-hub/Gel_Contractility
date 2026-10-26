@@ -1,6 +1,6 @@
 # Guía de la salida de consola (para analizar videos en vivo)
 
-Actualizada el 2026-10-07, después de limpiar la consola (commit `4e4d37e`). Explica **todo lo que puede aparecer en pantalla** al analizar un video, qué es normal, cuándo preocuparse y qué contestar si alguien pregunta. Los ejemplos son salidas reales de Video_476 (caso limpio), Video_613 (no reportable por vibración) y Video_068 (actividad continua).
+Escrita el 2026-10-07 y actualizada por partes hasta el 2026-10-19 (cada sección dice su fecha). Explica **todo lo que puede aparecer en pantalla** al analizar un video, qué es normal, cuándo preocuparse y qué contestar si alguien pregunta. Los ejemplos son salidas reales de Video_476 (caso limpio), Video_613 (no reportable por vibración) y Video_068 (actividad continua).
 
 **Regla general:** lo que no aparece en pantalla igual queda guardado en los Excel (`serie_temporal_<video>.xlsx`, `contracciones_<video>.xlsx`, `movimiento_<video>.xlsx`). Para ver todo el detalle técnico también en pantalla, agregá `--verbose` al final de cualquier comando: esas líneas extra empiezan con `[detalle]`.
 
@@ -458,15 +458,9 @@ Al reconstruir la imagen, el brillo da un pequeño salto en cada foto clave. En 
 
 ---
 
-## 6. Pendiente: hacer el programa más amigable para quien no programa
+## 6. Cómo se llegó a la ventana
 
-Hoy hay que copiar comandos y cambiar el nombre del video a mano. Ideas, de menor a mayor esfuerzo:
-
-0. **Hecho (2026-10-07): `interfaz.py` + `Analizar.bat`** (sección 0).
-1. **Un solo comando que corra todo** (`analizar.py --video Video_XXX [--frecuencia 0.1]`): hace los pasos 1 y 2, y el 3 si se pide. Busca el video solo en `data\raw_videos\` (sin escribir la ruta). Si detecta muchos fotogramas sin borde, repite solo con `--half-window 30`.
-2. **Hecho (2026-10-10): procesar una carpeta entera** con tabla resumen (secciones 0 y 1b). En la ventana y por consola (`scripts/procesar_carpeta.py`).
-3. **Hecho (2026-10-10): un informe por video en una página** (paso 4, sección 0).
-4. **Doble clic en vez de consola:** un archivo `.bat` que pregunte el nombre del video y la frecuencia, o una ventanita simple para elegir el video, escribir la frecuencia y apretar "Analizar".
-5. **Hecho (2026-10-10): `configuracion.ini`** con los valores con que arranca la ventana (sin parámetros del análisis).
-
-Ninguna cambia números: solo envuelven los scripts actuales.
+Todo lo de esta sección está hecho: la ventana (`Analizar.bat` + `interfaz.py`, sección 0), una carpeta entera
+con tabla resumen (1b), el informe de una página (paso 4) y `configuracion.ini`. La idea de un solo comando
+por consola quedó cubierta por la ventana y por `procesar_carpeta.py`. Ninguna cambia números: solo
+envuelven los scripts.

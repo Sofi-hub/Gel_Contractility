@@ -56,6 +56,7 @@ Flags que conviene conocer:
 | `--x-start` / `--x-end` | fuerza la zona de medición a mano cuando la automática no sirve |
 | `--k` | fuerza el umbral de detección. Por defecto es `auto` y lo elige la meseta del escaneo |
 | `--half-window 30` | cuando el gel se mueve mucho y `main.py` avisa que hay fotogramas sin borde |
+| `--metodo textura` | videos con el borde poco nítido (4K de Andrés): mide el corrimiento de la textura, sin bordes. Ver `docs/guia-salida-consola.md` 1c |
 | `--verbose` | (los tres scripts) imprime también el detalle técnico; sin él, solo resultados y avisos |
 
 Opcional, para confirmar el movimiento por un segundo método (intensidad, sin bordes):
@@ -154,7 +155,10 @@ En `docs/`:
 
 ## Pendiente
 
-Todo en `docs/pendientes.md`. Lo principal: respuestas del equipo de Tecnun
-(estimulación de los RARITOS, adquisición a 200–300 fps, video de control de
-iluminación), una medida de actividad para los videos con actividad continua, y
-optimizar el tiempo de procesamiento.
+Todo en `docs/pendientes.md`. Lo principal (2026-10-26): las respuestas del equipo sobre los videos de
+frecuencia (304, 341, 491) y los de Andrés, y rehacer los pasos 2 y 4 de los 5 videos de Andrés con la
+respuesta forzada.
+
+## Verificar
+
+Doble clic en `verificar.bat` (todos los tests y la regresión; `verificar.bat completo` también desde el video).

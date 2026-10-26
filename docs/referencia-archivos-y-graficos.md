@@ -97,6 +97,10 @@ columnas seguidas (px)` (aviso si es menor que el ancho mínimo de la zona; real
 | `error de modelo borde sup/inf (px)`, `error de modelo peor / grosor (%)` | (Fase 4) cuánto se aparta la parábola del borde de forma estable. Diagnóstico sin umbral; validados 0.33–1.01 % |
 | `ROI criterio`, `ROI cintura del gel (px)`, `ROI grosor min/max en la zona (px)`, `ROI fraccion del ancho de la imagen`, `ROI columnas con franja seguida`, `ROI columnas de la imagen`, `ROI columnas descartadas por nitidez/grosor/pendiente` | (2026-10-07) el detalle de la zona elegida que antes solo salía en pantalla |
 
+### Con `--metodo textura` (2026-10-16)
+
+La misma hoja `diagnostics`, con `center_px` = posición de la franja medida por textura (centro de la franja en la referencia + corrimiento); `thickness_px` constante (grosor aproximado); `y_top_px`/`y_bottom_px` = `center_px` ± grosor/2 (no son bordes medidos). Columnas propias: `corrimiento_textura_px` (corrimiento contra la referencia, px del video original) y `respuesta_correlacion` (pico de la correlación de fase, 0–1). Todo `frame_quality` = OK (no hay columnas descartadas). En `resumen`: `metodo` = textura, `grosor aproximado`, `textura franja y (px)`, `textura zona comparada y (px)`, `textura columnas x (px)` (= `ROI x_start`/`x_end`, la mitad central), `textura escala` (0.5 si se midió achicado), `textura fotogramas de referencia`, `textura suavizado sigma (px)`, `textura margen`, `textura respuesta mediana`. No hay `roi_alternativas`. La franja y las columnas están en píxeles de la imagen medida (achicada si escala < 1).
+
 ### Hoja `roi_alternativas` (2026-10-07)
 
 Una fila por nivel de la cascada de la ROI (`gauge_plana`, `gauge_cintura`, …):
@@ -311,6 +315,9 @@ Imagen. `x` = columna (px), `y` = fila (px). El gris es la intensidad **máxima
 que alcanzó cada píxel a lo largo del vídeo**. Todo lo que se movió en algún
 momento queda iluminado, y por eso sirve para acotar dónde puede estar el borde
 en cualquier instante.
+
+### `00_franja_textura_<video>.png` — solo con `--metodo textura`
+Izquierda: la imagen de referencia (promedio de los 30 primeros fotogramas, gel horizontal) con la franja usada (naranja) y la zona comparada (celeste punteado). Derecha: brillo medio por fila, con la franja sombreada y el grosor aproximado.
 
 ### `00_roi_profile_<video>.png` — dos paneles apilados
 - **Arriba:** `x` = columna de la imagen (px). `y` = **grosor de la franja en

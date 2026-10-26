@@ -1,0 +1,126 @@
+# Estado del proyecto y arranque de un chat nuevo
+
+Actualizado 2026-10-17. Sirve para dos cosas: es el resumen del estado actual, y su primera sección se puede pegar tal cual al abrir un chat nuevo. **Lo que falta hacer está en `docs/pendientes.md`**, no acá.
+
+---
+
+## Prompt para pegar en el chat nuevo
+
+```
+Continuamos gel_contractility (Tecnun), con el código.
+ANTES DE EMPEZAR leé del proyecto CLAUDE.md, claude/ESTADO-arranque-chat-nuevo.md y claude/pendientes.md (sección 0). Leé el código desde mi carpeta (repo git): C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility. Leé también data/_mediciones_fases/andres/LEEME.md. Traé los videos solo si una tarea lo pide, y NUNCA los originales de Andrés (520 MB, 4K): usá copias chicas hechas con scripts/achicar_video.py y no cargues un video entero en memoria.
+
+Reglas de siempre: medir y proponer primero, explicarme en simple, respuestas cortas, comandos de git juntos al final. Los documentos viven en docs/ del repo, con copia de los vigentes en el proyecto: si cambiás uno, actualizá los dos y verificá que lo que copiás a mi carpeta llegó bien (re-traerlo y comparar). Verificación de cada cambio: todos los tests (incluidos test_lote, test_visor, test_basal y test_orientacion), `python tests/test_regresion.py` y, si se toca ROI, bordes, RANSAC o la lectura del video, `--completo`. Versiones fijas en requirements.txt.
+
+Modo de trabajo: resolver lo que MENOS atención mía requiera, sin gastar de más (si algo no avanza, pará y preguntame).
+* Si un cambio NO cambia ningún número (o solo agrega diagnósticos o mejora la ventana), hacelo directo, verificalo y copialo; contame al final.
+* Si cambia un número informado, medilo y dejame la propuesta con la tabla; no lo implementes sin mi visto bueno.
+* Mediciones: scripts y tablas en data/_mediciones_fases/<tema>/ con un LEEME.md.
+* Al final, un resumen corto: qué se hizo, qué quedó esperando mi decisión, y los comandos de git.
+
+Dónde quedamos (2026-10-17): hecho y aprobado: ventana, basal (C8), B6, rotación automática para gel vertical, y la medición por TEXTURA como opción (`main.py --metodo textura`, `src/textura.py`; default sigue siendo bordes, los 11 de referencia idénticos). Textura: sin bordes, corrimiento de la franja (correlación de fase + Lucas-Kanade iterado), validada con sintético (±5 % desde 0.5 px) y contra center_px en los 7 reportables (mismos eventos; amplitud 0.87–0.98). Los 4K se miden achicados x0.5 (si no, ~1 h por video); `--resolucion-completa` para compararlo. Carpeta de Andrés corrida con textura: 4 de 9 reportables (10V_1, 20V_3, 40V_1, 40V_3); en otros 4 se ve respuesta cada 10 s pero ruido o sacudidas los dejan NO REPORTABLES; período 10.10 s en todos (probablemente la cámara). Preguntas nuevas al equipo en docs/preguntas-reunion-equipo.md (2026-10-17). Todo en data/_mediciones_fases/textura/LEEME.md.
+
+Objetivo de este chat: (1) revisar el control de una noche (`data/_mediciones_fases/textura/noche_4k.bat`: 4K completo contra achicado, comparacion_*.txt y noche_4k_log.txt); (2) según las respuestas del equipo: videos de frecuencia (304, 341, 491: respuesta a cada tren de 1 s, curva amplitud vs frecuencia) y, si hace falta, "respuesta forzada" para los videos de Andrés no reportables; (3) pendiente: por qué textura deja NO REPORTABLES 583/466/063/268 (hoy se miden con bordes, no afecta resultados).
+```
+
+---
+
+## Cómo se usa hoy
+
+- **La forma fácil:** doble clic en `Analizar.bat`, que abre la ventana de `interfaz.py`. Pestaña Analizar: video o carpeta entera, pasos (1 medir, 2 contracciones, 3 confirmar, 4 informe HTML) y salida en vivo. Pestaña Resultados (`visor.py`): todo `processed_data`, números, avisos y gráfico interactivo (clic en una contracción = su ficha; marcar dudosa, fotograma, exportar). Pestaña Comparar (`comparar.py`): 2 o más resultados lado a lado.
+- **Por consola:**
+  - `main.py` → `scripts/contraction_report.py`, con `scripts/motion_check.py` como paso opcional.
+  - Comandos y explicación de todo lo que se imprime en `docs/guia-salida-consola.md`.
+  - `--verbose` muestra el detalle técnico. Todo queda igual guardado en los Excel.
+
+## Dónde está todo
+
+**Resultados vigentes:** `data/processed_data/<video>/`, sin sufijo. Las corridas anteriores están solo en el historial de git. Mediciones de las fases: `data/_mediciones_fases/`. Los videos crudos (`data/raw_videos/`) no están en git. `Video_068_hw30` es 068 (corre con ±30, ahora automático; la carpeta conserva el sufijo).py`. **Regresión con un comando:** `python tests/test_regresion.py` (agregar `--completo` si se tocó ROI, bordes o RANSAC).
+
+| documento (`docs/`) | para qué |
+|---|---|
+| `guia-salida-consola.md` | comandos, la ventana y qué significa cada línea que se imprime. Para usar el programa y explicarlo |
+| `pendientes.md` | **la lista única de lo que falta** |
+| `protocolo-analisis-videos.md` | reglas del método y chequeos de aceptación antes de informar un número |
+| `referencia-archivos-y-graficos.md` | qué contiene cada archivo, cada columna y cada eje |
+| `DOCUMENTACION.md` | el método explicado sin código, para quien diseña el experimento |
+| `raritos.md` | resultados y diagnóstico de los cinco videos `RARITOS` |
+| `preguntas-reunion-equipo.md` | preguntas para el equipo de Tecnun (anotar ahí las respuestas) |
+| `base-de-tiempo-y-frames-perdidos.md` | el eje temporal, en detalle |
+| `separacion-estimuladas-espontaneas.md` | enganche de fase y sus límites |
+| `metricas-cinetica-TTP-RT50.md` | cinética: viabilidad, implementación y resultados |
+| `comparacion-musclemotion.md` | nuestros números contra MuscleMotion |
+| `contexto-tecnun-y-musclemotion.md` | para quién es el trabajo y qué es la carpeta `OK` |
+| `revision-script-matlab.md` | los errores del script del equipo, para conversarlo con ellos |
+| `historia/` | cómo se llegó a cada decisión: propuestas de cada fase, diagnósticos viejos (la revisión de código H1–H55 se borró el 2026-10-10: lo abierto está en `pendientes.md`, sección F; el detalle, en el historial de git) |
+
+## Resultados de referencia (los seis validados)
+
+| video | ROI (método, columnas) | var | k (meseta) | eventos | período del tren |
+|---|---|---|---|---|---|
+| Video_prueba | 454–1516 (`gauge_cintura`, 60) | 5.32 % | 9.4 (5.3–15.2) | 29 (6 estimulados) | 10.00043 ± 0.00230 s |
+| Video_063 | 875–1039 (`gauge_plana`, 54) | 0.35 % | 11.4 (9.4–13.8) | 6 (5 estimulados) | 9.99812 ± 0.00304 s |
+| Video_268 | 918–1328 (`gauge_cintura`, 60) | 5.24 % | 12.5 (5.8–24.4) | 6 | 10.00132 ± 0.00230 s |
+| Video_466 | 696–846 (`gauge_cintura`, 50) | 4.85 % | 11.4 (6.4–20.2) | 5 | 10.00184 ± 0.00542 s |
+| Video_583 | 718–1187 (`gauge_cintura`, 60) | 5.83 % | 16.7 (12.5–24.4) | 6 | 10.00024 ± 0.00230 s |
+| Video_491 | 459–1206 (`gauge_cintura`, 60) | 5.08 % | 10.4 (7.8–13.8) | 2 | sin tren |
+
+**Video_prueba (29) y Video_063 (6) son la regresión:** cualquier cambio de algoritmo tiene que darlos iguales. Los cinco videos con tren dan 0.1 Hz dentro del error, con captura del 100 % y p = 0.001. Ninguno usa zona (ROI) manual.
+
+| video | TTP | RT50 | amplitud relativa (estimulados) | amplitud (px) |
+|---|---|---|---|---|
+| Video_prueba | < ~100 ms (no medible) | < ~100 ms | 2.31 % | 6.81 |
+| Video_063 | < ~100 ms | < ~100 ms | 0.56 % | 1.59 |
+| Video_268 | < ~100 ms | < ~100 ms | 0.57 % | 1.55 |
+| Video_466 | 255 ms [137, 365] | 192 ms [33, 260] | 2.16 % | 4.36 |
+| Video_583 | 258 ms [129, 335] | 181 ms [99, 301] | 1.31 % | 3.10 |
+| Video_491 | 570 ms | 467 ms | 0.40 % (todos; sin tren) | 1.02 |
+
+**Video_491 (36 Hz)** es distinto: dos contracciones de ~1 s, en sentido contrario (la franja sube). Es compatible con un tétanos fusionado, pero no está confirmado. Consultar con el equipo antes de citarlo.
+
+## RARITOS (procesados 2026-10-07; detalle en `docs/raritos.md`)
+
+| video | resultado | lectura |
+|---|---|---|
+| 476 | 6 estimuladas a 0.1 Hz, 0.64 % | normal; MuscleMotion falla por la compresión del video |
+| 613 | NO REPORTABLE | vibración al inicio y al final; sin contracciones detectables |
+| 068 | NO REPORTABLE (con ventana ±30, automática) | actividad continua del tejido, sin pausas: el método de eventos no aplica |
+| 304 | 0 eventos | oscilación continua a ~3.5–4.3 Hz: mismo caso que 068 |
+| 341 | NO REPORTABLE | mezcla: ráfagas del tejido hacia los dos lados y un tren limpio a ~3.2 Hz |
+
+## Historia en una línea por fase
+
+- **2026-10-16/17:** medición por textura como opción (`--metodo textura`), validada (sintético y 7 reportables); 4K achicados x0.5 y `--resolucion-completa`; carpeta de Andrés: 4 de 9 reportables; preguntas nuevas al equipo.
+- **v4 (septiembre):** detección sobre `center_px`, ROI automática, eje por timestamps.
+- **Revisión de código** (H1–H55; lo que sigue abierto, en `pendientes.md` F).
+- **Fase 2.2:** qué es un evento (altura y prominencia, ventana automática).
+- **Fase 3:**
+  - ritmo y cinética: tren dirigido e instante = inicio;
+  - borde y ajuste: columnas adaptables, rescate con cintura;
+  - una sola métrica: la traslación.
+- **Fase 4:**
+  - el chequeo de outliers pasa a ser solo diagnóstico;
+  - `motion_check` arreglado;
+  - el sexto evento de 063 es real;
+  - la ráfaga final de 583 es vibración.
+- **2026-10-08 (código, sin cambiar números):** Excel con el nombre del video (se aceptan los nombres viejos); video leído una vez menos, fotogramas en paralelo (`--procesos`) y RANSAC propio (igual al de sklearn): de 5–6 min a ~70 s por video; borradas opciones y scripts sin uso. CLAHE sobre la franja: medido y descartado. Mail a Cami con los RARITOS y preguntas (`docs/RARITOS_resultados_y_preguntas.pdf`).
+- **2026-10-10:** ventana de búsqueda automática (B1, opción a'): ±15 y, si el borde se sale, ±30. Solo cambia 304 (sin cambiar números informados).
+- **2026-10-10 (tarde, sin cambiar números):** versiones fijas en `requirements.txt`; procesar una **carpeta entera** con tabla resumen (ventana y `scripts/procesar_carpeta.py`). Medidas y cerradas: D2/H52 (el peine de compresión está en los 11 videos, no pasa a los bordes), D3 (la espontánea de 0.31 s de 063 es local), D7 (la oscilación post-evento es solo de 476), B1 (en 466 el borde superior tiene un segundo escalón a ~15 px). D1: por contracción 476 da 0.99 y 268, 466 y 491 dan 0.86–0.88; `motion_check` ahora juzga el tamaño contracción por contracción. H23: escalar la ventana de la ROI con el gel no cambia ningún número informado; se deja como está.
+- **2026-10-10 (noche, sin cambiar números):** informe HTML de una página por video (paso 4, `scripts/informe.py`); `configuracion.ini`; IC 95 % por bootstrap de la amplitud (y TTP/RT50); avisos de timestamps inventados, cintura corta y poco contraste (D6).
+- **2026-10-15 (noche):** B6 aprobado e implementado (pico = primer fotograma ≥ 95 % del máximo; cambian TTP/RT50 de 466, 583 y 491; referencia regenerada y `processed_data` rehecho). Rotación automática para gel vertical (videos de Andrés); el borde de esos videos es una rampa granulada y queda por probar con un video real.
+- **2026-10-15 (tarde, sin cambiar números):** resumen de la **basal** (C8: consola, hoja `basal_*`, informe, ventana); Comparar con selector de pulsos arriba, tabla de pulsos elegidos y vistas de forma normalizada, TTP/RT50 por pulso y amplitud pulso a pulso.
+- **2026-10-15 (sin cambiar números):** textos "mediana"/"promedio (media)" en consola, informe, ventana y figuras; sub-pestaña Pulsos (tabla por pulso, elegir pulsos y su media) y Comparar con los N primeros estimulados o la selección guardada. Medidos y esperando decisión: B6 (pico = primer fotograma ≥ 95 % del máximo), B7 (613 y 068 sin respuesta a 0.1 Hz, ni plegando la señal) y C8 (resumen de la basal). Ver `pendientes.md` sección 0.
+- **2026-10-11 (sin cambiar números):** pestaña Comparar; en Resultados, números en varias líneas, atajos, exportar la ficha, marcar dudosa (aparte), fotograma del pico y amplitud contra el tiempo. Script para medir los tiempos de `main.py` en la notebook (`data/_mediciones_fases/tiempos_main/`).
+- **2026-10-08 (tarde):** resultados regenerados con nombres nuevos (sin cambiar números); test de regresión automático de los 11 videos; `--procesos` por defecto 2 (medido en la notebook).
+- **2026-10-07:** se procesaron los RARITOS. Después: consola clara, `--verbose`, sentido de los eventos corregido, figuras NO REPORTABLE, la ventana (`interfaz.py`) y la documentación ordenada.
+
+## Límites conocidos del método
+
+- Una serie espontánea **muy** regular es indistinguible de una estimulada por los tiempos solos.
+- `rhythm_split` necesita al menos 4 latidos estimulados y el 75 % de los pulsos ocupados.
+- **Una vibración del montaje entra en `center_px` igual que una contracción.** El control con la señal invertida la delata cuando va hacia los dos lados (613), pero no siempre: la ráfaga final de 583 casi cuenta como evento.
+- **El método cuenta contracciones separadas por reposo.** Si el tejido no se queda quieto nunca (068, 304), el conteo no aplica; falta una medida de actividad (`pendientes.md`).
+- **Si el gel se mueve más de ±15 px**, el borde se sale de la ventana de búsqueda: desde 2026-10-10 `main.py` lo detecta (bordes pegados al límite) y reprocesa solo con ±30 (068, 341).
+- A 30 fps, TTP y RT50 no son medibles cuando la subida dura menos de 5 fotogramas.
+- En las muestras lentas (466, 583) el pico es una meseta de 4–5 fotogramas: el instante del pico es ambiguo, el del inicio no.
+- El grosor da un salto positivo en el fotograma de máxima velocidad: es motion blur, no engrosamiento.

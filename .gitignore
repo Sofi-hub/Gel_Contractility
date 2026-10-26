@@ -8,3 +8,8 @@ qc_output/
 
 # videos crudos: pesados y no cambian; se guardan fuera de git
 data/raw_videos/
+
+# salidas que no son resultados vigentes (2026-10-26)
+data/processed_data/_cuaderno/
+data/processed_data/_4k_completo/
+tests/ultimo_resultado.txt

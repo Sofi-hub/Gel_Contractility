@@ -96,10 +96,18 @@ def leer_fila(carpeta: Path) -> dict:
     fila["reportable"] = bool(r.get("conteo_reportable"))
     mot = r.get("motivo_no_reportable")
     fila["motivo_no_reportable"] = "" if mot is None or mot != mot else str(mot)
-    fila["amplitud_pct"] = _num(r.get("amplitud_relativa_pct"))
-    fila["amplitud_px"] = _num(r.get("amplitud_px"))
-    if fila["amplitud_px"] is None:   # resultados anteriores a H40
-        fila["amplitud_px"] = _num(r.get("amplitud_traslacion_px"))
+    # amplitud: SOLO si el conteo es reportable. Con el conteo NO reportable sale de
+    # candidatos que no se distinguen del ruido, asi que no se informa; ahi el numero a
+    # mirar es la respuesta forzada (columnas forzada_*, que siguen igual).
+    if fila["reportable"]:
+        fila["amplitud_pct"] = _num(r.get("amplitud_relativa_pct"))
+        fila["amplitud_px"] = _num(r.get("amplitud_px"))
+        if fila["amplitud_px"] is None:   # resultados anteriores a H40
+            fila["amplitud_px"] = _num(r.get("amplitud_traslacion_px"))
+        g = r.get("cinetica_grupo_principal")
+        fila["amplitud_grupo"] = "" if g is None or g != g else str(g)
+    else:
+        fila["amplitud_pct"] = fila["amplitud_px"] = fila["amplitud_grupo"] = None
     # respuesta forzada (2026-10-19): solo si el reporte la calculo (conteo NO reportable)
     if _num(r.get("forzada_p")) is not None:
         fila["forzada_p"] = _num(r.get("forzada_p"))
@@ -108,8 +116,6 @@ def leer_fila(carpeta: Path) -> dict:
         hay = str(r.get("forzada_hay_respuesta")).strip().lower() in ("true", "1", "1.0")
         fila["forzada_amplitud_pct"] = _num(r.get("forzada_amplitud_pct")) if hay else None
         fila["forzada_amplitud_px"] = _num(r.get("forzada_amplitud_px")) if hay else None
-    g = r.get("cinetica_grupo_principal")
-    fila["amplitud_grupo"] = "" if g is None or g != g else str(g)
 
     # tren: la hoja `trenes` (fila del tren clasificado como estimulado)
     tr = _hoja(hojas, "trenes")
@@ -202,20 +208,38 @@ def _txt_forzada(r: dict) -> str:
     return f"{r['forzada_amplitud_px']:.2f} px {r.get('forzada_pulsos', '')}"
 
 
+def _vacio() -> str:
+    """Celda sin numero. Guion largo, o guion normal si la consola no lo puede imprimir
+    (una consola vieja de Windows no tiene el guion largo y el print falla)."""
+    try:
+        "—".encode(sys.stdout.encoding or "ascii")
+    except (UnicodeEncodeError, LookupError, AttributeError):
+        return "-"
+    return "—"
+
+
 def tabla_texto(filas: list[dict]) -> str:
     def f(x, fmt):
         return "" if x is None or x != x else format(x, fmt)
+    vacio = _vacio()
     lin = [f"{'video':34s} {'estado':6s} {'ev':>3s} {'report.':7s} {'periodo (s)':>12s} "
            f"{'ampl %':>6s} {'ampl px':>7s} {'forzada':>16s} avisos"]
     for r in filas:
         rep = "" if r.get("reportable") is None else ("si" if r["reportable"] else "NO")
         per = (f(r.get("periodo_s"), ".4f") if r.get("tren") == "si"
                else "sin tren" if r.get("tren") == "no" else "")
+        # conteo NO reportable: la amplitud no se informa (leer_fila la deja vacia)
+        no_rep = r.get("reportable") is False
+        a_pct = vacio if no_rep else f(r.get("amplitud_pct"), ".2f")
+        a_px = vacio if no_rep else f(r.get("amplitud_px"), ".2f")
         lin.append(f"{r['video'][:34]:34s} {str(r.get('estado',''))[:6]:6s} "
                    f"{f(r.get('eventos'), 'd'):>3s} {rep:7s} {per:>12s} "
-                   f"{f(r.get('amplitud_pct'), '.2f'):>6s} {f(r.get('amplitud_px'), '.2f'):>7s} "
+                   f"{a_pct:>6s} {a_px:>7s} "
                    f"{_txt_forzada(r):>16s} {r.get('n_avisos', 0)}")
     lin.append("(ampl % y px: MEDIANA de las contracciones del grupo informado)")
+    if any(r.get("reportable") is False for r in filas):
+        lin.append("(ampl vacia = conteo NO reportable: esos numeros saldrian de candidatos que "
+                   "no se distinguen del ruido, asi que no se informan; mirar la columna forzada)")
     if any(r.get("forzada_p") is not None for r in filas):
         lin.append("(forzada: respuesta al reloj del estimulador cuando el conteo es NO reportable; "
                    "px de la mediana de los pulsos y pulsos que responden. 'no' = sin respuesta. No es un conteo)")

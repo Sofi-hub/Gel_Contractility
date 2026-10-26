@@ -40,6 +40,25 @@ if (P / "Video_341").is_dir():
     f = pc.leer_fila(P / "Video_341")
     check("Video_341: NO reportable, sin tren", f.get("reportable") is False and f.get("tren") == "no")
 
+# conteo NO REPORTABLE: la amplitud no se informa (sale de candidatos), la forzada sí
+if (P / "10V_3").is_dir():
+    f = pc.leer_fila(P / "10V_3")
+    check("10V_3: NO reportable", f.get("reportable") is False)
+    check("10V_3: sin amplitud en la tabla",
+          f["amplitud_pct"] is None and f["amplitud_px"] is None and f["amplitud_grupo"] is None)
+    check("10V_3: respuesta forzada intacta",
+          f.get("forzada_p") is not None and f.get("forzada_pulsos") == "6/6"
+          and f.get("forzada_amplitud_px") is not None)
+    # el Excel no se toca: el numero sigue estando, solo no se informa
+    hojas = pc.leer_excel(sorted((P / "10V_3").glob("contracciones_*.xlsx"))[0], sheet_name=None)
+    r0 = pc._hoja(hojas, "resumen").iloc[0]
+    check("10V_3: el Excel sigue trayendo la amplitud",
+          pc._num(r0.get("amplitud_relativa_pct")) is not None)
+    t = pc.tabla_texto([dict(f, video="10V_3.mp4", estado="OK")])
+    check("tabla: la fila NO reportable no muestra amplitud",
+          f"{pc._vacio():>6s} {pc._vacio():>7s}" in t and "6.02 px 6/6" in t)
+    check("tabla: nota de la amplitud vacia", "(ampl vacia = conteo NO reportable" in t)
+
 check("avisos_de", pc.avisos_de("x\n  AVISO: algo\nRESULTADO: NO REPORTABLE -> y\n  AVISO: algo\n")
       == ["AVISO: algo", "RESULTADO: NO REPORTABLE -> y"])
 

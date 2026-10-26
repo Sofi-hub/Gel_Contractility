@@ -180,5 +180,25 @@ check("basal: resultado viejo -> avisa que falta el paso 2",
 check("basal: texto guardado", informe.texto_basal({"basal_resumen": "0 contraccion(es)", "basal_fin_s": 10.0})
       == "0–10.0 s: 0 contraccion(es)")
 
+# ---- respuesta forzada (2026-10-19): texto del resumen; sin calcular nada ----
+check("forzada: sin columnas -> no se muestra", informe.texto_forzada({"amplitud_relativa_pct": 1.0}) is None)
+_rf = {"forzada_p": 0.024, "forzada_periodo_s": 10.1, "forzada_hay_respuesta": True,
+       "forzada_n_responden": 6, "forzada_n_pulsos": 6, "forzada_amplitud_pct": 0.262,
+       "forzada_amplitud_px": 6.02}
+check("forzada: hay respuesta, con amplitud y pulsos",
+      informe.texto_forzada(_rf).startswith("HAY") and "6.02 px" in informe.texto_forzada(_rf)
+      and "6 de 6" in informe.texto_forzada(_rf))
+check("forzada: sin respuesta",
+      informe.texto_forzada({**_rf, "forzada_hay_respuesta": False, "forzada_p": 0.78}).startswith("sin respuesta"))
+_cl, _fr = informe.frase_resultado({"fila": {"eventos": 8, "reportable": False}, "res": _rf})
+check("forzada: la frase del informe la menciona si el conteo no es reportable",
+      _cl == "mal" and "respuesta forzada" in _fr and "0.262" in _fr)
+sys.path.insert(0, str(RAIZ / "scripts"))
+import procesar_carpeta as _pc  # noqa: E402
+check("forzada: tabla de carpeta",
+      _pc._txt_forzada({"forzada_p": 0.024, "forzada_amplitud_px": 6.02, "forzada_pulsos": "6/6"}) == "6.02 px 6/6"
+      and _pc._txt_forzada({"forzada_p": 0.78, "forzada_amplitud_px": None}) == "no"
+      and _pc._txt_forzada({}) == "")
+
 print("\nTODO OK" if ok else "\nHAY FALLAS")
 sys.exit(0 if ok else 1)

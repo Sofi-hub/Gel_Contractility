@@ -526,6 +526,7 @@ def tabla_comparar(rs: list[Resultado]) -> list[tuple[str, list[str]]]:
         fila("Avisos", lambda r: str(len(r.avisos)) if r.avisos else "ninguno"),
         fila("Marcadas dudosas (a mano)", lambda r: str(len(leer_marcas(r.carpeta)))),
         fila("Basal (antes del estímulo)", lambda r: informe.texto_basal(r.res)),
+        fila("Respuesta forzada", lambda r: informe.texto_forzada(r.res) or "—"),
     ]
 
 
@@ -968,6 +969,9 @@ class PestanaResultados:
                                                "  (no medible a 30 fps)")))
         if res:
             filas.append(("Basal", informe.texto_basal(res)))
+        tf = informe.texto_forzada(res)
+        if tf:
+            filas.append(("Respuesta forzada", tf))
         if r.veredicto:
             filas.append(("2.º método", str(r.veredicto.get("veredicto", ""))))
         for a in r.avisos:

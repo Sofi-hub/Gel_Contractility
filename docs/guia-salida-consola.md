@@ -325,6 +325,7 @@ Cuando no se pueden contar las contracciones (ruido, sacudidas), pero se sabe ca
 - **Amplitud:** mediana de los pulsos, en % del grosor y px. Cerca del límite (pulsos de ~3 × el ruido) sale ~10–30 % alta.
 - **No es un conteo:** no ve espontáneas, no da TTP ni RT50 y el RESULTADO sigue NO REPORTABLE. Los pulsos quedan en la hoja `forzada_*`.
 - Si dice `no hay respuesta al estimulo distinguible de los controles` (613, 068): no hay respuesta medible a esa frecuencia.
+- También aparece en el informe HTML (fila "Respuesta forzada" y en la frase del resultado), en la ventana (Números y Comparar) y en la tabla de una carpeta (columnas `forzada_p`, `forzada_pulsos`, `forzada_amplitud_pct`, `forzada_amplitud_px`; en la consola, columna "forzada": px y pulsos que responden, o "no").
 
 ### `ESTIMULADOR` (solo si se pasó `--frecuencia-estimulo`)
 

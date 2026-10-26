@@ -42,6 +42,7 @@ EXTENSIONES = {".mp4", ".avi", ".mov"}
 COLUMNAS = ["video", "estado", "eventos", "reportable", "motivo_no_reportable",
             "tren", "periodo_s", "periodo_err_s", "frecuencia_Hz", "n_estimulados",
             "captura_pct", "amplitud_pct", "amplitud_px", "amplitud_grupo",
+            "forzada_p", "forzada_pulsos", "forzada_amplitud_pct", "forzada_amplitud_px",
             "roi_cumple", "half_window", "n_avisos", "avisos", "informe", "carpeta"]
 
 
@@ -99,6 +100,14 @@ def leer_fila(carpeta: Path) -> dict:
     fila["amplitud_px"] = _num(r.get("amplitud_px"))
     if fila["amplitud_px"] is None:   # resultados anteriores a H40
         fila["amplitud_px"] = _num(r.get("amplitud_traslacion_px"))
+    # respuesta forzada (2026-10-19): solo si el reporte la calculo (conteo NO reportable)
+    if _num(r.get("forzada_p")) is not None:
+        fila["forzada_p"] = _num(r.get("forzada_p"))
+        n, tot = _num(r.get("forzada_n_responden")), _num(r.get("forzada_n_pulsos"))
+        fila["forzada_pulsos"] = f"{n:.0f}/{tot:.0f}" if n is not None and tot is not None else ""
+        hay = str(r.get("forzada_hay_respuesta")).strip().lower() in ("true", "1", "1.0")
+        fila["forzada_amplitud_pct"] = _num(r.get("forzada_amplitud_pct")) if hay else None
+        fila["forzada_amplitud_px"] = _num(r.get("forzada_amplitud_px")) if hay else None
     g = r.get("cinetica_grupo_principal")
     fila["amplitud_grupo"] = "" if g is None or g != g else str(g)
 
@@ -185,11 +194,19 @@ def guardar_tabla(filas: list[dict], salida: Path) -> Path:
     return xlsx
 
 
+def _txt_forzada(r: dict) -> str:
+    if r.get("forzada_p") is None:
+        return ""
+    if r.get("forzada_amplitud_px") is None:
+        return "no"
+    return f"{r['forzada_amplitud_px']:.2f} px {r.get('forzada_pulsos', '')}"
+
+
 def tabla_texto(filas: list[dict]) -> str:
     def f(x, fmt):
         return "" if x is None or x != x else format(x, fmt)
     lin = [f"{'video':34s} {'estado':6s} {'ev':>3s} {'report.':7s} {'periodo (s)':>12s} "
-           f"{'ampl %':>6s} {'ampl px':>7s} avisos"]
+           f"{'ampl %':>6s} {'ampl px':>7s} {'forzada':>16s} avisos"]
     for r in filas:
         rep = "" if r.get("reportable") is None else ("si" if r["reportable"] else "NO")
         per = (f(r.get("periodo_s"), ".4f") if r.get("tren") == "si"
@@ -197,8 +214,11 @@ def tabla_texto(filas: list[dict]) -> str:
         lin.append(f"{r['video'][:34]:34s} {str(r.get('estado',''))[:6]:6s} "
                    f"{f(r.get('eventos'), 'd'):>3s} {rep:7s} {per:>12s} "
                    f"{f(r.get('amplitud_pct'), '.2f'):>6s} {f(r.get('amplitud_px'), '.2f'):>7s} "
-                   f"{r.get('n_avisos', 0)}")
+                   f"{_txt_forzada(r):>16s} {r.get('n_avisos', 0)}")
     lin.append("(ampl % y px: MEDIANA de las contracciones del grupo informado)")
+    if any(r.get("forzada_p") is not None for r in filas):
+        lin.append("(forzada: respuesta al reloj del estimulador cuando el conteo es NO reportable; "
+                   "px de la mediana de los pulsos y pulsos que responden. 'no' = sin respuesta. No es un conteo)")
     return "\n".join(lin)
 
 

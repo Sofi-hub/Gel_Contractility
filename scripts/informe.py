@@ -112,6 +112,13 @@ def frase_resultado(d: dict) -> tuple[str, str]:
     n = f.get("eventos") or 0
     if not f.get("reportable"):
         mot = f.get("motivo_no_reportable") or "no hay meseta en el escaneo del umbral"
+        tf = texto_forzada(res)
+        if tf and tf.startswith("HAY"):
+            return "mal", (f"<b>El conteo NO es reportable</b> ({html.escape(mot)}): no informar "
+                           f"cuántas contracciones hay. Pero la <b>respuesta forzada</b> muestra "
+                           f"respuesta al estimulador: <b>{_f(res.get('forzada_amplitud_pct'), '.3f')} % "
+                           f"del grosor</b> ({_f(res.get('forzada_amplitud_px'))} px, mediana de los "
+                           f"pulsos; ver la tabla).")
         return "mal", (f"<b>El conteo NO es reportable</b> ({html.escape(mot)}). Hay {n} "
                        f"candidatos, pero no se distinguen del ruido con seguridad: no informar "
                        f"números de este video. Las figuras quedan para revisar qué pasó.")
@@ -136,6 +143,24 @@ def texto_basal(res: dict) -> str:
         return "— (resultado anterior al 2026-10-15: aparece al rehacer el paso 2)"
     fin = _num(res.get("basal_fin_s"))
     return (f"0–{fin:.1f} s: " if fin is not None else "") + t
+
+
+def texto_forzada(res: dict):
+    """Respuesta forzada (2026-10-19), tal como la guardó el reporte. None si no se calculó
+    (conteo reportable, sin --frecuencia-estimulo o resultado anterior)."""
+    if not res or _num(res.get("forzada_p")) is None:
+        return None
+    p = _num(res.get("forzada_p"))
+    per = _num(res.get("forzada_periodo_s"))
+    hay = str(res.get("forzada_hay_respuesta")).strip().lower() in ("true", "1", "1.0")
+    if not hay:
+        return (f"sin respuesta al estímulo distinguible de los controles "
+                f"(período {per:.2f} s, p = {p:.3f})")
+    n, tot = _num(res.get("forzada_n_responden")), _num(res.get("forzada_n_pulsos"))
+    return (f"HAY respuesta al estímulo (p = {p:.3f}; {n:.0f} de {tot:.0f} pulsos sobre los controles; "
+            f"período {per:.2f} s): {_num(res.get('forzada_amplitud_pct')):.3f} % del grosor = "
+            f"{_num(res.get('forzada_amplitud_px')):.2f} px (mediana de los pulsos). "
+            f"No es un conteo: no da TTP/RT50 ni espontáneas.")
 
 
 def cinetica_txt(res: dict, m: str) -> str:
@@ -241,6 +266,9 @@ def armar_html(d: dict) -> str:
         filas.append(("Relajación al 50 % (RT50), mediana", cinetica_txt(res, "rt50")))
     if res:
         filas.append(("Basal (antes del estímulo)", html.escape(texto_basal(res))))
+    tf = texto_forzada(res)
+    if tf:
+        filas.append(("Respuesta forzada (al reloj del estimulador)", html.escape(tf)))
     v = d.get("veredicto")
     if v:
         tam = _num(v.get("tamano_por_contraccion_mediana")) or _num(v.get("pendiente_desp_vert_sobre_center_px"))

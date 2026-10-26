@@ -100,3 +100,70 @@ Contexto: los 9 videos de Andrés (4K, mucho zoom, gel vertical) no se pueden me
    - Si lo usan igual: ¿se puede dejar algo fijo con textura dentro de la imagen, para distinguir una sacudida del microscopio de un movimiento del tejido?
 4. **Videos de frecuencia (304 "1_2HZ", 341 "5_10HZ", 491 "36HZ"):** el protocolo general ya lo pasó Cami (40 V; trenes de 1 s a 1–5, 10, 20, 30 y 36 Hz con 10 s de descanso). ¿Qué frecuencias tiene cada uno de estos tres videos, en qué orden y cuándo empieza el primer tren?
 5. **Para comparar voltajes, ¿les alcanza con 1 o 2 videos limpios por voltaje, o necesitan los 3?** Hoy por textura son reportables 10V_1, 20V_3, 40V_1 y 40V_3. Si necesitan los 3, conviene implementar la "respuesta forzada" (medir en cada instante esperado de estímulo, contra controles).
+
+> **Actualización (2026-10-19) de la pregunta 5:** ya no hace falta elegir. La "respuesta forzada" está hecha y los 5 videos que no eran reportables (10V_2, 10V_3, 20V_1, 20V_2, 40V_2) **sí responden** al estímulo. Ver la explicación C de abajo.
+
+## Explicaciones para la reunión (2026-10-26)
+
+Para contarle al equipo, en palabras simples, tres cosas que salen de los videos de Andrés. Detalle técnico: `data/_mediciones_fases/textura/LEEME.md` §6, `data/_mediciones_fases/textura_resolucion/LEEME.md` y `data/_mediciones_fases/respuesta_forzada/LEEME.md`.
+
+### A. ¿Por qué un video sale "NO REPORTABLE" si a ojo se ven las contracciones?
+
+**"NO REPORTABLE" no quiere decir "no hay contracciones".** Quiere decir que el programa no puede **asegurar cuántas** hay sin que el número dependa de una elección arbitraria. Para contar, el programa busca picos que sobresalgan del temblor normal de la medición (el "ruido") y solo informa el número si pasa **tres pruebas**:
+
+1. **El número no cambia al mover el umbral.** Se prueban umbrales de 3 a 24 veces el ruido. Si en un tramo amplio de umbrales sale siempre el mismo número (la "meseta"), el conteo es firme. Si con un umbral salen 6 y con uno apenas más alto salen 4, no hay un número verdadero para dar.
+2. **Nada del lado contrario.** Una contracción mueve el gel hacia **un** lado; una sacudida o el ruido lo mueven hacia **los dos**. El programa busca picos también en la señal dada vuelta: si aparece alguno con ese umbral, lo que está contando puede ser ruido o vibración.
+3. **El número no depende de cómo se quita la deriva.** Antes de contar se quita el corrimiento lento (foco, temperatura) con una ventana de unos segundos. Se cuenta con tres ventanas (1.5, 2 y 3 s) y las tres tienen que dar lo mismo.
+
+**De qué depende, en la práctica:** del **tamaño de la respuesta comparado con el ruido**. Ejemplos reales:
+- **20V_3:** la respuesta es ~25 veces el ruido → pasa las tres pruebas siempre.
+- **40V_3:** ~9 veces el ruido → pasaba "raspando" (la meseta apenas tenía el ancho mínimo); medido en 4K, con un poco más de ruido, dejó de pasar.
+- **40V_1:** respuesta clara, pero en el primer segundo del video hay un poco de ruido que, con la ventana de 1.5 s, aparece como un sexto "evento" → falla la prueba 3.
+- **10V_3:** respuestas grandes (~6 px), pero una **sacudida** a los ~15 s mueve la imagen hacia los dos lados → falla la prueba 2.
+- **10V_2, 40V_2:** respuestas de ~0.5 px, apenas por encima del ruido → no hay meseta (prueba 1).
+
+**Por qué es así a propósito:** el programa prefiere **no informar** antes que informar un número que cambia según un ajuste. El error siempre va hacia "no informar", nunca hacia inventar contracciones.
+
+### B. Videos 4K: ¿se miden achicados o en tamaño completo? ¿Cuál es el verdadero?
+
+**Qué se hace hoy:** los videos 4K se miden **achicados a la mitad** (cada 2×2 píxeles se promedian en uno) y el resultado se pasa a píxeles del video original. Achicado tarda ~4 veces menos.
+
+**Cómo lo comprobamos:** medimos 5 videos de las dos formas, 4K completo y achicado, y comparamos.
+- **Respuesta grande (más de ~1.5 px; 20V_3, 40V_1, 10V_3):** las dos dan **lo mismo**: mismas contracciones, mismo instante y amplitud dentro del 0–2 %.
+- **Respuesta chica (~1 px o menos):** **no dan lo mismo.** En 10V_1 la amplitud es 16 % menor en 4K (en los 6 pulsos); en 40V_3 cambia hasta el veredicto.
+
+**Por qué no sabemos cuál es el verdadero:** en un video real **no conocemos el movimiento verdadero**, así que no hay contra qué comparar. Para averiguarlo hicimos un video **sintético**: una imagen con textura que movimos una cantidad **exacta y conocida** (0.5, 1 y 2 px), y la medimos de las dos formas.
+- Con 2 px, las dos formas aciertan (error menor que 5 %).
+- Con 0.5–1 px, **las dos se equivocan** hasta 10–20 %, y no siempre hacia el mismo lado.
+- En el sintético, el achicado mide **menos** que el 4K; en 10V_1 real mide **más**. O sea, el sintético no reproduce lo que pasa en el video real: la diferencia de 10V_1 depende de algo propio de la imagen real (la textura del gel, la compresión del video o el ruido de la cámara), que un sintético no copia.
+
+**Por qué pasa (la idea):** con movimientos de menos de un píxel, el programa tiene que "adivinar" fracciones de píxel a partir de cómo cambia el brillo entre píxeles vecinos. Eso funciona muy bien cuando el movimiento es de varios píxeles; con fracciones chicas, cualquier detalle de la imagen (cómo es el grano, la compresión) sesga un poco la estimación. Al achicar, un movimiento de 1 px pasa a ser de 0.5 px en la imagen medida, todavía más chico.
+
+**Cuál usar:**
+- **Respuestas de más de ~1.5 px:** el **achicado** (lo de siempre). Da lo mismo y es mucho más rápido.
+- **Respuestas de ~1 px o menos:** cualquiera de las dos, pero **informar la amplitud con un margen de ~15–20 %** (más grande que el intervalo de confianza que da el programa). El programa ya avisa en estos casos: `AVISO: respuesta chica para el metodo de textura`.
+- **Para saber el verdadero** haría falta un video del mismo montaje con un movimiento **conocido** (ver la pregunta 6).
+
+### C. "Respuesta forzada": cómo se rescatan los videos que no se pueden contar
+
+**Idea:** sabemos que el estimulador dispara cada 10 s. Entonces no hace falta encontrar cada contracción: alcanza con preguntar **"¿el gel se mueve en los instantes del estímulo más que en cualquier otro momento?"**. Es como escuchar golpes en una puerta en una habitación ruidosa: un golpe solo se pierde, pero si sabés cuándo va a golpear y escuchás justo ahí, lo notás.
+
+**Cómo:**
+1. Se corta la señal en tramos de 10 s y se superponen (como hojas transparentes). Las respuestas al estímulo caen siempre en el mismo lugar y se suman; el ruido cae en lugares distintos y se borra.
+2. **Control:** lo mismo cortando en tramos de 40 duraciones que **no** son la del estimulador (5.5 s, 7 s, 12 s…). Ahí no hay nada que se sume. Si el período verdadero sobresale más que los 40 falsos, hay respuesta (p = 0.024 es el mejor valor posible: ninguno de los 40 le ganó).
+3. En cada pulso se mide cuánto sube la franja y se compara con instantes **sin** estímulo. La amplitud es la mediana de los pulsos.
+
+**Cómo sabemos que funciona:**
+- En los 5 videos que ya se podían contar, da **la misma amplitud** que el método normal (diferencia ≤ 1.5 %).
+- En 2 videos que sabemos que **no** responden al estímulo (613 y 068), dice "no hay respuesta".
+- En videos sintéticos: encuentra pulsos desde 3 veces el ruido y no inventa respuestas en ruido puro ni con sacudidas al azar.
+
+**Resultado:** los 5 videos de Andrés que no se podían contar **sí responden**: 10V_2 0.44 px (0.022 %), 10V_3 6.02 px (0.26 %), 20V_1 1.93 px (0.084 %), 20V_2 2.94 px (0.125 %), 40V_2 0.58 px (0.028 %). **Los 9 videos de Andrés responden a 0.1 Hz.**
+
+**Lo que no hace:** no cuenta contracciones (el conteo sigue diciendo NO REPORTABLE), no ve contracciones espontáneas ni da TTP/RT50, y supone que el estimulador estaba encendido a esa frecuencia.
+
+## Preguntas nuevas (2026-10-26)
+
+6. **¿Se puede grabar un video con un movimiento conocido**, con el mismo microscopio y aumento que Andrés? Por ejemplo, mover la platina una cantidad medida (unos pocos µm) o filmar una muestra fija mientras se la corre. Es la única forma de saber cuál medición es la correcta cuando la respuesta es de ~1 px o menos (explicación B).
+7. **¿Les sirve la respuesta forzada como resultado?** Es decir: "el tejido responde al estímulo, con una amplitud de X % del grosor", aunque no se pueda dar el número de contracciones ni la cinética. ¿O para esos videos necesitan sí o sí el conteo?
+8. **Respuestas de menos de 1 px** (10V_2, 40V_2, 40V_3): ¿se puede bajar el ruido de la imagen en las próximas grabaciones? Por ejemplo, más luz o contraste, que el equipo no vibre, o exportar el video con menos compresión. Lo que decide si una respuesta chica se puede medir es cuánto sobresale del ruido.

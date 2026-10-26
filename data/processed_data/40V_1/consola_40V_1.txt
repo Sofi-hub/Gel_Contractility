@@ -1,0 +1,37 @@
+
+##### Paso 2: buscar contracciones #####
+==========================================================================
+40V_1   (1957 fotogramas, 65.2 s, 30.00 fps)
+  las contracciones mueven la franja hacia ARRIBA en la imagen
+  ruido de fondo de la senal: 0.053 px
+
+  RESULTADO: 5 contracciones  (conteo confiable)
+    umbral: 16.7 x ruido, dentro de la zona estable k = 10.4-24.4, con 0 falsos de control
+    momentos (s): 16.80, 26.90, 37.03, 47.10, 57.23
+    tiempo tipico entre eventos: 10.117 s  (0.0988 Hz)
+    amplitud mediana (todos los eventos): 1.670 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [5 de 5 pulsos, p = 0.001]
+    periodo: 10.10160 +- 0.00304 s  (0.09899 Hz) | capturados 100% | tren de 16.7 a 57.1 s
+    estimuladas: 5 | espontaneas: 0
+
+  CONTRACTILIDAD (estimulados, 5 eventos)
+    amplitud (mediana): 0.08 % del grosor en reposo = 1.67 px  (IC 95 % de la mediana 0.083-0.09154 %)
+    TTP (inicio -> pico): menos de 133 ms  (3 fotogramas)
+    RT50 (pico -> 50 % de relajacion): menos de 167 ms  (4 fotogramas)
+    (con menos de 5 fotogramas no se puede dar un valor, solo un maximo: la contraccion es mas rapida que la camara)
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    0 contraccion(es) en 10.0 s; actividad basal 0.01 % del grosor
+
+  ESTIMULADOR (40V_1): configurado 0.1 Hz, medido 0.09899 +- 0.000030 Hz -> desvio sistematico de -1.01 %. Es chico y muy significativo: lo mas probable es la base de tiempo del video, no el equipo (se corrio main.py con --base-tiempo pts?)
+
+Archivos en C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility\data\processed_data\40V_1:
+  contracciones_40V_1.xlsx
+  05_estabilidad_umbral_40V_1.png
+  09_contracciones_40V_1.png
+  10_ritmo_40V_1.png
+  11_cinetica_40V_1.png
+
+##### LISTO #####

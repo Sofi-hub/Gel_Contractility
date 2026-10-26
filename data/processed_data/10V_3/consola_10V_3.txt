@@ -1,0 +1,41 @@
+
+##### Paso 2: buscar contracciones #####
+==========================================================================
+10V_3   (2070 fotogramas, 69.0 s, 30.00 fps)
+  los eventos mueven la franja hacia ARRIBA en la imagen
+  ruido de fondo de la senal: 0.376 px
+
+  RESULTADO: NO REPORTABLE -> no hay meseta en el escaneo de k.
+    Hay 8 candidatos, pero el control con la senal invertida no permite separarlos del ruido o la vibracion.
+    Los tiempos de abajo son para revisar el video, NO para informar.
+    momentos (s): 10.70, 15.43, 15.80, 20.90, 30.93, 41.10, 51.20, 61.27
+    tiempo tipico entre eventos: 10.033 s  (0.0997 Hz)
+    amplitud mediana (todos los eventos): 5.704 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [6 de 6 pulsos, p = 0.001]
+    periodo: 10.09994 +- 0.00230 s  (0.09901 Hz) | capturados 100% | tren de 10.5 a 61.0 s
+    estimuladas: 6 | espontaneas: 2   (candidatos: no se informa)
+
+  CONTRACTILIDAD (estimulados, 6 eventos)
+    no se informa: el conteo no es reportable.
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    no contable (conteo NO reportable); actividad basal 0.04 % del grosor
+
+  RESPUESTA FORZADA (al reloj del estimulador; NO es un conteo)
+    periodo 10.10 s (tren medido) | senal plegada: SNR 32.5 contra 16.1 del mejor de 40 periodos de control, p = 0.024
+    HAY respuesta al estimulo: 6 de 6 pulsos por encima de los controles (1.18 px)
+    amplitud (mediana de los pulsos): 0.262 % del grosor = 6.02 px  (franja hacia ARRIBA)
+    (no cuenta contracciones ni da TTP/RT50; el conteo sigue NO REPORTABLE)
+
+  ESTIMULADOR (10V_3): configurado 0.1 Hz, medido 0.09901 +- 0.000023 Hz -> desvio sistematico de -0.99 %. Es chico y muy significativo: lo mas probable es la base de tiempo del video, no el equipo (se corrio main.py con --base-tiempo pts?)
+
+Archivos en C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility\data\processed_data\10V_3:
+  contracciones_10V_3.xlsx
+  05_estabilidad_umbral_10V_3.png
+  09_contracciones_10V_3.png
+  10_ritmo_10V_3.png
+  11_cinetica_10V_3.png
+
+##### LISTO #####

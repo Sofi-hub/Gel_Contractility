@@ -1,0 +1,25 @@
+
+##### Paso 2: buscar contracciones #####
+==========================================================================
+10V_2   (1963 fotogramas, 65.4 s, 30.00 fps)
+  los eventos mueven la franja hacia ABAJO en la imagen
+  ruido de fondo de la senal: 0.084 px
+
+  RESULTADO: NO REPORTABLE -> no hay meseta en el escaneo de k.
+    Con el umbral de auditoria no queda ningun candidato.
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    no contable (conteo NO reportable); actividad basal 0.01 % del grosor
+
+  RESPUESTA FORZADA (al reloj del estimulador; NO es un conteo)
+    periodo 10.09 s (1/0.1 Hz +-2 %) | senal plegada: SNR 12.6 contra 7.1 del mejor de 40 periodos de control, p = 0.024
+    HAY respuesta al estimulo: 6 de 6 pulsos por encima de los controles (0.26 px)
+    amplitud (mediana de los pulsos): 0.022 % del grosor = 0.44 px  (franja hacia ABAJO)
+    (no cuenta contracciones ni da TTP/RT50; el conteo sigue NO REPORTABLE)
+
+Archivos en C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility\data\processed_data\10V_2:
+  contracciones_10V_2.xlsx
+  05_estabilidad_umbral_10V_2.png
+  09_contracciones_10V_2.png
+
+##### LISTO #####

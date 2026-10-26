@@ -1,0 +1,37 @@
+
+##### Paso 2: buscar contracciones #####
+==========================================================================
+20V_3   (1975 fotogramas, 65.8 s, 30.00 fps)
+  las contracciones mueven la franja hacia ARRIBA en la imagen
+  ruido de fondo de la senal: 0.059 px
+
+  RESULTADO: 6 contracciones  (conteo confiable)
+    umbral: 16.7 x ruido, dentro de la zona estable k = 12.5-24.4, con 0 falsos de control
+    momentos (s): 9.40, 19.53, 29.63, 39.70, 49.87, 59.97
+    tiempo tipico entre eventos: 10.100 s  (0.0990 Hz)
+    amplitud mediana (todos los eventos): 1.642 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [6 de 6 pulsos, p = 0.001]
+    periodo: 10.09896 +- 0.00230 s  (0.09902 Hz) | capturados 100% | tren de 9.3 a 59.8 s
+    estimuladas: 6 | espontaneas: 0
+
+  CONTRACTILIDAD (estimulados, 6 eventos)
+    amplitud (mediana): 0.08 % del grosor en reposo = 1.64 px  (IC 95 % de la mediana 0.08131-0.09013 %)
+    TTP (inicio -> pico): menos de 167 ms  (2.5 fotogramas)
+    RT50 (pico -> 50 % de relajacion): 153 ms  (mediana de 5 medibles; intervalo [33, 200] ms; IC 95 % 147-165 ms)
+    (con menos de 5 fotogramas no se puede dar un valor, solo un maximo: la contraccion es mas rapida que la camara)
+
+  BASAL (0 a 9.3 s, antes del estimulo)
+    0 contraccion(es) en 9.3 s; actividad basal 0.01 % del grosor
+
+  ESTIMULADOR (20V_3): configurado 0.1 Hz, medido 0.09902 +- 0.000023 Hz -> desvio sistematico de -0.98 %. Es chico y muy significativo: lo mas probable es la base de tiempo del video, no el equipo (se corrio main.py con --base-tiempo pts?)
+
+Archivos en C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility\data\processed_data\20V_3:
+  contracciones_20V_3.xlsx
+  05_estabilidad_umbral_20V_3.png
+  09_contracciones_20V_3.png
+  10_ritmo_20V_3.png
+  11_cinetica_20V_3.png
+
+##### LISTO #####

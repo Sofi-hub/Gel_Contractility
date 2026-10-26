@@ -1,0 +1,39 @@
+
+##### Paso 2: buscar contracciones #####
+==========================================================================
+40V_3   (2051 fotogramas, 68.3 s, 30.00 fps)
+  las contracciones mueven la franja hacia ABAJO en la imagen
+  ruido de fondo de la senal: 0.081 px
+
+  RESULTADO: 6 contracciones  (conteo confiable)
+    umbral: 4.8 x ruido, dentro de la zona estable k = 4.4-5.8, con 0 falsos de control
+    momentos (s): 10.73, 20.87, 30.93, 41.00, 51.13, 61.23
+    tiempo tipico entre eventos: 10.100 s  (0.0990 Hz)
+    amplitud mediana (todos los eventos): 0.763 px
+
+  RITMO (estimuladas vs espontaneas, por el reloj del estimulador)
+    busqueda dirigida a 0.1 Hz: enganchado a la frecuencia configurada (0.1 Hz)  [6 de 6 pulsos, p = 0.001]
+    periodo: 10.09770 +- 0.00230 s  (0.09903 Hz) | capturados 100% | tren de 10.6 a 61.1 s
+    estimuladas: 6 | espontaneas: 0
+
+  CONTRACTILIDAD (estimulados, 6 eventos)
+    amplitud (mediana): 0.03 % del grosor en reposo = 0.76 px  (IC 95 % de la mediana 0.02576-0.03728 %)
+    TTP (inicio -> pico): menos de 167 ms  (4 fotogramas)
+    RT50 (pico -> 50 % de relajacion): menos de 133 ms  (1.5 fotogramas)
+    (con menos de 5 fotogramas no se puede dar un valor, solo un maximo: la contraccion es mas rapida que la camara)
+
+  BASAL (0 a 10.0 s, antes del estimulo)
+    0 contraccion(es) en 10.0 s; actividad basal 0.01 % del grosor
+
+  AVISO: respuesta chica para el metodo de textura (0.76 px, 9 x el ruido; firme desde 1.5 px y 10 x ruido): la amplitud puede variar ~15-20 % y el veredicto puede cambiar con la resolucion (--resolucion-completa). Informarla con cautela.
+
+  ESTIMULADOR (40V_3): configurado 0.1 Hz, medido 0.09903 +- 0.000023 Hz -> desvio sistematico de -0.97 %. Es chico y muy significativo: lo mas probable es la base de tiempo del video, no el equipo (se corrio main.py con --base-tiempo pts?)
+
+Archivos en C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility\data\processed_data\40V_3:
+  contracciones_40V_3.xlsx
+  05_estabilidad_umbral_40V_3.png
+  09_contracciones_40V_3.png
+  10_ritmo_40V_3.png
+  11_cinetica_40V_3.png
+
+##### LISTO #####

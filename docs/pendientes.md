@@ -8,9 +8,6 @@ Regla: cuando algo se termina, se borra de acá y se anota en una línea en `EST
 ## 1. Próximo (no depende del equipo)
 - **Videos de Andrés:** pasos 2 y 4 ya rehechos (commit "Resultados de Andres rehechos"). Falta solo mirar en
   Windows cómo se ve la respuesta forzada en la ventana (Números y Comparar).
-- **Tabla de carpeta (`procesar_carpeta`):** muestra "ampl %" y "ampl px" también en videos NO REPORTABLES
-  (10V_3, 40V_2); son de los candidatos y no se deben informar. Dejarlas vacías (o "—") cuando el conteo no es
-  reportable, en la consola y en el Excel/CSV de la tabla. No cambia ningún número calculado (visto 2026-10-26).
 - **Textura en 583/466/063/268:** por qué textura los deja NO REPORTABLES o cambia el conteo (583 ve
   la vibración; 466 parte un evento, 5 → 6; 063/268 pierden la meseta con la ventana de 1.5 s).
   Hoy se miden con bordes: no afecta resultados.

@@ -117,9 +117,13 @@ Tres cosas de acá:
 
 ### Qué se podría hacer (sin implementar: cambiaría números informados)
 
-- **Diagnóstico, sin umbral** (como `outlier_frac`): guardar en `resumen_*` el sesgo y el cociente
-  cola arriba / cola abajo del ruido en los tramos quietos. No cambia nada, y deja a la vista cuándo
-  el supuesto del control está flojo. Es el cambio más barato y el único que no toca ningún número.
+- ~~**Diagnóstico, sin umbral** (como `outlier_frac`)~~ → **HECHO el 2026-10-27** (aprobado por
+  Franco): `contraction_report.asimetria_ruido` guarda en la hoja `resumen_*` las columnas
+  `ruido_sesgo_quieto` y `ruido_cola_arriba_sobre_abajo`. Sin umbral y sin aviso; ningún número
+  cambia y la regresión de los 11 es idéntica. Medidos en los 11 de referencia y los 9 de Andrés:
+  sesgo de −0.30 (10V_3) a +1.26 (Video_prueba), cola de 0.80 (268) a 2.59 (Video_prueba); el
+  segundo más alto es 068 (1.62). Los de Andrés quedan entre −0.30 y +0.63 de sesgo y 0.89–1.41 de
+  cola: ninguno llega a donde está Video_prueba.
 - **Filtro por ancho** (más fuerte, y hay que medirlo antes): pedir que un evento dure al menos 2
   fotogramas por encima de la mitad de su altura. En los sintéticos eso borraría **todos** los
   inventados (duran 1) y **ninguno** de los verdaderos. En los videos reales tocaría 1 de los 29

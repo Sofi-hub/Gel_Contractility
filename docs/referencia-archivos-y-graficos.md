@@ -415,3 +415,16 @@ aceptación por video". En resumen: la zona medida varía ≤ 6 % y contiene la
 cintura (`ROI cumple criterio`, `ROI contiene cintura`), y hay meseta con 0 falsos
 (`conteo_reportable`). `outlier_frac` y el error de modelo son diagnóstico, sin
 umbral. Mirar además `frames faltantes (%)`: con `--base-tiempo pts` no afecta.
+
+**Asimetría del ruido (desde 2026-10-27, también diagnóstico sin umbral).** La hoja
+`resumen_*` de `contracciones_*.xlsx` trae dos columnas más: `ruido_sesgo_quieto` y
+`ruido_cola_arriba_sobre_abajo`, medidas sobre los fotogramas que están a más de 1 s
+de cualquier evento (el percentil 99 sobre el valor absoluto del percentil 1; 1.0 =
+parejo). Sirven para mirar cuán flojo está el supuesto del control de falsos, que da
+por sentado que el ruido es igual de grande hacia los dos lados. **No hay umbral ni
+aviso, y no cambian ningún número**: medido en
+`data/_mediciones_fases/h13_ruido_asimetrico/`, Video_prueba tiene sesgo +1.26 y cola
+2.59 —en el rango del escenario sintético que se equivoca— y su conteo de 29 es
+correcto, porque ahí la cola es señal (espontáneas chicas que no llegan al umbral),
+no ruido. Valores medidos en los 20 videos: sesgo de −0.30 a +1.26, cola de 0.80 a
+2.59 (el segundo más alto es 068 con 1.62).

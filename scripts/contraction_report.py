@@ -374,6 +374,40 @@ def imprimir_basal(a: dict) -> None:
         print(f"    ({a['basal_junto_al_borde']} pegada(s) al inicio del video: amplitud menos segura)")
 
 
+LEJOS_EVENTO_S = 1.0     # para medir el ruido "quieto", lejos de cualquier evento
+
+
+def asimetria_ruido(t, r, picos, lejos=LEJOS_EVENTO_S):
+    """DIAGNOSTICO (2026-10-27, H13): cuan desparejo es el ruido hacia cada lado,
+    medido sobre los fotogramas que estan a mas de `lejos` de cualquier evento.
+
+    Dos numeros, SIN umbral y SIN aviso (como `outlier_frac`): el sesgo (skew) y
+    el cociente entre la cola de arriba y la de abajo (percentil 99 sobre el
+    valor absoluto del percentil 1). 1.0 = parejo.
+
+    Para que sirve: el control de falsos con la senal invertida supone que el
+    ruido es igual de grande hacia los dos lados. Medido en
+    `data/_mediciones_fases/h13_ruido_asimetrico/`, ese supuesto solo falla de
+    forma grave cuando la cola larga va HACIA EL LADO de las contracciones. No
+    se puede usar como alarma automatica: Video_prueba tiene sesgo +1.26 y cola
+    2.59 (en el rango del escenario que falla) y su conteo de 29 es correcto,
+    porque ahi la cola es senal (espontaneas chicas), no ruido. Por eso se
+    registra y se mira, pero no decide nada.
+    """
+    t = np.asarray(t, float)
+    r = np.asarray(r, float)
+    m = np.ones(len(t), bool)
+    for p in np.asarray(picos, int):
+        m &= np.abs(t - t[p]) > lejos
+    q = r[m]
+    q = q[np.isfinite(q)]
+    if len(q) < 50:
+        return float("nan"), float("nan")
+    s = float(((q - q.mean()) ** 3).mean() / max(q.std() ** 3, 1e-12))
+    p99, p1 = np.percentile(q, 99), np.percentile(q, 1)
+    return s, (float(p99 / abs(p1)) if p1 != 0 else float("nan"))
+
+
 def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
              sep_s: float, half_s: float, separar: bool = True,
              min_captura: float = 0.75,
@@ -432,9 +466,13 @@ def analizar(df: pd.DataFrame, canal: str, k: float | None, win_s: float,
     lag, prom_g, n_ev = promedio_alineado(rg, picos, fps, half_s)
     _, prom_c, _ = promedio_alineado(r, picos, fps, half_s)
 
+    # diagnostico, sin umbral: el supuesto del control de falsos (ruido simetrico)
+    sesgo_ruido, cola_ruido = asimetria_ruido(t, r, picos)
+
     res = {
         "canal": canal, "fps": fps, "n_frames": len(t), "duracion_s": float(t[-1] - t[0]),
         "signo": signo, "ruido_canal_px": m, "ruido_grosor_px": mg,
+        "ruido_sesgo_quieto": sesgo_ruido, "ruido_cola_arriba_sobre_abajo": cola_ruido,
         "n_eventos": len(picos), "estabilidad": estab,
         "k_usado": float(k), "k_automatico": bool(k_auto),
         "hay_meseta": bool(sel["hay_meseta"]),

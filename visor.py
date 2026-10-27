@@ -11,6 +11,11 @@ misma función y la misma ventana que usó el reporte (`win_s_usado`), igual que
 la figura 09; los valores de la ficha de cada contracción salen de la hoja
 `cinetica` del reporte.
 
+Las marcas "dudosa" y la seleccion de pulsos se guardan en archivos aparte
+(marcas_<carpeta>.json, seleccion_<carpeta>.json) por INSTANTE en segundos: si
+se rehace el paso 2 y la numeracion cambia, siguen apuntando a la misma
+contraccion. La que no cae sobre ninguna se avisa y no se pasa a otra.
+
 La parte de datos (leer_resultado, ficha_evento, listar_carpetas) no usa tkinter
 y se prueba sola (tests/test_visor.py).
 """
@@ -173,42 +178,119 @@ def ficha_evento(r: Resultado, i: int) -> list[tuple[str, str]]:
 def ficha_texto(r: Resultado, i: int) -> str:
     """La ficha como texto (para copiar o guardar): de qué resultado es y sus filas."""
     filas = [("Resultado", r.carpeta.name)] + ficha_evento(r, i)
-    m = leer_marcas(r.carpeta).get(str(int(r.cin.iloc[i]["evento"])))
+    m = leer_marcas(r).get(str(int(r.cin.iloc[i]["evento"])))
     if m:
         filas.append(("Marca manual", m))
     return "\n".join(f"{a}:\t{b}" for a, b in filas)
 
 
 # ---- marcas manuales ("dudosa"): archivo aparte, nunca tocan los Excel ----
+# Se guardan por INSTANTE (s), no por número de contracción: si se rehace el
+# paso 2 y la numeración cambia, la marca sigue apuntando a la misma
+# contracción. El número va igual en el archivo, pero solo para poder leerlo.
+# Una marca que no cae sobre ninguna contracción NO se pasa a otra: se avisa.
+TOL_INSTANTE_S = 0.05
+
+
 def archivo_marcas(carpeta: Path) -> Path:
     return Path(carpeta) / f"marcas_{Path(carpeta).name}.json"
 
 
-def leer_marcas(carpeta: Path) -> dict[str, str]:
-    """{numero de evento (texto): nota}. Archivo aparte: los Excel no se tocan
-    y ningún número cambia. Si no existe o está roto, vacío."""
+def _json(p: Path) -> dict:
+    """El contenido del archivo, o {} si no existe o está roto."""
     import json
     try:
-        d = json.loads(archivo_marcas(carpeta).read_text(encoding="utf-8"))
-        return {str(k): str(v) for k, v in d.get("dudosas", {}).items()}
+        d = json.loads(Path(p).read_text(encoding="utf-8"))
     except Exception:
         return {}
+    return d if isinstance(d, dict) else {}
 
 
-def marcar_dudosa(carpeta: Path, evento: int, dudosa: bool = True, nota: str = "dudosa") -> dict:
+def _num(x, tipo):
+    try:
+        return tipo(x)
+    except (TypeError, ValueError):
+        return None
+
+
+def _instantes(r: Resultado) -> list[tuple[int, float]]:
+    """(número, instante) de cada contracción del resultado, por número."""
+    if r.cin is None:
+        return []
+    return sorted((int(e), round(float(t), 3))
+                  for e, t in zip(r.cin["evento"], r.cin["tiempo_s"]))
+
+
+def _fila_de(r: Resultado, instante, n):
+    """Qué contracción de AHORA es un registro guardado: la que está a menos de
+    TOL_INSTANTE_S de su instante. Los registros del formato viejo (sin
+    instante) se buscan por número, como antes. None si no cae sobre ninguna."""
+    if r.cin is None or not len(r.cin):
+        return None
+    if instante is None:
+        hit = np.flatnonzero(r.cin["evento"].astype(int).to_numpy() == n) if n is not None else []
+        return int(hit[0]) if len(hit) else None
+    t = r.cin["tiempo_s"].to_numpy(float)
+    if not np.isfinite(t).any():
+        return None
+    k = int(np.nanargmin(np.abs(t - instante)))
+    return k if abs(t[k] - instante) <= TOL_INSTANTE_S else None
+
+
+def _aviso_sin_contraccion(que: str, reg: dict) -> str:
+    donde = (f"{reg['instante_s']:.2f} s" if reg["instante_s"] is not None
+             else f"la contracción n.º {reg['n']}")
+    return f"{que} de {donde} sin contracción en el resultado actual (no se usó ninguna otra)"
+
+
+def _registros_marcas(carpeta: Path) -> list[dict]:
+    """Lo guardado, sin resolver: [{'instante_s', 'n', 'nota'}]. Lee también el
+    formato viejo ("dudosas": {"3": "dudosa"}), que solo tenía el número."""
+    dud = _json(archivo_marcas(carpeta)).get("dudosas")
+    if isinstance(dud, dict):                 # formato viejo
+        return [{"instante_s": None, "n": _num(k, int), "nota": str(v)} for k, v in dud.items()]
+    if isinstance(dud, list):
+        return [{"instante_s": _num(d.get("instante_s"), float), "n": _num(d.get("n"), int),
+                 "nota": str(d.get("nota", "dudosa"))} for d in dud if isinstance(d, dict)]
+    return []
+
+
+def marcas_y_avisos(r: Resultado) -> tuple[dict[str, str], list[str]]:
+    """({numero de contracción de AHORA (texto): nota}, avisos). Archivo aparte:
+    los Excel no se tocan y ningún número cambia."""
+    m, avisos = {}, []
+    for reg in _registros_marcas(r.carpeta):
+        i = _fila_de(r, reg["instante_s"], reg["n"])
+        if i is None:
+            avisos.append(_aviso_sin_contraccion("marca", reg))
+        else:
+            m[str(int(r.cin.iloc[i]["evento"]))] = reg["nota"]
+    return m, avisos
+
+
+def leer_marcas(r: Resultado) -> dict[str, str]:
+    return marcas_y_avisos(r)[0]
+
+
+def marcar_dudosa(r: Resultado, evento: int, dudosa: bool = True, nota: str = "dudosa") -> dict:
+    """Marca (o desmarca) una contracción del resultado. Al guardar, el archivo
+    queda siempre en el formato nuevo, aunque viniera del viejo."""
     import json
     from datetime import datetime
-    m = leer_marcas(carpeta)
+    m = leer_marcas(r)
     if dudosa:
         m[str(int(evento))] = nota or "dudosa"
     else:
         m.pop(str(int(evento)), None)
-    p = archivo_marcas(carpeta)
+    p = archivo_marcas(r.carpeta)
     if m:
         p.write_text(json.dumps({"que_es": "contracciones marcadas a mano como dudosas desde la "
-                                           "ventana. Solo una nota: no cambia ningún número.",
+                                           "ventana. Cada una va por su instante (s), que no "
+                                           "cambia si se rehace el paso 2; el número es solo para "
+                                           "leerlo. Solo una nota: no cambia ningún número.",
                                  "actualizado": datetime.now().isoformat(timespec="seconds"),
-                                 "dudosas": dict(sorted(m.items(), key=lambda kv: int(kv[0])))},
+                                 "dudosas": [{"instante_s": t, "n": k, "nota": m[str(k)]}
+                                             for k, t in _instantes(r) if str(k) in m]},
                                 ensure_ascii=False, indent=1), encoding="utf-8")
     elif p.is_file():
         p.unlink()
@@ -293,7 +375,7 @@ def tabla_pulsos(r: Resultado) -> list[dict]:
     Las claves son las columnas de la tabla de la ventana."""
     if r.cin is None:
         return []
-    dud = leer_marcas(r.carpeta)
+    dud = leer_marcas(r)
     out = []
     for i, (_, e) in enumerate(r.cin.iterrows()):
         out.append({
@@ -395,25 +477,54 @@ def archivo_seleccion(carpeta: Path) -> Path:
     return Path(carpeta) / f"seleccion_{Path(carpeta).name}.json"
 
 
-def leer_seleccion(carpeta: Path) -> list[int] | None:
+def _registros_seleccion(carpeta: Path) -> list[dict] | None:
+    """Lo guardado, sin resolver, o None si no hay selección guardada. Lee
+    también el formato viejo ("eventos": [2, 4]), que solo tenía el número."""
+    d = _json(archivo_seleccion(carpeta))
+    if isinstance(d.get("pulsos"), list):
+        return [{"instante_s": _num(x.get("instante_s"), float), "n": _num(x.get("n"), int)}
+                for x in d["pulsos"] if isinstance(x, dict)]
+    if isinstance(d.get("eventos"), list):    # formato viejo
+        return [{"instante_s": None, "n": _num(x, int)} for x in d["eventos"]]
+    return None
+
+
+def seleccion_y_avisos(r: Resultado) -> tuple[list[int] | None, list[str]]:
+    """(números de contracción elegidos, en la numeración de AHORA; avisos) o
+    (None, []) si no hay selección guardada."""
+    regs = _registros_seleccion(r.carpeta)
+    if regs is None:
+        return None, []
+    ev, avisos = set(), []
+    for reg in regs:
+        i = _fila_de(r, reg["instante_s"], reg["n"])
+        if i is None:
+            avisos.append(_aviso_sin_contraccion("pulso elegido", reg))
+        else:
+            ev.add(int(r.cin.iloc[i]["evento"]))
+    return sorted(ev), avisos
+
+
+def leer_seleccion(r: Resultado) -> list[int] | None:
     """La selección guardada (números de contracción) o None si no hay."""
-    import json
-    try:
-        d = json.loads(archivo_seleccion(carpeta).read_text(encoding="utf-8"))
-        return sorted(int(x) for x in d.get("eventos", []))
-    except Exception:
-        return None
+    return seleccion_y_avisos(r)[0]
 
 
-def guardar_seleccion(carpeta: Path, eventos, nota: str = "") -> Path:
-    """Archivo aparte, como las marcas dudosas: no toca ningún Excel."""
+def guardar_seleccion(r: Resultado, eventos, nota: str = "") -> Path:
+    """Archivo aparte, como las marcas dudosas: no toca ningún Excel. Cada pulso
+    va por su instante (s), así que sobrevive a rehacer el paso 2."""
     import json
     from datetime import datetime
-    p = archivo_seleccion(carpeta)
+    ev = {int(x) for x in eventos}
+    p = archivo_seleccion(r.carpeta)
     p.write_text(json.dumps({"que_es": "contracciones elegidas a mano en la ventana para ver su "
-                                       "media. Solo una selección: no cambia ningún número.",
+                                       "media. Cada una va por su instante (s), que no cambia si "
+                                       "se rehace el paso 2; el número es solo para leerlo. Solo "
+                                       "una selección: no cambia ningún número.",
                              "actualizado": datetime.now().isoformat(timespec="seconds"),
-                             "regla": nota, "eventos": sorted({int(x) for x in eventos})},
+                             "regla": nota,
+                             "pulsos": [{"instante_s": t, "n": k}
+                                        for k, t in _instantes(r) if k in ev]},
                             ensure_ascii=False, indent=1), encoding="utf-8")
     return p
 
@@ -524,7 +635,7 @@ def tabla_comparar(rs: list[Resultado]) -> list[tuple[str, list[str]]]:
         fila("Fotogramas perdidos (%)", lambda r: _txt_num(r.serie_meta.get("frames faltantes (%)"))),
         fila("2.º método", lambda r: str(r.veredicto.get("veredicto", "—")) if r.veredicto else "—"),
         fila("Avisos", lambda r: str(len(r.avisos)) if r.avisos else "ninguno"),
-        fila("Marcadas dudosas (a mano)", lambda r: str(len(leer_marcas(r.carpeta)))),
+        fila("Marcadas dudosas (a mano)", lambda r: str(len(leer_marcas(r)))),
         fila("Basal (antes del estímulo)", lambda r: informe.texto_basal(r.res)),
         fila("Respuesta forzada", lambda r: informe.texto_forzada(r.res) or "—"),
     ]
@@ -543,7 +654,7 @@ def eventos_para_comparar(r: Resultado, modo: str, n: int = 3) -> tuple[list[int
     if r.cin is None or not len(r.cin):
         return [], "sin contracciones"
     if modo == "guardada":
-        g = leer_seleccion(r.carpeta)
+        g = leer_seleccion(r)
         if g is not None:
             return g, "selección guardada"
         modo = "primeros"
@@ -671,7 +782,7 @@ def guardar_ficha_png(r: Resultado, i: int, destino: Path) -> Path:
     ax.grid(alpha=0.25)
     fig.suptitle(f"{r.carpeta.name} · contracción {int(e['evento'])}", fontsize=11)
     filas = ficha_evento(r, i)
-    nota = leer_marcas(r.carpeta).get(str(int(e["evento"])))
+    nota = leer_marcas(r).get(str(int(e["evento"])))
     if nota:
         filas.append(("Marca manual", nota))
     fig.text(0.54, 0.86, "\n".join(f"{a}:  {b}" for a, b in filas), va="top", fontsize=8.5,
@@ -976,10 +1087,12 @@ class PestanaResultados:
             filas.append(("2.º método", str(r.veredicto.get("veredicto", ""))))
         for a in r.avisos:
             filas.append(("Aviso", a))
-        dud = leer_marcas(r.carpeta)
+        dud, avisos_marcas = marcas_y_avisos(r)
         if dud:
             filas.append(("Marcadas dudosas", ", ".join(sorted(dud, key=int))
                           + "  (a mano; no cambia ningún número)"))
+        for a in avisos_marcas:
+            filas.append(("Aviso", a))
         ttk = self.ttk
         for k, (a, b) in enumerate(filas):
             col = "#b03a2e" if a == "Aviso" else None
@@ -1055,7 +1168,7 @@ class PestanaResultados:
                        "candidatos": "candidatos (no reportable)"}.get(g, g)
                 ax.scatter([], [], c=COLOR.get(g, "#444"), marker="v", label=f"{n} {nom}")
             ax.legend(fontsize=8, loc="upper right")
-            dud = leer_marcas(r.carpeta)
+            dud = leer_marcas(r)
             md = np.array([str(int(v)) in dud for v in r.cin["evento"].to_numpy()])
             if md.any():
                 ax.scatter(r.t[idx[md]], r.senal[idx[md]], s=110, facecolors="none",
@@ -1090,7 +1203,7 @@ class PestanaResultados:
         grupos = r.cin["grupo"].astype(str).to_numpy() if rep else np.array(["candidatos"] * len(r.cin))
         t = r.cin["tiempo_s"].to_numpy(float)
         a = r.cin["amplitud_relativa_pct"].to_numpy(float)
-        dud = leer_marcas(r.carpeta)
+        dud = leer_marcas(r)
         md = np.array([str(int(v)) in dud for v in r.cin["evento"].to_numpy()])
         for g in dict.fromkeys(grupos):
             m = grupos == g
@@ -1130,7 +1243,7 @@ class PestanaResultados:
         e = r.cin.iloc[i]
         p = int(min(e["frame_pico"], len(r.t) - 1))
         filas = ficha_evento(r, i)
-        nota = leer_marcas(r.carpeta).get(str(int(e["evento"])))
+        nota = leer_marcas(r).get(str(int(e["evento"])))
         if nota:
             filas.append(("Marca manual", f"{nota} (no cambia ningún número)"))
         self.ficha_txt.config(text="\n".join(f"{a}:  {b}" for a, b in filas))
@@ -1241,7 +1354,9 @@ class PestanaResultados:
             self._elegidos = set()
             self._actualizar_media()
             return
-        guard = leer_seleccion(r.carpeta)
+        guard, avisos_sel = seleccion_y_avisos(r)
+        if avisos_sel:
+            self.estado.config(text="  ·  ".join(avisos_sel))
         if self._carpeta_pul == r.carpeta:
             pass   # misma carpeta (p. ej. tras marcar dudosa): se mantiene lo elegido
         elif guard is not None:
@@ -1337,7 +1452,7 @@ class PestanaResultados:
         if self.r is None:
             return
         try:
-            p = guardar_seleccion(self.r.carpeta, self._elegidos, self._regla_txt)
+            p = guardar_seleccion(self.r, self._elegidos, self._regla_txt)
         except OSError as e:
             self.estado.config(text=f"No pude guardar la selección: {e}")
             return
@@ -1369,9 +1484,9 @@ class PestanaResultados:
         if self.r is None or self.sel is None:
             return
         ev = int(self.r.cin.iloc[self.sel]["evento"])
-        ya = str(ev) in leer_marcas(self.r.carpeta)
+        ya = str(ev) in leer_marcas(self.r)
         try:
-            marcar_dudosa(self.r.carpeta, ev, dudosa=not ya)
+            marcar_dudosa(self.r, ev, dudosa=not ya)
         except OSError as e:
             self.estado.config(text=f"No pude guardar la marca: {e}")
             return

@@ -65,6 +65,7 @@ Videos de Andrés (textura, `data/_mediciones_fases/textura/LEEME.md`): 4 de 9 r
 
 ## Historia (una línea por paso; detalle en `docs/historia/` y en los LEEME de mediciones)
 
+- **2026-10-26:** marcas dudosas y selección de pulsos guardadas por instante.
 - **2026-10-26:** tabla de carpeta sin amplitud en conteos NO REPORTABLES; RARITOS docx/pdf a `docs/historia`.
 - **2026-10-26:** revisión de la forma de trabajar: documentos solo en `docs/`, pendientes y ESTADO cortos,
   `verificar.bat`, índice de mediciones.

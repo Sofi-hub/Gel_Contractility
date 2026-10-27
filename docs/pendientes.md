@@ -11,7 +11,6 @@ Regla: cuando algo se termina, se borra de acá y se anota en una línea en `EST
 - **Textura en 583/466/063/268:** por qué textura los deja NO REPORTABLES o cambia el conteo (583 ve
   la vibración; 466 parte un evento, 5 → 6; 063/268 pierden la meseta con la ventana de 1.5 s).
   Hoy se miden con bordes: no afecta resultados.
-- **Forma de trabajar:** pasar a Claude Code en la notebook; primera prueba: correr `verificar.bat` (tiene que dar TODO OK).
 
 ## 2. Esperando al equipo (preguntas en `preguntas-reunion-equipo.md`)
 - **Videos de frecuencia (304, 341, 491):** qué frecuencias, en qué orden y cuándo empieza el primer
@@ -48,5 +47,3 @@ Medido el 2026-10-26. No molesta hoy; unificarlo en `visor.py` y que `comparar.p
 - **H38:** sin `--frecuencia-estimulo`, espontáneas agrupadas pueden salir "estimuladas" (28 % en el
   barajado de Video_prueba). Hoy lo protege la búsqueda dirigida.
 - **H13:** el control con la señal invertida supone ruido simétrico (sin caso real).
-- **Ventana:** la marca "dudosa" va por número de contracción; si se rehace el paso 2 y la numeración
-  cambia, puede apuntar a otra.

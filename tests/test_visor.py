@@ -74,13 +74,13 @@ if (P / "Video_prueba").is_dir():
         c = Path(tmp) / "Video_prueba"
         shutil.copytree(P / "Video_prueba", c)
         antes = {p.name: p.read_bytes() for p in c.glob("*.xlsx")}
-        visor.marcar_dudosa(c, 3)
         r = visor.leer_resultado_sin_cache(c)
-        check("marca dudosa: se guarda aparte", visor.leer_marcas(c) == {"3": "dudosa"})
+        visor.marcar_dudosa(r, 3)
+        check("marca dudosa: se guarda aparte", visor.leer_marcas(r) == {"3": "dudosa"})
         check("marca dudosa: los Excel no se tocan",
               {p.name: p.read_bytes() for p in c.glob("*.xlsx")} == antes)
         check("marca dudosa: la ficha la menciona", "Marca manual" in visor.ficha_texto(r, 2))
-        visor.marcar_dudosa(c, 3, dudosa=False)
+        visor.marcar_dudosa(r, 3, dudosa=False)
         check("quitar la última marca borra el archivo", not visor.archivo_marcas(c).exists())
         png = visor.guardar_ficha_png(r, 0, c / "f.png")
         check("exportar ficha como imagen", png.stat().st_size > 10000)
@@ -137,10 +137,10 @@ if (P / "Video_063_CTRL1_5V").is_dir():
         c = Path(tmp) / "Video_063_CTRL1_5V"
         shutil.copytree(P / "Video_063_CTRL1_5V", c)
         antes = {p.name: p.read_bytes() for p in c.glob("*.xlsx")}
-        check("sin selección guardada: None", visor.leer_seleccion(c) is None)
-        visor.guardar_seleccion(c, [4, 2], "a mano")
-        check("selección guardada aparte y releída", visor.leer_seleccion(c) == [2, 4])
         r = visor.leer_resultado_sin_cache(c)
+        check("sin selección guardada: None", visor.leer_seleccion(r) is None)
+        visor.guardar_seleccion(r, [4, 2], "a mano")
+        check("selección guardada aparte y releída", visor.leer_seleccion(r) == [2, 4])
         ev, txt = visor.eventos_para_comparar(r, "guardada")
         check("Comparar usa la selección guardada", ev == [2, 4] and "guardada" in txt)
         x = visor.exportar_seleccion(r, [2, 3], c / "sel.xlsx")
@@ -172,6 +172,60 @@ if len(nombres) == 2:
     v = visor.valores_pulsos(rs[1], [3, 1, 2])
     check("valores de los pulsos en orden de tiempo", v["evento"].tolist() == [1, 2, 3])
 check("compactar números de pulso", visor.compactar([1, 2, 3, 5, 7, 8]) == "1–3, 5, 7, 8")
+
+# ---- marcas y selección por INSTANTE (2026-10-26) ----
+# Si se rehace el paso 2 y cambia la numeración, la marca tiene que seguir en la
+# misma contracción; y si esa contracción ya no está, no se marca otra.
+import json  # noqa: E402
+import pandas as pd  # noqa: E402
+
+
+def _falso(carpeta, eventos):
+    """Un Resultado mínimo: solo lo que miran las marcas y la selección (la
+    carpeta y, de la hoja cinetica, el número y el instante de cada una)."""
+    return visor.Resultado(carpeta=Path(carpeta),
+                           cin=pd.DataFrame({"evento": [n for n, _ in eventos],
+                                             "tiempo_s": [t for _, t in eventos]}))
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    c = Path(tmp)
+    r_antes = _falso(c, [(1, 5.00), (2, 12.30), (3, 20.10)])
+    visor.marcar_dudosa(r_antes, 2)
+    check("marca: el archivo guarda el instante (y el número al lado)",
+          json.loads(visor.archivo_marcas(c).read_text(encoding="utf-8"))["dudosas"]
+          == [{"instante_s": 12.3, "n": 2, "nota": "dudosa"}])
+    # paso 2 rehecho: aparece una contracción nueva al principio y todo se renumera
+    r_despues = _falso(c, [(1, 2.00), (2, 5.00), (3, 12.30), (4, 20.10)])
+    m, av = visor.marcas_y_avisos(r_despues)
+    check("marca: tras renumerar sigue en la misma contracción (2 -> 3)",
+          m == {"3": "dudosa"} and av == [])
+    # y si la contracción marcada ya no está, no se marca otra: se avisa
+    m2, av2 = visor.marcas_y_avisos(_falso(c, [(1, 5.00), (2, 20.10)]))
+    check("marca sin contracción: aviso y ninguna otra marcada",
+          m2 == {} and len(av2) == 1 and av2[0].startswith("marca de 12.30 s sin contracción"))
+
+    visor.guardar_seleccion(r_antes, [1, 3], "a mano")
+    check("selección: tras renumerar son las mismas contracciones (1, 3 -> 2, 4)",
+          visor.leer_seleccion(r_despues) == [2, 4])
+    ev, av3 = visor.seleccion_y_avisos(_falso(c, [(1, 5.00)]))
+    check("pulso elegido sin contracción: aviso y no se elige otro",
+          ev == [1] and len(av3) == 1 and av3[0].startswith("pulso elegido de 20.10 s sin contracción"))
+
+    # archivos del formato viejo (solo el número): se siguen leyendo
+    visor.archivo_marcas(c).write_text(json.dumps({"dudosas": {"2": "dudosa"}}), encoding="utf-8")
+    visor.archivo_seleccion(c).write_text(json.dumps({"eventos": [1, 3]}), encoding="utf-8")
+    check("archivo viejo (solo el número): marcas y selección se leen igual",
+          visor.leer_marcas(r_antes) == {"2": "dudosa"} and visor.leer_seleccion(r_antes) == [1, 3])
+    visor.marcar_dudosa(r_antes, 3)
+    check("al guardar, un archivo viejo queda en el formato nuevo",
+          json.loads(visor.archivo_marcas(c).read_text(encoding="utf-8"))["dudosas"]
+          == [{"instante_s": 12.3, "n": 2, "nota": "dudosa"},
+              {"instante_s": 20.1, "n": 3, "nota": "dudosa"}])
+    visor.marcar_dudosa(r_antes, 2, dudosa=False)
+    visor.marcar_dudosa(r_antes, 3, dudosa=False)
+    check("quitar la última marca borra el archivo", not visor.archivo_marcas(c).exists())
+
 
 # ---- basal (C8): el texto sale del resumen; resultados viejos lo avisan ----
 import informe  # noqa: E402

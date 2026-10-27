@@ -145,3 +145,74 @@ Tres cosas de acá:
   evento **detectado**; las contracciones que no se detectan quedan adentro y suben el sesgo. Eso es
   justamente lo que hace ambigua la interpretación en Video_prueba.
 - No se tocó ningún archivo del análisis. Ningún número informado cambia.
+
+---
+
+# D. El filtro por duración, medido en los videos reales (2026-10-27)
+
+**Qué se probó** (`filtro_ancho.py`, solo medición): en los 11 de referencia (con su serie vigente,
+por bordes) y en los 9 de Andrés (sus series, por textura), cuánto dura cada evento —los fotogramas
+seguidos por encima de la mitad de la altura del pico, la misma regla del sintético— y cuáles se
+caerían si se exigiera un piso de **2 fotogramas**. Tablas: `filtro_ancho_eventos.csv` (138 eventos,
+uno por fila) y `filtro_ancho_resumen.csv`; consola en `salida_filtro_ancho.txt`.
+
+| video | eventos | ancho mediano | el más corto | de 1 fotograma | quedarían | conteo |
+|---|---|---|---|---|---|---|
+| Video_prueba | 29 | 3 fot. | **1** | **1** (7.28 s) | 28 | reportable |
+| 063 | 6 | 2 fot. | 2 | 0 | 6 | reportable |
+| 268 | 6 | 2 fot. | 2 | 0 | 6 | reportable |
+| 466 | 5 | 10 fot. | 9 | 0 | 5 | reportable |
+| 583 | 6 | 12 fot. | 12 | 0 | 6 | reportable |
+| 491 | 2 | 30 fot. | 29 | 0 | 2 | reportable |
+| 476 | 6 | 4 fot. | 3 | 0 | 6 | reportable |
+| **613** | 24 | **1 fot.** | 1 | **14** | 10 | NO reportable |
+| 068 / 304 | 0 | — | — | — | — | NO reportable |
+| **341** | 22 | 2 fot. | 1 | **2** | 20 | NO reportable |
+| 10V_1 | 6 | 5 fot. | 4 | 0 | 6 | reportable |
+| 10V_3 | 8 | 12.5 fot. | 1 | **1** (15.80 s) | 7 | NO reportable |
+| 20V_3 | 6 | 5.5 fot. | 5 | 0 | 6 | reportable |
+| 40V_1 | 5 | 5 fot. | 5 | 0 | 5 | reportable |
+| 40V_2 | 1 | 4 fot. | 4 | 0 | 1 | NO reportable |
+| 40V_3 | 6 | 3.5 fot. | 2 | 0 | 6 | reportable |
+| 10V_2 / 20V_1 / 20V_2 | 0 | — | — | — | — | NO reportable |
+
+**En 16 de los 20 videos el filtro no cambiaría nada.** Toca cuatro: 613 (−14 de 24), 341 (−2 de 22),
+10V_3 (−1 de 8) y Video_prueba (−1 de 29). Los tres primeros ya son NO REPORTABLES, así que su
+conteo no se informa igual: **el único número informado que cambiaría es el 29 de Video_prueba, la
+línea base del proyecto**.
+
+## El evento de Video_prueba que se caería (7.28 s)
+
+Figura: `prueba_evento_1_frame.png` (la señal) y `prueba_evento_1_frame_fotograma.jpg` (el fotograma
+del video en ese instante).
+
+- **Por tamaño es indiscutible:** 2.124 px, **24.9 veces el ruido** del canal, casi igual de alto que
+  sus vecinos reales (2.1, 2.4, 2.0, 2.2 px).
+- **Por forma es el único raro de los 29:** sube y baja en **un solo fotograma**, sin subida ni cola.
+  Sus cuatro vecinos de la misma ráfaga (5.97, 6.57, 7.67 y 8.28 s) duran 3, 3, 2 y 3 fotogramas y
+  tienen la cola de relajación de siempre.
+- **Y hay algo más, que no se buscaba:** justo antes hay un **hueco de 0.398 s en la grabación**
+  (entre los fotogramas 206 y 207; el `dt` normal es 0.0333 s, o sea que faltan ~12 fotogramas). El
+  evento es el tercer fotograma después del hueco. Los dos de antes y los siete de después están
+  planos.
+- A ojo, el fotograma del video no tiene nada llamativo (la franja se ve nítida, sin arrastre).
+
+Dicho sin vueltas: ese evento **tiene la altura de una contracción y la forma de un artefacto**, y
+aparece pegado al único corte grande de la grabación en esa zona. No alcanza para afirmar que sea
+falso, pero tampoco para defenderlo.
+
+## Conclusión de D
+
+1. El filtro por duración (piso de 2 fotogramas) **hace lo que promete el sintético**: no toca ningún
+   evento de los videos reportables salvo uno, y limpia 14 de los 24 de 613, que es justamente el
+   video donde el control se equivoca.
+2. **No se puede subir el piso a 3:** en 063 y 268 *todos* los eventos duran 2 fotogramas, y son
+   conteos validados. El piso tiene que ser 2, no más.
+3. **Falta decidir.** Cambia un número de la línea base (Video_prueba 29 → 28), así que no se
+   implementa sin que Franco lo apruebe. Lo que habría que mirar primero es el evento de 7.28 s con
+   el equipo: si aceptan que un pico de 1 fotograma pegado a un hueco de 0.4 s no es una contracción,
+   el filtro entra; si no, no.
+4. Alternativa más conservadora, por si el filtro parece demasiado: **no filtrar, pero avisar**, como
+   `junto_al_borde`, marcando los eventos de 1 fotograma y los que caen a menos de medio segundo de
+   un hueco de la grabación. Eso no cambia ningún número.
+

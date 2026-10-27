@@ -1,0 +1,43 @@
+﻿=== 11 de referencia (bordes) + 9 de Andres (textura) ===
+  Video_prueba                    29 ev, reportable True  | ancho mediano   3.0 fot. | se caerian  1 -> quedarian  28  (7.28 s)
+  Video_063_CTRL1_5V               6 ev, reportable True  | ancho mediano   2.0 fot. | se caerian  0 -> quedarian   6
+  Video_268_EXP3_FAPS2_40V         6 ev, reportable True  | ancho mediano   2.0 fot. | se caerian  0 -> quedarian   6
+  Video_466_EXP5_FAPS4_40V         5 ev, reportable True  | ancho mediano  10.0 fot. | se caerian  0 -> quedarian   5
+  Video_583_EXP6_CTRL4_40V         6 ev, reportable True  | ancho mediano  12.0 fot. | se caerian  0 -> quedarian   6
+  Video_491_EXP5_CTRL1_36HZ        2 ev, reportable True  | ancho mediano  30.0 fot. | se caerian  0 -> quedarian   2
+  Video_476                        6 ev, reportable True  | ancho mediano   4.0 fot. | se caerian  0 -> quedarian   6
+  Video_613                       24 ev, reportable False | ancho mediano   1.0 fot. | se caerian 14 -> quedarian  10  (1.39 s, 2.05 s, 3.09 s, 3.93 s, 4.30 s, 10.99 s, 64.89 s, 66.25 s, 66.39 s, 67.49 s, 70.16 s, 70.39 s, 70.82 s, 71.85 s)
+  Video_068_hw30                   0 ev, reportable False | ancho mediano   nan fot. | se caerian  0 -> quedarian   0
+  Video_304                        0 ev, reportable False | ancho mediano   nan fot. | se caerian  0 -> quedarian   0
+  Video_341                       22 ev, reportable False | ancho mediano   2.0 fot. | se caerian  2 -> quedarian  20  (4.97 s, 5.77 s)
+  10V_1                            6 ev, reportable True  | ancho mediano   5.0 fot. | se caerian  0 -> quedarian   6
+  10V_2                            0 ev, reportable False | ancho mediano   nan fot. | se caerian  0 -> quedarian   0
+  10V_3                            8 ev, reportable False | ancho mediano  12.5 fot. | se caerian  1 -> quedarian   7  (15.80 s)
+  20V_1                            0 ev, reportable False | ancho mediano   nan fot. | se caerian  0 -> quedarian   0
+  20V_2                            0 ev, reportable False | ancho mediano   nan fot. | se caerian  0 -> quedarian   0
+  20V_3                            6 ev, reportable True  | ancho mediano   5.5 fot. | se caerian  0 -> quedarian   6
+  40V_1                            5 ev, reportable True  | ancho mediano   5.0 fot. | se caerian  0 -> quedarian   5
+  40V_2                            1 ev, reportable False | ancho mediano   4.0 fot. | se caerian  0 -> quedarian   1
+  40V_3                            6 ev, reportable True  | ancho mediano   3.5 fot. | se caerian  0 -> quedarian   6
+
+     grupo                     video  eventos  ancho_mediano  ancho_min  de_1_frame  quedarian
+referencia              Video_prueba       29            3.0          1           1         28
+referencia        Video_063_CTRL1_5V        6            2.0          2           0          6
+referencia  Video_268_EXP3_FAPS2_40V        6            2.0          2           0          6
+referencia  Video_466_EXP5_FAPS4_40V        5           10.0          9           0          5
+referencia  Video_583_EXP6_CTRL4_40V        6           12.0         12           0          6
+referencia Video_491_EXP5_CTRL1_36HZ        2           30.0         29           0          2
+referencia                 Video_476        6            4.0          3           0          6
+referencia                 Video_613       24            1.0          1          14         10
+referencia                 Video_341       22            2.0          1           2         20
+    Andres                     10V_1        6            5.0          4           0          6
+    Andres                     10V_3        8           12.5          1           1          7
+    Andres                     20V_3        6            5.5          5           0          6
+    Andres                     40V_1        5            5.0          5           0          5
+    Andres                     40V_2        1            4.0          4           0          1
+    Andres                     40V_3        6            3.5          2           0          6
+
+Video_prueba: el evento de 7.28 s dura 1 fotograma (amplitud 2.124 px = 24.9 x el ruido)
+  figura: prueba_evento_1_frame.png y prueba_evento_1_frame_fotograma.jpg
+
+tablas: filtro_ancho_eventos.csv (138), filtro_ancho_resumen.csv

@@ -1,0 +1,16 @@
+grupo,video,eventos,ancho_mediano,ancho_min,de_1_frame,quedarian
+referencia,Video_prueba,29,3.0,1,1,28
+referencia,Video_063_CTRL1_5V,6,2.0,2,0,6
+referencia,Video_268_EXP3_FAPS2_40V,6,2.0,2,0,6
+referencia,Video_466_EXP5_FAPS4_40V,5,10.0,9,0,5
+referencia,Video_583_EXP6_CTRL4_40V,6,12.0,12,0,6
+referencia,Video_491_EXP5_CTRL1_36HZ,2,30.0,29,0,2
+referencia,Video_476,6,4.0,3,0,6
+referencia,Video_613,24,1.0,1,14,10
+referencia,Video_341,22,2.0,1,2,20
+Andres,10V_1,6,5.0,4,0,6
+Andres,10V_3,8,12.5,1,1,7
+Andres,20V_3,6,5.5,5,0,6
+Andres,40V_1,5,5.0,5,0,5
+Andres,40V_2,1,4.0,4,0,1
+Andres,40V_3,6,3.5,2,0,6

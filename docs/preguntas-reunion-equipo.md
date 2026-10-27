@@ -167,3 +167,15 @@ Para contarle al equipo, en palabras simples, tres cosas que salen de los videos
 6. **¿Se puede grabar un video con un movimiento conocido**, con el mismo microscopio y aumento que Andrés? Por ejemplo, mover la platina una cantidad medida (unos pocos µm) o filmar una muestra fija mientras se la corre. Es la única forma de saber cuál medición es la correcta cuando la respuesta es de ~1 px o menos (explicación B).
 7. **¿Les sirve la respuesta forzada como resultado?** Es decir: "el tejido responde al estímulo, con una amplitud de X % del grosor", aunque no se pueda dar el número de contracciones ni la cinética. ¿O para esos videos necesitan sí o sí el conteo?
 8. **Respuestas de menos de 1 px** (10V_2, 40V_2, 40V_3): ¿se puede bajar el ruido de la imagen en las próximas grabaciones? Por ejemplo, más luz o contraste, que el equipo no vibre, o exportar el video con menos compresión. Lo que decide si una respuesta chica se puede medir es cuánto sobresale del ruido.
+
+## Preguntas nuevas (2026-10-27)
+
+9. **20V_1 es bifásico: antes de contraerse, la franja se mueve un poco hacia el otro lado.**
+   En los 6 pulsos de ese video, y siempre igual, la franja primero se desplaza ~0.9 px en el
+   sentido contrario durante casi medio segundo y recién después hace la contracción (~1.7 px).
+   **En ningún otro de los 20 videos medidos pasa esto** (en 20V_2 se insinúa, pero mucho más
+   chico). Se ve en la figura `data/_mediciones_fases/cinetica_forzada/formas.png`, panel
+   "20V_1": las 6 curvas grises tienen el mismo valle antes del pico, así que no es ruido.
+   **¿Puede ser algo del montaje de ese gel** (cómo quedó anclado, una tensión previa, que el
+   electrodo esté más cerca de un lado) **o es algo del tejido?** Saberlo cambia si ese video se
+   puede comparar con los otros dos de 20 V o si conviene repetirlo.

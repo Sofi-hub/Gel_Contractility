@@ -15,11 +15,16 @@
     periodo 10.12 s (1/0.1 Hz +-2 %) | senal plegada: SNR 11.9 contra 6.4 del mejor de 40 periodos de control, p = 0.024
     HAY respuesta al estimulo: 6 de 6 pulsos por encima de los controles (1.06 px)
     amplitud (mediana de los pulsos): 0.084 % del grosor = 1.93 px  (franja hacia ARRIBA)
-    (no cuenta contracciones ni da TTP/RT50; el conteo sigue NO REPORTABLE)
+    cinetica de la respuesta al estimulo (pulso a pulso; NO es un conteo, el RESULTADO sigue NO REPORTABLE):
+      TTP 174 ms (IC95 157-184 ms), 5 de 6 pulsos medibles | RT50 167 ms (IC95 167-179 ms), 3 de 6 pulsos medibles   (sobre 6 pulsos que responden)
+    (no cuenta contracciones ni ve espontaneas; el conteo sigue NO REPORTABLE)
 
 Archivos en C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility\data\processed_data\20V_1:
   contracciones_20V_1.xlsx
   05_estabilidad_umbral_20V_1.png
   09_contracciones_20V_1.png
+
+##### Paso 4: armar el informe #####
+Informe: C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility\data\processed_data\20V_1\informe_20V_1.html
 
 ##### LISTO #####

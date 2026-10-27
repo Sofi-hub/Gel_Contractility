@@ -31,7 +31,7 @@
   - Supone el período (10.10 s, de los propios videos) y que el estimulador estaba encendido; mide la respuesta **a ese reloj**, no cuenta contracciones ni ve espontáneas.
   - En 068 (actividad continua) la prueba por pulso sola daría 3/6: **la que decide es la del plegado (p)**; la amplitud por pulso solo se informa si p es significativo.
   - 10V_2, 40V_2 (y 40V_3) son respuestas de < 1 px: valen las salvedades del aviso de textura (amplitud ±15–20 %). 20V_1 y 20V_2 tienen ruido alto (control p95 1–1.8 px) y respuestas bifásicas.
-  - TTP/RT50 no se miden así.
+  - TTP/RT50 no se medían así en esta medición. **Desde el 2026-10-27 sí**, pulso a pulso: ver `data/_mediciones_fases/cinetica_forzada/LEEME.md` (medición) y la sección 5 del docstring de `src/forzada.py` (implementación).
 
 ## Propuesta (sin implementar: cambia números informados)
 Agregar al reporte una sección **RESPUESTA FORZADA** que corra solo cuando se pasa `--frecuencia-estimulo` y el conteo sale NO REPORTABLE, con p, pulsos que responden y amplitud (px y %), marcada como "respuesta al estímulo, no conteo". El veredicto del conteo no cambia.
@@ -41,3 +41,4 @@ Agregar al reporte una sección **RESPUESTA FORZADA** que corra solo cuando se p
 - Diferencia con la medición de arriba: si el reporte no encontró tren, el período se busca a ±2 % de 1/f (los controles con la misma búsqueda). Da 10.09–10.12 s en los de Andrés y los mismos resultados (10V_2 0.44 px, 10V_3 6.02, 20V_1 1.93, 20V_2 2.94, 40V_2 0.58); 613 p = 0.78 y 068 p = 0.68.
 - **Sensibilidad** (`tests/test_forzada.py`, ruido blanco): pulsos de 5 × el ruido por fotograma se ven siempre con la amplitud a ±20 %; de 3 ×, se ven siempre pero la amplitud sale ~10–30 % alta; de 2 ×, 2 de 5. Ruido solo o con sacudidas: 0 falsas respuestas en 20.
 - Se muestra también en el informe HTML, la ventana (Números y Comparar) y la tabla de `procesar_carpeta` (2026-10-19).
+- **Cinética de la respuesta al estímulo (2026-10-27, aprobado por Franco):** TTP y RT50 pulso a pulso, con la mediana de los medibles y su IC 95 %, en la consola, la hoja `forzada_*`, el resumen, el informe, la ventana y la tabla de carpeta (`forzada_ttp_ms`, `forzada_rt50_ms`). Es un número aparte: el veredicto del conteo no cambia y la regresión de los 11 sigue idéntica. Medición: `../cinetica_forzada/LEEME.md`.

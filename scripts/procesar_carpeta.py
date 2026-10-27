@@ -43,6 +43,7 @@ COLUMNAS = ["video", "estado", "eventos", "reportable", "motivo_no_reportable",
             "tren", "periodo_s", "periodo_err_s", "frecuencia_Hz", "n_estimulados",
             "captura_pct", "amplitud_pct", "amplitud_px", "amplitud_grupo",
             "forzada_p", "forzada_pulsos", "forzada_amplitud_pct", "forzada_amplitud_px",
+            "forzada_ttp_ms", "forzada_rt50_ms",
             "roi_cumple", "half_window", "n_avisos", "avisos", "informe", "carpeta"]
 
 
@@ -116,6 +117,11 @@ def leer_fila(carpeta: Path) -> dict:
         hay = str(r.get("forzada_hay_respuesta")).strip().lower() in ("true", "1", "1.0")
         fila["forzada_amplitud_pct"] = _num(r.get("forzada_amplitud_pct")) if hay else None
         fila["forzada_amplitud_px"] = _num(r.get("forzada_amplitud_px")) if hay else None
+        # cinetica de la respuesta al estimulo (2026-10-27): solo el valor
+        # medible; si es una cota queda vacio (la cota esta en el informe)
+        for _m in ("ttp", "rt50"):
+            _ok = str(r.get(f"forzada_{_m}_reportable")).strip().lower() in ("true", "1", "1.0")
+            fila[f"forzada_{_m}_ms"] = _num(r.get(f"forzada_{_m}_ms")) if hay and _ok else None
 
     # tren: la hoja `trenes` (fila del tren clasificado como estimulado)
     tr = _hoja(hojas, "trenes")

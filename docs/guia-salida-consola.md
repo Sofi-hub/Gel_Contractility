@@ -317,15 +317,18 @@ Va también a la hoja `basal_*` del Excel, al informe y a la ventana (Números y
       periodo 10.09 s (1/0.1 Hz +-2 %) | senal plegada: SNR 12.6 contra 7.1 del mejor de 40 periodos de control, p = 0.024
       HAY respuesta al estimulo: 6 de 6 pulsos por encima de los controles (0.26 px)
       amplitud (mediana de los pulsos): 0.022 % del grosor = 0.44 px  (franja hacia ABAJO)
+      cinetica de la respuesta al estimulo (pulso a pulso; NO es un conteo, el RESULTADO sigue NO REPORTABLE):
+        TTP 214 ms (IC95 160-263 ms), 6 de 6 pulsos medibles | RT50 234 ms (IC95 201-287 ms), 6 de 6 pulsos medibles   (sobre 6 pulsos que responden)
 
 Cuando no se pueden contar las contracciones (ruido, sacudidas), pero se sabe cada cuánto dispara el estimulador, se mira la señal **en los instantes del estimulador** y se compara con momentos sin estímulo.
 - **¿Hay respuesta?** Se superponen todos los ciclos (la señal "plegada" al período) y se mira cuánto sobresale el pico (SNR). Lo mismo con 40 períodos falsos. `p = 0.024` es el mínimo posible: ninguno de los 40 falsos sobresale tanto. Hay respuesta si p ≤ 0.05.
 - **Período:** el del tren si se encontró; si no, el de la frecuencia configurada ±2 % (los videos de Andrés dan 10.10 s).
 - **Pulsos que responden:** cuántos pulsos superan el percentil 95 de la misma medida hecha en instantes sin pulso.
 - **Amplitud:** mediana de los pulsos, en % del grosor y px. Cerca del límite (pulsos de ~3 × el ruido) sale ~10–30 % alta.
-- **No es un conteo:** no ve espontáneas, no da TTP ni RT50 y el RESULTADO sigue NO REPORTABLE. Los pulsos quedan en la hoja `forzada_*`.
+- **Cinética de la respuesta al estímulo** (desde 2026-10-27): TTP y RT50 **de cada pulso que responde**, con las mismas reglas que el reporte normal (el pico es el primer fotograma que llega al 95 % del máximo; hace falta que la subida —o la bajada a la mitad— abarque al menos 5 fotogramas). Lo que se informa es la **mediana de los pulsos medibles**, con su intervalo de confianza del 95 %, y solo si es medible al menos la mitad de los pulsos que cruzan el nivel; si no, sale la **cota** (`TTP < 133 ms`), igual que en el reporte normal. Es un **número aparte**: no cambia el veredicto NO REPORTABLE ni ningún otro número, y no es un conteo. Está validado contra los videos reportables: la mediana pulso a pulso da lo mismo que el reporte normal dentro del 5 % (466 +1 %/−3 %, 583 +2 %/−1 %). **No** se usa la forma promedio de los pulsos: da +42 % en 466. Detalle: `data/_mediciones_fases/cinetica_forzada/LEEME.md`.
+- **No es un conteo:** no ve espontáneas y el RESULTADO sigue NO REPORTABLE. Los pulsos quedan en la hoja `forzada_*`, ahora con el TTP y el RT50 de cada uno.
 - Si dice `no hay respuesta al estimulo distinguible de los controles` (613, 068): no hay respuesta medible a esa frecuencia.
-- También aparece en el informe HTML (fila "Respuesta forzada" y en la frase del resultado), en la ventana (Números y Comparar) y en la tabla de una carpeta (columnas `forzada_p`, `forzada_pulsos`, `forzada_amplitud_pct`, `forzada_amplitud_px`; en la consola, columna "forzada": px y pulsos que responden, o "no").
+- También aparece en el informe HTML (fila "Respuesta forzada" y en la frase del resultado), en la ventana (Números y Comparar) y en la tabla de una carpeta (columnas `forzada_p`, `forzada_pulsos`, `forzada_amplitud_pct`, `forzada_amplitud_px`, `forzada_ttp_ms`, `forzada_rt50_ms`; en la consola, columna "forzada": px y pulsos que responden, o "no").
 
 ### `ESTIMULADOR` (solo si se pasó `--frecuencia-estimulo`)
 

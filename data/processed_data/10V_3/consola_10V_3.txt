@@ -27,7 +27,9 @@
     periodo 10.10 s (tren medido) | senal plegada: SNR 32.5 contra 16.1 del mejor de 40 periodos de control, p = 0.024
     HAY respuesta al estimulo: 6 de 6 pulsos por encima de los controles (1.18 px)
     amplitud (mediana de los pulsos): 0.262 % del grosor = 6.02 px  (franja hacia ARRIBA)
-    (no cuenta contracciones ni da TTP/RT50; el conteo sigue NO REPORTABLE)
+    cinetica de la respuesta al estimulo (pulso a pulso; NO es un conteo, el RESULTADO sigue NO REPORTABLE):
+      TTP 214 ms (IC95 160-263 ms), 6 de 6 pulsos medibles | RT50 235 ms (IC95 201-287 ms), 6 de 6 pulsos medibles   (sobre 6 pulsos que responden)
+    (no cuenta contracciones ni ve espontaneas; el conteo sigue NO REPORTABLE)
 
   ESTIMULADOR (10V_3): configurado 0.1 Hz, medido 0.09901 +- 0.000023 Hz -> desvio sistematico de -0.99 %. Es chico y muy significativo: lo mas probable es la base de tiempo del video, no el equipo (se corrio main.py con --base-tiempo pts?)
 
@@ -37,5 +39,8 @@ Archivos en C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contract
   09_contracciones_10V_3.png
   10_ritmo_10V_3.png
   11_cinetica_10V_3.png
+
+##### Paso 4: armar el informe #####
+Informe: C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility\data\processed_data\10V_3\informe_10V_3.html
 
 ##### LISTO #####

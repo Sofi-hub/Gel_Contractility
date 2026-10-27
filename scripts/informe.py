@@ -160,7 +160,31 @@ def texto_forzada(res: dict):
     return (f"HAY respuesta al estímulo (p = {p:.3f}; {n:.0f} de {tot:.0f} pulsos sobre los controles; "
             f"período {per:.2f} s): {_num(res.get('forzada_amplitud_pct')):.3f} % del grosor = "
             f"{_num(res.get('forzada_amplitud_px')):.2f} px (mediana de los pulsos). "
-            f"No es un conteo: no da TTP/RT50 ni espontáneas.")
+            f"No es un conteo: no ve espontáneas y el resultado sigue NO REPORTABLE. "
+            + texto_forzada_cinetica(res))
+
+
+def texto_forzada_cinetica(res: dict) -> str:
+    """Cinética de la respuesta al estímulo (2026-10-27), pulso a pulso. Es un
+    número aparte del conteo: ver src/forzada.py y
+    data/_mediciones_fases/cinetica_forzada/LEEME.md."""
+    if not res or not _num(res.get("forzada_cinetica_n_pulsos")):
+        return ""
+    partes = []
+    for m in ("ttp", "rt50"):
+        n_med = _num(res.get(f"forzada_{m}_n_medibles")) or 0
+        n_cru = _num(res.get(f"forzada_{m}_n_con_cruce")) or 0
+        if str(res.get(f"forzada_{m}_reportable")).strip().lower() in ("true", "1", "1.0"):
+            ic = res.get(f"forzada_{m}_ic95_ms")
+            ic = f" (IC95 {ic} ms)" if ic and str(ic) != "nan" else ""
+            partes.append(f"{m.upper()} {_num(res.get(f'forzada_{m}_ms')):.0f} ms{ic}")
+        else:
+            c = _num(res.get(f"forzada_{m}_cota_ms"))
+            partes.append(f"{m.upper()} < {c:.0f} ms (solo cota, medible en {n_med:.0f} "
+                          f"de {n_cru:.0f} pulsos)" if c is not None
+                          else f"{m.upper()}: sin cruce")
+    return ("Cinética de la respuesta al estímulo (pulso a pulso, no es un conteo): "
+            + " · ".join(partes) + ".")
 
 
 def cinetica_txt(res: dict, m: str) -> str:

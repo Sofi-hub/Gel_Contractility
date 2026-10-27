@@ -36,4 +36,7 @@ Archivos en C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contract
   10_ritmo_40V_3.png
   11_cinetica_40V_3.png
 
+##### Paso 4: armar el informe #####
+Informe: C:\Users\Franco Rita\Facultad\Espana\Análisis_de_Datos\gel_contractility_git\Gel_Contractility\data\processed_data\40V_3\informe_40V_3.html
+
 ##### LISTO #####

@@ -1103,6 +1103,23 @@ def _forzada(df: pd.DataFrame, r: dict, frecuencia: float) -> dict:
     return m
 
 
+def _txt_forzada_cinetica(r: dict, m: str) -> str:
+    """TTP o RT50 de la respuesta forzada: el valor si es medible, si no la cota.
+    Las reglas son las de src/cinetica.py (>= 5 fotogramas, mediana de los
+    medibles solo si lo es al menos la mitad de los que cruzan)."""
+    n_med, n_cru = r.get(f"forzada_{m}_n_medibles", 0), r.get(f"forzada_{m}_n_con_cruce", 0)
+    if r.get(f"forzada_{m}_reportable"):
+        ic = r.get(f"forzada_{m}_ic95_ms")
+        return (f"{m.upper()} {r[f'forzada_{m}_ms']:.0f} ms"
+                + (f" (IC95 {ic} ms)" if ic else "")
+                + f", {n_med} de {n_cru} pulsos medibles")
+    cota = r.get(f"forzada_{m}_cota_ms", float("nan"))
+    if not np.isfinite(cota):
+        return f"{m.upper()}: ningun pulso cruza el nivel"
+    return (f"{m.upper()} < {cota:.0f} ms (solo cota: medible en {n_med} de {n_cru} pulsos, "
+            f"a 30 fps hacen falta >= 5 fotogramas)")
+
+
 def imprimir_forzada(r: dict) -> None:
     if "forzada_p" not in r:
         return
@@ -1116,7 +1133,12 @@ def imprimir_forzada(r: dict) -> None:
               f"pulsos por encima de los controles ({r['forzada_control_p95_px']:.2f} px)")
         print(f"    amplitud (mediana de los pulsos): {r['forzada_amplitud_pct']:.3f} % del grosor "
               f"= {r['forzada_amplitud_px']:.2f} px  (franja hacia {r['forzada_sentido'].upper()})")
-        print("    (no cuenta contracciones ni da TTP/RT50; el conteo sigue NO REPORTABLE)")
+        if r.get("forzada_cinetica_n_pulsos"):
+            print(f"    cinetica de la respuesta al estimulo (pulso a pulso; NO es un conteo, "
+                  f"el RESULTADO sigue NO REPORTABLE):")
+            print(f"      {_txt_forzada_cinetica(r, 'ttp')} | {_txt_forzada_cinetica(r, 'rt50')}"
+                  f"   (sobre {r['forzada_cinetica_n_pulsos']} pulsos que responden)")
+        print("    (no cuenta contracciones ni ve espontaneas; el conteo sigue NO REPORTABLE)")
     else:
         print("    no hay respuesta al estimulo distinguible de los controles.")
 
@@ -1231,8 +1253,13 @@ def main():
                     if not kk.startswith("_") and kk not in ("estabilidad", "tiempos_s")}
             pd.DataFrame([fila]).to_excel(w, sheet_name=f"resumen_{nombre[:18]}", index=False)
             if r.get("_forzada_pulsos"):
-                pd.DataFrame(r["_forzada_pulsos"], columns=["instante_s", "amplitud_px", "responde"]
-                             ).to_excel(w, sheet_name=f"forzada_{nombre[:18]}", index=False)
+                pul = pd.DataFrame(r["_forzada_pulsos"],
+                                   columns=["instante_s", "amplitud_px", "responde"])
+                cin = pd.DataFrame(r.get("_forzada_cinetica") or [])
+                if len(cin):   # cinetica de la respuesta al estimulo (2026-10-27)
+                    pul = pul.merge(cin.drop(columns=["pulso", "amplitud_px"]),
+                                    on="instante_s", how="left")
+                pul.to_excel(w, sheet_name=f"forzada_{nombre[:18]}", index=False)
             rit = r.get("ritmo")
             if rit is not None:
                 rit["resumen_grupos"].to_excel(w, sheet_name=f"ritmo_{nombre[:19]}", index=False)

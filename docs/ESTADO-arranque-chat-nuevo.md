@@ -65,6 +65,10 @@ Videos de Andrés (textura, `data/_mediciones_fases/textura/LEEME.md`): 4 de 9 r
 
 ## Historia (una línea por paso; detalle en `docs/historia/` y en los LEEME de mediciones)
 
+- **2026-10-27:** fotogramas de Video_prueba 6.8–7.5 s exportados (`huecos_grabacion/fotogramas_7_28/`):
+  en 7.28 s los dos bordes saltan juntos un fotograma y vuelven. El worktree viejo se borró; Claude Code
+  trabaja en la carpeta principal.
+
 - **2026-10-27:** cinética de la respuesta forzada (TTP/RT50 pulso a pulso) en consola, Excel,
   informe, ventana y tabla de carpeta; pasos 2 y 4 de los 9 de Andrés rehechos.
 - **2026-10-27:** asimetría del ruido (sesgo y cola arriba/abajo) guardada como diagnóstico sin umbral.

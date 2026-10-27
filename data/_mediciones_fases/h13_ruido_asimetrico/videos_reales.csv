@@ -1,0 +1,12 @@
+video,n_eventos,ancho_eventos_frames_mediana,ancho_eventos_frames_min,eventos_de_1_frame,reportable,ruido_px,skew_quieto,cola_arriba_sobre_abajo,rebote_pct,falsos_control_max
+Video_prueba,29,3.0,1.0,1,True,0.0854,1.264,2.593,6.8,0
+Video_063_CTRL1_5V,6,2.0,2.0,0,True,0.0242,0.169,1.472,3.4,7
+Video_268_EXP3_FAPS2_40V,6,2.0,2.0,0,True,0.0494,-0.269,0.796,4.6,6
+Video_466_EXP5_FAPS4_40V,5,10.0,9.0,0,True,0.1824,0.131,1.077,11.7,5
+Video_583_EXP6_CTRL4_40V,6,12.0,12.0,0,True,0.0725,0.33,0.94,3.6,26
+Video_491_EXP5_CTRL1_36HZ,2,30.0,29.0,0,True,0.068,-0.1,0.903,50.5,9
+Video_476,6,4.0,3.0,0,True,0.1149,0.347,1.218,26.8,21
+Video_613,24,1.0,1.0,14,False,0.0286,-0.054,0.908,84.1,77
+Video_068_hw30,0,,,0,False,3.6693,0.659,1.624,,0
+Video_304,0,,,0,False,0.415,0.348,1.299,,1
+Video_341,22,2.0,1.0,2,False,0.1026,0.785,1.213,63.9,33

@@ -1,0 +1,40 @@
+﻿=== sintéticos: 6 contracciones conocidas de 1.5 px, ruido 0.04 px ===
+  simetrico (control)        correcto: 12/12
+  asim. A FAVOR 1 % x3s      INVENTA: 7/12, correcto: 3/12, conservador (no informa): 2/12
+  asim. A FAVOR 2 % x5s      INVENTA: 6/12, conservador (no informa): 4/12, correcto: 2/12
+  asim. A FAVOR 5 % x3s      correcto: 5/12, conservador (no informa): 4/12, INVENTA: 3/12
+  asim. EN CONTRA 1 % x3s    correcto: 11/12, conservador (no informa): 1/12
+  asim. EN CONTRA 2 % x5s    conservador (no informa): 8/12, correcto: 4/12
+  asim. EN CONTRA 5 % x3s    correcto: 6/12, conservador (no informa): 6/12
+  rebote 10 %                correcto: 12/12
+  rebote 30 %                conservador (no informa): 12/12
+  rebote 50 %                conservador (no informa): 12/12
+
+=== resumen por escenario ===
+                         corridas  correcto  conservador  inventa  pierde  eventos_min  eventos_max    skew    cola  rebote  ancho_ok  ancho_mal
+escenario                                                                                                                                       
+simetrico (control)            12        12            0        0       0            6            6  0.0115  1.0290    7.10       2.5        NaN
+asim. A FAVOR 1 % x3s          12         3            2        7       0            6           13  0.1520  1.0730    8.10       2.5        1.0
+asim. A FAVOR 2 % x5s          12         2            4        6       0            6           18  2.4425  1.2400    8.00       3.0        1.0
+asim. A FAVOR 5 % x3s          12         5            4        3       0            6           16  2.6155  2.2940    7.50       2.5        1.0
+asim. EN CONTRA 1 % x3s        12        11            1        0       0            6            6 -0.7920  0.9285    7.65       2.5        NaN
+asim. EN CONTRA 2 % x5s        12         4            8        0       0            6            6 -4.5160  0.6870    9.05       2.5        NaN
+asim. EN CONTRA 5 % x3s        12         6            6        0       0            5           11 -2.8560  0.4995   12.45       2.5        1.0
+rebote 10 %                    12        12            0        0       0            6            6  0.0110  1.0370   12.25       3.0        NaN
+rebote 30 %                    12         0           12        0       0            4            6 -7.8100  1.0235   21.05       NaN        7.0
+rebote 50 %                    12         0           12        0       0            6            6 -0.0085  0.9460   12.20       NaN        8.5
+
+=== cuánto ruido desparejo y cuánto rebote tienen los videos REALES ===
+  Video_prueba                 skew +1.26  cola arriba/abajo 2.59  rebote 7 %  ancho 3.0 fot. (mín 1.0, 1 de 1 fot.)  (29 ev, reportable True)
+  Video_063_CTRL1_5V           skew +0.17  cola arriba/abajo 1.47  rebote 3 %  ancho 2.0 fot. (mín 2.0, 0 de 1 fot.)  (6 ev, reportable True)
+  Video_268_EXP3_FAPS2_40V     skew -0.27  cola arriba/abajo 0.80  rebote 5 %  ancho 2.0 fot. (mín 2.0, 0 de 1 fot.)  (6 ev, reportable True)
+  Video_466_EXP5_FAPS4_40V     skew +0.13  cola arriba/abajo 1.08  rebote 12 %  ancho 10.0 fot. (mín 9.0, 0 de 1 fot.)  (5 ev, reportable True)
+  Video_583_EXP6_CTRL4_40V     skew +0.33  cola arriba/abajo 0.94  rebote 4 %  ancho 12.0 fot. (mín 12.0, 0 de 1 fot.)  (6 ev, reportable True)
+  Video_491_EXP5_CTRL1_36HZ    skew -0.10  cola arriba/abajo 0.90  rebote 50 %  ancho 30.0 fot. (mín 29.0, 0 de 1 fot.)  (2 ev, reportable True)
+  Video_476                    skew +0.35  cola arriba/abajo 1.22  rebote 27 %  ancho 4.0 fot. (mín 3.0, 0 de 1 fot.)  (6 ev, reportable True)
+  Video_613                    skew -0.05  cola arriba/abajo 0.91  rebote 84 %  ancho 1.0 fot. (mín 1.0, 14 de 1 fot.)  (24 ev, reportable False)
+  Video_068_hw30               skew +0.66  cola arriba/abajo 1.62  rebote nan %  ancho None fot. (mín None, 0 de 1 fot.)  (0 ev, reportable False)
+  Video_304                    skew +0.35  cola arriba/abajo 1.30  rebote nan %  ancho None fot. (mín None, 0 de 1 fot.)  (0 ev, reportable False)
+  Video_341                    skew +0.79  cola arriba/abajo 1.21  rebote 64 %  ancho 2.0 fot. (mín 1.0, 2 de 1 fot.)  (22 ev, reportable False)
+
+tablas: sinteticos.csv, resumen_escenarios.csv, videos_reales.csv

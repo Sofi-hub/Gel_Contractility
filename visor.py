@@ -1490,12 +1490,13 @@ class PestanaResultados:
         except OSError as e:
             self.estado.config(text=f"No pude guardar la marca: {e}")
             return
-        self.estado.config(text=(f"Contracción {ev}: marca quitada" if ya else
-                                 f"Contracción {ev} marcada dudosa")
-                           + f" (en {archivo_marcas(self.r.carpeta).name}; ningún número cambia)")
         sel = self.sel
         self._mostrar(self.r)
         self._seleccionar(sel)
+        # el aviso va DESPUES de volver a dibujar: _mostrar reescribe la barra
+        self.estado.config(text=(f"Contracción {ev}: marca quitada" if ya else
+                                 f"Contracción {ev} marcada dudosa")
+                           + f" (en {archivo_marcas(self.r.carpeta).name}; ningún número cambia)")
 
     def copiar_ficha(self):
         if self.r is None or self.sel is None:

@@ -1,0 +1,104 @@
+﻿=== 1. Huecos en el eje temporal (hueco = dt > 1.5 x mediana) ===
+  Video_prueba                    2007 fot., dt  33.33 ms |   7 huecos ( 29 fot. faltantes,  1.4 %), mayor  0.458 s |  29 ev,  4 a < 0.5 s
+  Video_063_CTRL1_5V              1848 fot., dt  33.33 ms |  24 huecos ( 35 fot. faltantes,  1.9 %), mayor  0.433 s |   6 ev,  2 a < 0.5 s
+  Video_268_EXP3_FAPS2_40V        2283 fot., dt  33.33 ms |  21 huecos ( 53 fot. faltantes,  2.3 %), mayor  0.432 s |   6 ev,  1 a < 0.5 s
+  Video_466_EXP5_FAPS4_40V        2076 fot., dt  33.33 ms |  23 huecos (106 fot. faltantes,  4.9 %), mayor  0.380 s |   5 ev,  0 a < 0.5 s
+  Video_583_EXP6_CTRL4_40V        2236 fot., dt  33.33 ms |   4 huecos ( 34 fot. faltantes,  1.5 %), mayor  0.437 s |   6 ev,  0 a < 0.5 s
+  Video_491_EXP5_CTRL1_36HZ       1846 fot., dt  33.33 ms |   6 huecos ( 30 fot. faltantes,  1.6 %), mayor  0.418 s |   2 ev,  0 a < 0.5 s
+  Video_476                       2165 fot., dt  33.33 ms |  14 huecos ( 47 fot. faltantes,  2.1 %), mayor  0.430 s |   6 ev,  1 a < 0.5 s
+  Video_613                       2179 fot., dt  33.33 ms |  19 huecos ( 57 fot. faltantes,  2.5 %), mayor  0.478 s |  24 ev, 11 a < 0.5 s
+  Video_068_hw30                  1843 fot., dt  33.33 ms |   8 huecos ( 44 fot. faltantes,  2.3 %), mayor  0.342 s |   0 ev,  0 a < 0.5 s
+  Video_304                       2233 fot., dt  33.33 ms |  16 huecos ( 52 fot. faltantes,  2.3 %), mayor  0.345 s |   0 ev,  0 a < 0.5 s
+  Video_341                       1833 fot., dt  33.33 ms |  17 huecos ( 37 fot. faltantes,  2.0 %), mayor  0.297 s |  22 ev, 12 a < 0.5 s
+  10V_1                           2031 fot., dt  33.33 ms |   0 huecos (  0 fot. faltantes,  0.0 %), mayor  0.000 s |   6 ev,  0 a < 0.5 s
+  10V_2                           1963 fot., dt  33.33 ms |   0 huecos (  0 fot. faltantes,  0.0 %), mayor  0.000 s |   0 ev,  0 a < 0.5 s
+  10V_3                           2070 fot., dt  33.33 ms |   0 huecos (  0 fot. faltantes,  0.0 %), mayor  0.000 s |   8 ev,  0 a < 0.5 s
+  20V_1                           2042 fot., dt  33.33 ms |   0 huecos (  0 fot. faltantes,  0.0 %), mayor  0.000 s |   0 ev,  0 a < 0.5 s
+  20V_2                           2076 fot., dt  33.33 ms |   0 huecos (  0 fot. faltantes,  0.0 %), mayor  0.000 s |   0 ev,  0 a < 0.5 s
+  20V_3                           1975 fot., dt  33.33 ms |   0 huecos (  0 fot. faltantes,  0.0 %), mayor  0.000 s |   6 ev,  0 a < 0.5 s
+  40V_1                           1957 fot., dt  33.33 ms |   0 huecos (  0 fot. faltantes,  0.0 %), mayor  0.000 s |   5 ev,  0 a < 0.5 s
+  40V_2                           2062 fot., dt  33.33 ms |   0 huecos (  0 fot. faltantes,  0.0 %), mayor  0.000 s |   1 ev,  0 a < 0.5 s
+  40V_3                           2051 fot., dt  33.33 ms |   0 huecos (  0 fot. faltantes,  0.0 %), mayor  0.000 s |   6 ev,  0 a < 0.5 s
+
+=== 2. Resumen por video ===
+                    video      grupo  frames  dt_mediano_ms  huecos  frames_faltantes  pct_faltantes  hueco_mayor_s  eventos  eventos_cerca  esperado_por_azar_pct  observado_pct  reportable
+             Video_prueba referencia    2007         33.333       7                29           1.42         0.4583       29              4                    9.5           13.8        True
+       Video_063_CTRL1_5V referencia    1848         33.333      24                35           1.86         0.4333        6              2                   33.9           33.3        True
+ Video_268_EXP3_FAPS2_40V referencia    2283         33.333      21                53           2.27         0.4317        6              1                   24.1           16.7        True
+ Video_466_EXP5_FAPS4_40V referencia    2076         33.333      23               106           4.86         0.3800        5              0                   26.2            0.0        True
+ Video_583_EXP6_CTRL4_40V referencia    2236         33.333       4                34           1.50         0.4367        6              0                    3.2            0.0        True
+Video_491_EXP5_CTRL1_36HZ referencia    1846         33.333       6                30           1.60         0.4183        2              0                    8.0            0.0        True
+                Video_476 referencia    2165         33.333      14                47           2.12         0.4300        6              1                   18.0           16.7        True
+                Video_613 referencia    2179         33.333      19                57           2.55         0.4783       24             11                   20.5           45.8       False
+           Video_068_hw30 referencia    1843         33.333       8                44           2.33         0.3417        0              0                   11.1            NaN       False
+                Video_304 referencia    2233         33.333      16                52           2.28         0.3450        0              0                   20.0            NaN       False
+                Video_341 referencia    1833         33.333      17                37           1.98         0.2967       22             12                   26.4           54.5       False
+                    10V_1     Andres    2031         33.333       0                 0           0.00         0.0000        6              0                    0.0            0.0        True
+                    10V_2     Andres    1963         33.333       0                 0           0.00         0.0000        0              0                    0.0            NaN       False
+                    10V_3     Andres    2070         33.333       0                 0           0.00         0.0000        8              0                    0.0            0.0       False
+                    20V_1     Andres    2042         33.333       0                 0           0.00         0.0000        0              0                    0.0            NaN       False
+                    20V_2     Andres    2076         33.333       0                 0           0.00         0.0000        0              0                    0.0            NaN       False
+                    20V_3     Andres    1975         33.333       0                 0           0.00         0.0000        6              0                    0.0            0.0        True
+                    40V_1     Andres    1957         33.333       0                 0           0.00         0.0000        5              0                    0.0            0.0        True
+                    40V_2     Andres    2062         33.333       0                 0           0.00         0.0000        1              0                    0.0            0.0       False
+                    40V_3     Andres    2051         33.333       0                 0           0.00         0.0000        6              0                    0.0            0.0        True
+
+=== 3. Eventos a menos de 0.5 s de un hueco ===
+                   video  evento  instante_s  dist_hueco_s  hueco_duracion_s  ancho_frames  amplitud_px  amplitud_sobre_ruido
+            Video_prueba      10       5.447        -0.083            0.0567             3       2.0937                  24.5
+            Video_prueba      11       5.972         0.442            0.0567             3       2.0812                  24.4
+            Video_prueba      13       7.280         0.032            0.3983             1       2.1236                  24.9
+            Video_prueba      14       7.672         0.424            0.3983             2       2.0390                  23.9
+      Video_063_CTRL1_5V       3      21.910         0.417            0.0500             2       1.5915                  65.9
+      Video_063_CTRL1_5V       6      51.908        -0.117            0.0500             2       1.5881                  65.7
+Video_268_EXP3_FAPS2_40V       3      32.665         0.117            0.0500             2       1.5630                  31.7
+               Video_476       1      11.323        -0.217            0.0500             4       1.7072                  14.9
+               Video_613       4       2.887        -0.385            0.0517             2       0.2531                   8.8
+               Video_613       5       3.088        -0.184            0.0517             1       0.3574                  12.5
+               Video_613      14      66.255        -0.282            0.0500             1       0.4118                  14.4
+               Video_613      15      66.387        -0.150            0.0500             1       0.2731                   9.5
+               Video_613      16      67.487        -0.050            0.0500             1       0.3884                  13.6
+               Video_613      17      67.588         0.051            0.0500             2       0.5413                  18.9
+               Video_613      19      70.155        -0.380            0.0500             1       0.4391                  15.3
+               Video_613      20      70.385        -0.150            0.0500             1       0.8860                  31.0
+               Video_613      21      70.592         0.057            0.0500             2       1.0441                  36.5
+               Video_613      22      70.820         0.285            0.0500             1       0.5157                  18.0
+               Video_613      23      71.720         0.450            0.0500             2       0.3377                  11.8
+               Video_341       2       0.875        -0.485            0.0533             3       1.0045                   9.8
+               Video_341       3       1.407         0.047            0.0533             2       1.1286                  11.0
+               Video_341       4       1.710         0.350            0.0533             3       1.2860                  12.5
+               Video_341       5       2.285        -0.407            0.0517             2       0.9519                   9.3
+               Video_341       6       2.807         0.115            0.0517             2       1.0094                   9.8
+               Video_341       8       3.640        -0.387            0.0500             3       0.9867                   9.6
+               Video_341       9       4.173         0.146            0.0500             3       1.0384                  10.1
+               Video_341      10       4.440         0.413            0.0500             2       1.1301                  11.0
+               Video_341      11       4.973        -0.385            0.0517             1       1.0226                  10.0
+               Video_341      12       5.773        -0.265            0.2650             1       0.9312                   9.1
+               Video_341      16      36.348        -0.344            0.0517             2       0.9161                   8.9
+               Video_341      22      46.678         0.150            0.0550             2       0.8960                   8.7
+
+=== 4. Eventos de 1 fotograma: estan cerca de un hueco? ===
+  Todos juntos (los 11 con huecos; los 9 de Andres no tienen ninguno):
+    de 1 fotograma  :  17 eventos,  10 a < 0.5 s (58.8 %), distancia mediana 0.38 s
+    de 2+ fotogramas:  89 eventos,  21 a < 0.5 s (23.6 %), distancia mediana 1.57 s
+
+  Dentro de cada video (lo anterior esta dominado por 613 y 341):
+    video                              1 fot.        2+ fot.    azar
+    Video_prueba                   1/1 (100%)     3/28 (11%)    9.5%
+    Video_063_CTRL1_5V                      -      2/6 (33%)   33.9%
+    Video_268_EXP3_FAPS2_40V                -      1/6 (17%)   24.1%
+    Video_466_EXP5_FAPS4_40V                -       0/5 (0%)   26.2%
+    Video_583_EXP6_CTRL4_40V                -       0/6 (0%)    3.2%
+    Video_491_EXP5_CTRL1_36HZ               -       0/2 (0%)    8.0%
+    Video_476                               -      1/6 (17%)   18.0%
+    Video_613                      7/14 (50%)     4/10 (40%)   20.5%
+    Video_341                      2/2 (100%)    10/20 (50%)   26.4%
+
+=== 5. Solo los huecos GRANDES (>= 0.3 s, como el de 7.28 s) ===
+  32 huecos de >= 0.3 s en 10 videos
+  eventos a < 0.5 s de uno de ellos: 2
+       video  instante_s  dist_hueco_s  hueco_duracion_s  ancho_frames  amplitud_sobre_ruido
+Video_prueba       7.280         0.032            0.3983             1                  24.9
+Video_prueba       7.672         0.424            0.3983             2                  23.9
+
+tablas: huecos.csv (159), eventos.csv (138), resumen.csv (20)

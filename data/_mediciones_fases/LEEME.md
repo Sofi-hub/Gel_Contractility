@@ -42,6 +42,7 @@ análisis: son scripts y tablas para decidir.
 | `cinetica_forzada/` | 2026-10-26 | TTP/RT50 desde la respuesta forzada → sirve pulso a pulso (±4 % contra el reporte), NO con la forma promedio. **Implementado el 2026-10-27** |
 | `textura_falla_bordes/` | 2026-10-26 | textura en 583/466/063/268 → 583, 063 y 268: movimiento real que bordes no resuelve; 466: falla de la correlación en el pico. **§B (2026-10-27): marcar esos fotogramas como sin medida NO sirve** |
 | `h13_ruido_asimetrico/` | 2026-10-26 | H13: control con la señal invertida → se puede equivocar GRAVE solo con ruido asimétrico a favor (hasta 18 eventos de 6); el rebote lo deja conservador. **Asimetría implementada como diagnóstico el 2026-10-27; §D: el filtro por duración solo tocaría el 29 de Video_prueba** |
+| `huecos_grabacion/` | 2026-10-27 | huecos en los timestamps y eventos cercanos → los 11 de Tecnun pierden 1.4–4.9 % de los fotogramas, los 9 de Andrés ninguno; de 32 huecos de ≥ 0.3 s solo uno tiene eventos al lado (el de 7.28 s de Video_prueba): **los eventos de 1 fotograma NO se concentran junto a los huecos** |
 
 Nota: `b2_sensibilidad/`, `h30_ransac/` y `verificacion_limpieza_11/` tienen el mismo LEEME (uno solo que
 describe las tres mediciones de esa tarde).

@@ -194,7 +194,9 @@ del video en ese instante).
 - **Y hay algo más, que no se buscaba:** justo antes hay un **hueco de 0.398 s en la grabación**
   (entre los fotogramas 206 y 207; el `dt` normal es 0.0333 s, o sea que faltan ~12 fotogramas). El
   evento es el tercer fotograma después del hueco. Los dos de antes y los siete de después están
-  planos.
+  planos. **Medido después** (`../huecos_grabacion/`, 2026-10-27): es una **coincidencia**. En los 11
+  videos hay 32 huecos de ≥ 0.3 s y este es el único con algún evento a menos de 0.5 s; y los eventos
+  de 1 fotograma no están más cerca de los huecos que los de 2+ dentro de ningún video.
 - A ojo, el fotograma del video no tiene nada llamativo (la franja se ve nítida, sin arrastre).
 
 Dicho sin vueltas: ese evento **tiene la altura de una contracción y la forma de un artefacto**, y

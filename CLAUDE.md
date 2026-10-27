@@ -210,6 +210,8 @@ cumplen sus requisitos, con la salida de MuscleMotion al lado ("OK" no quiere de
   Franco. Nunca se implementa antes.
 - Varias propuestas a decidir van juntas en una lista numerada, para aprobar de una vez.
 - Si algo no avanza, parar y preguntar.
+- **Las marcas y selecciones van a git:** los `marcas_*.json` y `seleccion_*.json` que guarda la ventana
+  se commitean junto a los resultados; no van a `.gitignore` (decisión de Franco, 2026-10-26).
 
 **Dónde va cada tarea.** Franco tiene poca experiencia con Claude Code: **cada vez que surja una tarea, decirle
 explícitamente dónde conviene hacerla.**

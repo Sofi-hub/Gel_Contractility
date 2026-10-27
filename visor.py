@@ -997,6 +997,9 @@ class PestanaResultados:
         threading.Thread(target=trabajo, daemon=True).start()
         if elegir:
             self.elegir(elegir)
+        # releer lo que está a la vista es cosa de "Actualizar" (y de terminar un
+        # paso), no de rellenar la lista: ver _al_elegir
+        self._al_elegir(forzar=True)
 
     def _llenar_lista(self):
         q = self.v_buscar.get().lower().strip()
@@ -1026,11 +1029,17 @@ class PestanaResultados:
             self.base = Path(r)
             self.refrescar()
 
-    def _al_elegir(self):
+    def _al_elegir(self, forzar: bool = False):
         s = self.lista.selection()
         if not s:
             return
         carpeta = self.base / s[0]
+        # el hilo que cuenta las contracciones vuelve a llenar la lista a los
+        # pocos segundos y repone la selección: eso disparaba otra lectura, y
+        # con ella se perdían la contracción elegida y su ficha. Si ya está a la
+        # vista, no se relee; "Actualizar" y los pasos pasan forzar=True.
+        if not forzar and self.r is not None and self.r.carpeta == carpeta:
+            return
         self.estado.config(text=f"Leyendo {carpeta.name}...")
 
         def trabajo():

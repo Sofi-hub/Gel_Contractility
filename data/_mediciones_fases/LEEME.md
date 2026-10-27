@@ -39,6 +39,7 @@ análisis: son scripts y tablas para decidir.
 | `textura/` | 2026-10-16/19 | medición por textura (opción `--metodo textura`), carpeta de Andrés, 4K contra achicado |
 | `textura_resolucion/` | 2026-10-19 | ¿achicado o 4K? sintético → con ≤ 1 px las dos se equivocan 10–20 % |
 | `respuesta_forzada/` | 2026-10-19 | respuesta forzada → implementada; los 5 NO REPORTABLES de Andrés responden |
+| `cinetica_forzada/` | 2026-10-26 | TTP/RT50 desde la respuesta forzada → sirve pulso a pulso (±4 % contra el reporte), NO con la forma promedio |
 
 Nota: `b2_sensibilidad/`, `h30_ransac/` y `verificacion_limpieza_11/` tienen el mismo LEEME (uno solo que
 describe las tres mediciones de esa tarde).

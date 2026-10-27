@@ -1,0 +1,13 @@
+﻿10V_2   NO REPORTABLE       6/6 pulsos | ampl  0.39 px | promedio: TTP < 133 ms (cota)    IC 38-88     RT50 < 100 ms (cota)    IC 33-85     | por pulso: TTP None   (0 medibles) RT50 None   (0)
+10V_3   NO REPORTABLE       6/6 pulsos | ampl  5.78 px | promedio: TTP 162 ms             IC 160-263   RT50 292 ms             IC 200-297   | por pulso: TTP 214.2  (6 medibles) RT50 234.2  (6)
+20V_1   NO REPORTABLE       6/6 pulsos | ampl  1.54 px | promedio: TTP 165 ms             IC 136-194   RT50 200 ms             IC 139-236   | por pulso: TTP 173.7  (5 medibles) RT50 166.8  (3)
+20V_2   NO REPORTABLE       6/6 pulsos | ampl  2.62 px | promedio: TTP 150 ms             IC 142-182   RT50 < 200 ms (cota)    IC 88-166    | por pulso: TTP 156.9  (6 medibles) RT50 143.6  (3)
+40V_2   NO REPORTABLE       6/6 pulsos | ampl  0.56 px | promedio: TTP < 133 ms (cota)    IC 52-95     RT50 < 133 ms (cota)    IC 60-119    | por pulso: TTP None   (0 medibles) RT50 136.2  (2)
+10V_1   control reportable  6/6 pulsos | ampl  1.04 px | promedio: TTP < 167 ms (cota)    IC 66-117    RT50 < 167 ms (cota)    IC 97-144    | por pulso: TTP None   (0 medibles) RT50 161.7  (1) | REPORTE TTP None RT50 None -> promedio —/—, por pulso —/—
+20V_3   control reportable  6/6 pulsos | ampl  1.65 px | promedio: TTP < 167 ms (cota)    IC 76-113    RT50 140 ms             IC 127-152   | por pulso: TTP None   (0 medibles) RT50 146.6  (6) | REPORTE TTP None RT50 153.1 -> promedio —/-8 %, por pulso —/-4 %
+40V_1   control reportable  5/5 pulsos | ampl  1.71 px | promedio: TTP < 133 ms (cota)    IC 85-91     RT50 < 167 ms (cota)    IC 113-122   | por pulso: TTP None   (0 medibles) RT50 None   (0) | REPORTE TTP None RT50 None -> promedio —/—, por pulso —/—
+40V_3   control reportable  6/6 pulsos | ampl  0.66 px | promedio: TTP < 167 ms (cota)    IC 74-123    RT50 < 133 ms (cota)    IC 57-140    | por pulso: TTP 156.7  (1 medibles) RT50 None   (0) | REPORTE TTP None RT50 None -> promedio —/—, por pulso —/—
+466     control reportable  5/6 pulsos | ampl  4.34 px | promedio: TTP 260 ms             IC 184-276   RT50 176 ms             IC 152-263   | por pulso: TTP 185.0  (5 medibles) RT50 219.0  (5) | REPORTE TTP 183.3 RT50 226.4 -> promedio +42 %/-22 %, por pulso +1 %/-3 %
+583     control reportable  6/7 pulsos | ampl  3.08 px | promedio: TTP 190 ms             IC 177-222   RT50 275 ms             IC 242-282   | por pulso: TTP 192.6  (6 medibles) RT50 250.8  (6) | REPORTE TTP 189.0 RT50 252.4 -> promedio +0 %/+9 %, por pulso +2 %/-1 %
+
+tablas: cinetica_forzada.csv (44 filas), pulsos.csv (260); figura: formas.png

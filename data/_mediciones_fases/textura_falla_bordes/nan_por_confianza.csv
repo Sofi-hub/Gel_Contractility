@@ -1,0 +1,81 @@
+video,grupo,umbral,respuesta_mediana,respuesta_minima,fotogramas,fotogramas_marcados,marcados_pct,n_eventos,reportable,k_usado,amplitud_px,amplitud_pct,motivo
+prueba,referencia (textura),sin marcar,0.851,0.55,2007,0,0.0,29,True,10.357,2.068,2.3348,
+prueba,referencia (textura),0.3 x mediana,0.851,0.55,2007,0,0.0,29,True,10.357,2.068,2.3348,
+prueba,referencia (textura),0.5 x mediana,0.851,0.55,2007,0,0.0,29,True,10.357,2.068,2.3348,
+prueba,referencia (textura),0.7 x mediana,0.851,0.55,2007,2,0.1,31,True,11.392,2.083,2.3348,
+063,referencia (textura),sin marcar,0.903,0.749,1848,0,0.0,6,False,20.182,1.423,0.487,el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6)
+063,referencia (textura),0.3 x mediana,0.903,0.749,1848,0,0.0,6,False,20.182,1.423,0.487,el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6)
+063,referencia (textura),0.5 x mediana,0.903,0.749,1848,0,0.0,6,False,20.182,1.423,0.487,el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6)
+063,referencia (textura),0.7 x mediana,0.903,0.749,1848,0,0.0,6,False,20.182,1.423,0.487,el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6)
+268,referencia (textura),sin marcar,0.851,0.766,2283,0,0.0,6,False,22.201,1.369,0.4905,el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6)
+268,referencia (textura),0.3 x mediana,0.851,0.766,2283,0,0.0,6,False,22.201,1.369,0.4905,el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6)
+268,referencia (textura),0.5 x mediana,0.851,0.766,2283,0,0.0,6,False,22.201,1.369,0.4905,el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6)
+268,referencia (textura),0.7 x mediana,0.851,0.766,2283,0,0.0,6,False,22.201,1.369,0.4905,el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6)
+466,referencia (textura),sin marcar,0.984,0.279,2076,0,0.0,6,False,7.074,3.686,1.6698,el conteo depende de la ventana del detrend (1.58 s: 6 | 2.1 s: 6 | 3.15 s: 5)
+466,referencia (textura),0.3 x mediana,0.984,0.279,2076,3,0.145,8,True,11.392,3.633,1.4868,
+466,referencia (textura),0.5 x mediana,0.984,0.279,2076,10,0.482,12,True,7.781,3.041,1.5563,
+466,referencia (textura),0.7 x mediana,0.984,0.279,2076,21,1.012,13,False,7.074,3.296,1.5587,el conteo depende de la ventana del detrend (1.5 s: 13 | 2 s: 13 | 3 s: sin meseta)
+583,referencia (textura),sin marcar,0.872,0.747,2236,0,0.0,39,False,8.559,0.193,1.1586,no hay meseta en el escaneo de k
+583,referencia (textura),0.3 x mediana,0.872,0.747,2236,0,0.0,39,False,8.559,0.193,1.1586,no hay meseta en el escaneo de k
+583,referencia (textura),0.5 x mediana,0.872,0.747,2236,0,0.0,39,False,8.559,0.193,1.1586,no hay meseta en el escaneo de k
+583,referencia (textura),0.7 x mediana,0.872,0.747,2236,0,0.0,39,False,8.559,0.193,1.1586,no hay meseta en el escaneo de k
+491,referencia (textura),sin marcar,0.847,0.755,1846,0,0.0,2,True,13.785,0.985,0.3746,
+491,referencia (textura),0.3 x mediana,0.847,0.755,1846,0,0.0,2,True,13.785,0.985,0.3746,
+491,referencia (textura),0.5 x mediana,0.847,0.755,1846,0,0.0,2,True,13.785,0.985,0.3746,
+491,referencia (textura),0.7 x mediana,0.847,0.755,1846,0,0.0,2,True,13.785,0.985,0.3746,
+476,referencia (textura),sin marcar,0.866,0.721,2165,0,0.0,6,True,15.163,1.519,0.5627,
+476,referencia (textura),0.3 x mediana,0.866,0.721,2165,0,0.0,6,True,15.163,1.519,0.5627,
+476,referencia (textura),0.5 x mediana,0.866,0.721,2165,0,0.0,6,True,15.163,1.519,0.5627,
+476,referencia (textura),0.7 x mediana,0.866,0.721,2165,0,0.0,6,True,15.163,1.519,0.5627,
+613,referencia (textura),sin marcar,0.856,0.756,2179,0,0.0,40,False,8.559,0.234,0.1051,no hay meseta en el escaneo de k
+613,referencia (textura),0.3 x mediana,0.856,0.756,2179,0,0.0,40,False,8.559,0.234,0.1051,no hay meseta en el escaneo de k
+613,referencia (textura),0.5 x mediana,0.856,0.756,2179,0,0.0,40,False,8.559,0.234,0.1051,no hay meseta en el escaneo de k
+613,referencia (textura),0.7 x mediana,0.856,0.756,2179,0,0.0,40,False,8.559,0.234,0.1051,no hay meseta en el escaneo de k
+068,referencia (textura),sin marcar,0.295,0.007,1843,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+068,referencia (textura),0.3 x mediana,0.295,0.007,1843,40,2.17,0,False,8.559,,,no hay meseta en el escaneo de k
+068,referencia (textura),0.5 x mediana,0.295,0.007,1843,166,9.007,0,False,8.559,,,no hay meseta en el escaneo de k
+068,referencia (textura),0.7 x mediana,0.295,0.007,1843,368,19.967,0,False,8.559,,,no hay meseta en el escaneo de k
+304,referencia (textura),sin marcar,0.972,0.666,2233,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+304,referencia (textura),0.3 x mediana,0.972,0.666,2233,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+304,referencia (textura),0.5 x mediana,0.972,0.666,2233,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+304,referencia (textura),0.7 x mediana,0.972,0.666,2233,1,0.045,0,False,8.559,,,no hay meseta en el escaneo de k
+341,referencia (textura),sin marcar,0.931,0.771,1833,0,0.0,88,False,8.559,0.664,0.245,no hay meseta en el escaneo de k
+341,referencia (textura),0.3 x mediana,0.931,0.771,1833,0,0.0,88,False,8.559,0.664,0.245,no hay meseta en el escaneo de k
+341,referencia (textura),0.5 x mediana,0.931,0.771,1833,0,0.0,88,False,8.559,0.664,0.245,no hay meseta en el escaneo de k
+341,referencia (textura),0.7 x mediana,0.931,0.771,1833,0,0.0,88,False,8.559,0.664,0.245,no hay meseta en el escaneo de k
+10V_1,Andres (textura),sin marcar,1.162,1.055,2031,0,0.0,6,True,11.392,1.164,0.0592,
+10V_1,Andres (textura),0.3 x mediana,1.162,1.055,2031,0,0.0,6,True,11.392,1.164,0.0592,
+10V_1,Andres (textura),0.5 x mediana,1.162,1.055,2031,0,0.0,6,True,11.392,1.164,0.0592,
+10V_1,Andres (textura),0.7 x mediana,1.162,1.055,2031,0,0.0,6,True,11.392,1.164,0.0592,
+10V_2,Andres (textura),sin marcar,1.15,1.105,1963,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+10V_2,Andres (textura),0.3 x mediana,1.15,1.105,1963,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+10V_2,Andres (textura),0.5 x mediana,1.15,1.105,1963,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+10V_2,Andres (textura),0.7 x mediana,1.15,1.105,1963,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+10V_3,Andres (textura),sin marcar,1.153,1.022,2070,0,0.0,8,False,8.559,5.704,0.2565,no hay meseta en el escaneo de k
+10V_3,Andres (textura),0.3 x mediana,1.153,1.022,2070,0,0.0,8,False,8.559,5.704,0.2565,no hay meseta en el escaneo de k
+10V_3,Andres (textura),0.5 x mediana,1.153,1.022,2070,0,0.0,8,False,8.559,5.704,0.2565,no hay meseta en el escaneo de k
+10V_3,Andres (textura),0.7 x mediana,1.153,1.022,2070,0,0.0,8,False,8.559,5.704,0.2565,no hay meseta en el escaneo de k
+20V_1,Andres (textura),sin marcar,1.183,0.931,2042,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+20V_1,Andres (textura),0.3 x mediana,1.183,0.931,2042,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+20V_1,Andres (textura),0.5 x mediana,1.183,0.931,2042,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+20V_1,Andres (textura),0.7 x mediana,1.183,0.931,2042,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+20V_2,Andres (textura),sin marcar,0.838,0.383,2076,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+20V_2,Andres (textura),0.3 x mediana,0.838,0.383,2076,0,0.0,0,False,8.559,,,no hay meseta en el escaneo de k
+20V_2,Andres (textura),0.5 x mediana,0.838,0.383,2076,31,1.493,0,False,8.559,,,no hay meseta en el escaneo de k
+20V_2,Andres (textura),0.7 x mediana,0.838,0.383,2076,409,19.701,0,False,8.559,,,no hay meseta en el escaneo de k
+20V_3,Andres (textura),sin marcar,1.162,1.015,1975,0,0.0,6,True,16.68,1.642,0.0836,
+20V_3,Andres (textura),0.3 x mediana,1.162,1.015,1975,0,0.0,6,True,16.68,1.642,0.0836,
+20V_3,Andres (textura),0.5 x mediana,1.162,1.015,1975,0,0.0,6,True,16.68,1.642,0.0836,
+20V_3,Andres (textura),0.7 x mediana,1.162,1.015,1975,0,0.0,6,True,16.68,1.642,0.0836,
+40V_1,Andres (textura),sin marcar,1.168,1.062,1957,0,0.0,5,True,16.68,1.67,0.085,
+40V_1,Andres (textura),0.3 x mediana,1.168,1.062,1957,0,0.0,5,True,16.68,1.67,0.085,
+40V_1,Andres (textura),0.5 x mediana,1.168,1.062,1957,0,0.0,5,True,16.68,1.67,0.085,
+40V_1,Andres (textura),0.7 x mediana,1.168,1.062,1957,0,0.0,5,True,16.68,1.67,0.085,
+40V_2,Andres (textura),sin marcar,1.155,1.105,2062,0,0.0,1,False,8.559,0.806,0.0395,no hay meseta en el escaneo de k
+40V_2,Andres (textura),0.3 x mediana,1.155,1.105,2062,0,0.0,1,False,8.559,0.806,0.0395,no hay meseta en el escaneo de k
+40V_2,Andres (textura),0.5 x mediana,1.155,1.105,2062,0,0.0,1,False,8.559,0.806,0.0395,no hay meseta en el escaneo de k
+40V_2,Andres (textura),0.7 x mediana,1.155,1.105,2062,0,0.0,1,False,8.559,0.806,0.0395,no hay meseta en el escaneo de k
+40V_3,Andres (textura),sin marcar,1.151,1.07,2051,0,0.0,6,True,4.832,0.763,0.0335,
+40V_3,Andres (textura),0.3 x mediana,1.151,1.07,2051,0,0.0,6,True,4.832,0.763,0.0335,
+40V_3,Andres (textura),0.5 x mediana,1.151,1.07,2051,0,0.0,6,True,4.832,0.763,0.0335,
+40V_3,Andres (textura),0.7 x mediana,1.151,1.07,2051,0,0.0,6,True,4.832,0.763,0.0335,

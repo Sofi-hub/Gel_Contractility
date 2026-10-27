@@ -142,3 +142,77 @@ Solo 466 tiene el bajón.
 - Los eventos "de más" se comparan contra la señal de bordes **sin volver a detectar**: se mira el
   valor en ese instante, no se afirma que bordes los detectaría con otro umbral.
 - No se tocó ningún archivo del análisis. Ningún número informado cambia.
+
+---
+
+# B. Marcar como "sin medida" los fotogramas de confianza baja: **no sirve** (2026-10-27)
+
+**Lo que se proponía arriba.** En 466, la textura parte en dos el evento de ~34 s, y justo en el
+fotograma más rápido la correlación de fase se desploma (0.285 contra 0.984 de mediana). Parecía
+motion blur, así que la idea era **no creerle** a esos fotogramas: marcarlos como sin medida (NaN),
+que el pipeline ya sabe manejar, y esperar que 466 por textura pasara de 6 eventos a 5.
+
+**Lo que se probó** (`nan_por_confianza.py`, solo medición): la regla
+`respuesta_correlacion < u × la mediana del video` → NaN, con **u = 0.3, 0.5 y 0.7**, contra no
+marcar nada. Corrida sobre los **11 de referencia medidos por textura** (las series se cachean en
+`series/`) y sobre los **9 de Andrés**, que ya están medidos por textura y guardan la columna
+`respuesta_correlacion` por fotograma (o sea: las series guardadas, sin volver a leer los 4K).
+Tabla completa: `nan_por_confianza.csv` (80 filas), consola en `salida_nan_por_confianza.txt`.
+
+## Resultado: en 17 de los 20 no marca nada, y donde marca, empeora
+
+| video | marcados 0.3 / 0.5 / 0.7 | eventos sin marcar → 0.3 → 0.5 → 0.7 |
+|---|---|---|
+| **466** | 3 / 10 / 21 | 6 (NO rep) → **8 (rep)** → **12 (rep)** → **13 (NO rep)** |
+| Video_prueba | 0 / 0 / 2 | 29 → 29 → 29 → **31** |
+| 068 | 40 / 166 / 368 | 0 → 0 → 0 → 0 (no cambia: ya no cuenta) |
+| 20V_2 | 0 / 31 / 409 | 0 → 0 → 0 → 0 (ídem) |
+| 304 | 0 / 0 / 1 | 0 → 0 → 0 → 0 |
+| los otros 15 | 0 / 0 / 0 | sin cambios |
+
+**En ningún umbral 466 baja a 5.** Sube: 6 → 8 → 12 → 13.
+
+## Por qué: la correlación baja no marca una medición mala, marca la contracción
+
+Mirando dónde caen esos fotogramas en 466 (los 6 eventos por textura están en 14.31, 24.32, 34.18,
+34.31, 44.29 y 54.32 s):
+
+| fotograma marcado | respuesta | señal en ese instante | distancia al evento más cercano |
+|---|---|---|---|
+| 14.143 s | 0.365 | +2.12 px | 0.168 s |
+| 24.117 / 24.143 / 24.177 s | 0.46 / 0.37 / 0.29 | +1.93 / +2.33 / +2.31 px | 0.20 / 0.18 / 0.14 s |
+| 34.112 / 34.150 / 34.210 s | 0.45 / 0.35 / 0.29 | +2.01 / +2.32 / +2.41 px | 0.07 / 0.03 / 0.03 s |
+| 44.112 / 44.185 s | 0.40 / 0.28 | +2.13 / +2.76 px | 0.18 / 0.10 s |
+| 54.120 s | 0.36 | +2.52 px | 0.20 s |
+
+**Los diez están adentro de una contracción real**, a 0.03–0.20 s de su pico y con la señal cerca del
+máximo (+1.9 a +2.8 px). Uno por contracción, siempre en el tramo rápido. O sea: la correlación de
+fase baja **porque el gel se está moviendo rápido**, que es exactamente cuando hay que medir. Marcar
+esos fotogramas como sin medida le hace un agujero al medio a cada contracción, y el detector cuenta
+los pedazos: por eso el conteo sube en vez de bajar.
+
+Dicho de otro modo: la interpretación del 2026-10-26 era correcta en el **síntoma** (en 466 la
+textura se equivoca en el fotograma más rápido) y equivocada en el **remedio**. Tirar el dato no
+arregla nada, porque es el dato que importa.
+
+## Dos cosas más que salieron
+
+1. **La respuesta no es comparable entre videos.** La mediana va de 0.295 (068) a 1.18 (20V_1): en
+   los de Andrés es mayor que 1 y en 068 es tres veces más baja que en el resto. Cualquier umbral
+   tiene que ser relativo al propio video, y aun así 0.7 × mediana marca 409 fotogramas en 20V_2 y
+   368 en 068, contra 2 en Video_prueba. **No hay un umbral que signifique lo mismo en todos.**
+2. **Video_prueba con 0.7 pasa de 29 a 31 eventos**, por el mismo mecanismo que 466: se parten
+   contracciones. Es otra señal de que el umbral alto rompe en vez de limpiar.
+
+## Conclusión de B
+
+1. **No implementar.** La regla no arregla 466 (6 → 8/12/13, nunca 5) y en el mejor de los casos no
+   hace nada en los otros 19.
+2. **466 por textura se queda como está**, con 6 eventos NO REPORTABLE. Hoy 466 se mide con
+   **bordes**, donde da 5 reportables, que es el resultado vigente y no cambia.
+3. Si alguna vez hace falta arreglar la textura en el tramo rápido, el camino no es borrar el
+   fotograma sino **no dejar que el corrimiento se parta**: por ejemplo medir contra el fotograma de
+   reposo en lugar de contra el anterior, o interpolar el corrimiento dentro del evento. Eso es un
+   cambio del método, hay que medirlo aparte y hoy no hace falta para ningún resultado.
+4. Lo de la medición anterior sigue en pie: en 583, 063 y 268 la textura **no** se equivoca, ve
+   movimiento real que los bordes tapan bajo su propio ruido.

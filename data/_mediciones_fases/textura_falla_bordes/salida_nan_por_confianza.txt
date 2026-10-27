@@ -1,0 +1,34 @@
+=== 11 de referencia, medidos por TEXTURA ===
+  prueba: textura medida (2007 fotogramas) -> prueba_textura.csv
+  prueba  respuesta mediana 0.851, minima 0.550 | sin marcar: 0 marc, 29 ev | 0.3 x mediana: 0 marc, 29 ev | 0.5 x mediana: 0 marc, 29 ev | 0.7 x mediana: 2 marc, 31 ev
+  063     respuesta mediana 0.903, minima 0.749 | sin marcar: 0 marc, 6 ev (NO rep) | 0.3 x mediana: 0 marc, 6 ev (NO rep) | 0.5 x mediana: 0 marc, 6 ev (NO rep) | 0.7 x mediana: 0 marc, 6 ev (NO rep)
+  268     respuesta mediana 0.851, minima 0.766 | sin marcar: 0 marc, 6 ev (NO rep) | 0.3 x mediana: 0 marc, 6 ev (NO rep) | 0.5 x mediana: 0 marc, 6 ev (NO rep) | 0.7 x mediana: 0 marc, 6 ev (NO rep)
+  466     respuesta mediana 0.984, minima 0.279 | sin marcar: 0 marc, 6 ev (NO rep) | 0.3 x mediana: 3 marc, 8 ev | 0.5 x mediana: 10 marc, 12 ev | 0.7 x mediana: 21 marc, 13 ev (NO rep)
+  583     respuesta mediana 0.872, minima 0.747 | sin marcar: 0 marc, 39 ev (NO rep) | 0.3 x mediana: 0 marc, 39 ev (NO rep) | 0.5 x mediana: 0 marc, 39 ev (NO rep) | 0.7 x mediana: 0 marc, 39 ev (NO rep)
+  491: textura medida (1846 fotogramas) -> 491_textura.csv
+  491     respuesta mediana 0.847, minima 0.755 | sin marcar: 0 marc, 2 ev | 0.3 x mediana: 0 marc, 2 ev | 0.5 x mediana: 0 marc, 2 ev | 0.7 x mediana: 0 marc, 2 ev
+  476: textura medida (2165 fotogramas) -> 476_textura.csv
+  476     respuesta mediana 0.866, minima 0.721 | sin marcar: 0 marc, 6 ev | 0.3 x mediana: 0 marc, 6 ev | 0.5 x mediana: 0 marc, 6 ev | 0.7 x mediana: 0 marc, 6 ev
+  613: textura medida (2179 fotogramas) -> 613_textura.csv
+  613     respuesta mediana 0.856, minima 0.756 | sin marcar: 0 marc, 40 ev (NO rep) | 0.3 x mediana: 0 marc, 40 ev (NO rep) | 0.5 x mediana: 0 marc, 40 ev (NO rep) | 0.7 x mediana: 0 marc, 40 ev (NO rep)
+  068: textura medida (1843 fotogramas) -> 068_textura.csv
+  068     respuesta mediana 0.295, minima 0.007 | sin marcar: 0 marc, 0 ev (NO rep) | 0.3 x mediana: 40 marc, 0 ev (NO rep) | 0.5 x mediana: 166 marc, 0 ev (NO rep) | 0.7 x mediana: 368 marc, 0 ev (NO rep)
+  304: textura medida (2233 fotogramas) -> 304_textura.csv
+  304     respuesta mediana 0.972, minima 0.666 | sin marcar: 0 marc, 0 ev (NO rep) | 0.3 x mediana: 0 marc, 0 ev (NO rep) | 0.5 x mediana: 0 marc, 0 ev (NO rep) | 0.7 x mediana: 1 marc, 0 ev (NO rep)
+  341: textura medida (1833 fotogramas) -> 341_textura.csv
+  341     respuesta mediana 0.931, minima 0.771 | sin marcar: 0 marc, 88 ev (NO rep) | 0.3 x mediana: 0 marc, 88 ev (NO rep) | 0.5 x mediana: 0 marc, 88 ev (NO rep) | 0.7 x mediana: 0 marc, 88 ev (NO rep)
+
+=== 9 de Andres, series de textura ya guardadas ===
+  10V_1   respuesta mediana 1.162, minima 1.055 | sin marcar: 0 marc, 6 ev | 0.3 x mediana: 0 marc, 6 ev | 0.5 x mediana: 0 marc, 6 ev | 0.7 x mediana: 0 marc, 6 ev
+  10V_2   respuesta mediana 1.150, minima 1.105 | sin marcar: 0 marc, 0 ev (NO rep) | 0.3 x mediana: 0 marc, 0 ev (NO rep) | 0.5 x mediana: 0 marc, 0 ev (NO rep) | 0.7 x mediana: 0 marc, 0 ev (NO rep)
+  10V_3   respuesta mediana 1.153, minima 1.022 | sin marcar: 0 marc, 8 ev (NO rep) | 0.3 x mediana: 0 marc, 8 ev (NO rep) | 0.5 x mediana: 0 marc, 8 ev (NO rep) | 0.7 x mediana: 0 marc, 8 ev (NO rep)
+  20V_1   respuesta mediana 1.183, minima 0.931 | sin marcar: 0 marc, 0 ev (NO rep) | 0.3 x mediana: 0 marc, 0 ev (NO rep) | 0.5 x mediana: 0 marc, 0 ev (NO rep) | 0.7 x mediana: 0 marc, 0 ev (NO rep)
+  20V_2   respuesta mediana 0.838, minima 0.383 | sin marcar: 0 marc, 0 ev (NO rep) | 0.3 x mediana: 0 marc, 0 ev (NO rep) | 0.5 x mediana: 31 marc, 0 ev (NO rep) | 0.7 x mediana: 409 marc, 0 ev (NO rep)
+  20V_3   respuesta mediana 1.162, minima 1.015 | sin marcar: 0 marc, 6 ev | 0.3 x mediana: 0 marc, 6 ev | 0.5 x mediana: 0 marc, 6 ev | 0.7 x mediana: 0 marc, 6 ev
+  40V_1   respuesta mediana 1.168, minima 1.062 | sin marcar: 0 marc, 5 ev | 0.3 x mediana: 0 marc, 5 ev | 0.5 x mediana: 0 marc, 5 ev | 0.7 x mediana: 0 marc, 5 ev
+  40V_2   respuesta mediana 1.155, minima 1.105 | sin marcar: 0 marc, 1 ev (NO rep) | 0.3 x mediana: 0 marc, 1 ev (NO rep) | 0.5 x mediana: 0 marc, 1 ev (NO rep) | 0.7 x mediana: 0 marc, 1 ev (NO rep)
+  40V_3   respuesta mediana 1.151, minima 1.070 | sin marcar: 0 marc, 6 ev | 0.3 x mediana: 0 marc, 6 ev | 0.5 x mediana: 0 marc, 6 ev | 0.7 x mediana: 0 marc, 6 ev
+
+tabla: nan_por_confianza.csv (80 filas)
+
+[exited with code 0]

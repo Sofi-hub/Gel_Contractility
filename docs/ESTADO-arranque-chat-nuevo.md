@@ -65,6 +65,12 @@ Videos de Andrés (textura, `data/_mediciones_fases/textura/LEEME.md`): 4 de 9 r
 
 ## Historia (una línea por paso; detalle en `docs/historia/` y en los LEEME de mediciones)
 
+- **2026-10-27:** cinética de la respuesta forzada (TTP/RT50 pulso a pulso) en consola, Excel,
+  informe, ventana y tabla de carpeta; pasos 2 y 4 de los 9 de Andrés rehechos.
+- **2026-10-27:** asimetría del ruido (sesgo y cola arriba/abajo) guardada como diagnóstico sin umbral.
+- **2026-10-27:** dos mediciones sin implementar: marcar los fotogramas de confianza baja de la
+  textura NO sirve (466 sube de 6 a 8-13), y el filtro por duración solo cambiaría el 29 de
+  Video_prueba. Pregunta 9 para el equipo: 20V_1 bifásico.
 - **2026-10-26:** tres mediciones: cinética desde la respuesta forzada (sirve pulso a pulso), textura en
   583/466/063/268 (solo 466 falla, por la correlación) y H13 (el control solo se equivoca grave con ruido
   asimétrico a favor).

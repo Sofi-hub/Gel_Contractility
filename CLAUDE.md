@@ -212,6 +212,8 @@ cumplen sus requisitos, con la salida de MuscleMotion al lado ("OK" no quiere de
 - Si algo no avanza, parar y preguntar.
 - **Las marcas y selecciones van a git:** los `marcas_*.json` y `seleccion_*.json` que guarda la ventana
   se commitean junto a los resultados; no van a `.gitignore` (decisión de Franco, 2026-10-26).
+- Claude Code trabaja siempre en la carpeta principal, rama main, sin worktree (una sesión en worktree
+  no puede editar la carpeta principal).
 
 **Dónde va cada tarea.** Franco tiene poca experiencia con Claude Code: **cada vez que surja una tarea, decirle
 explícitamente dónde conviene hacerla.**

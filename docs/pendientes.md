@@ -8,9 +8,11 @@ Regla: cuando algo se termina, se borra de acá y se anota en una línea en `EST
 ## 1. Próximo (no depende del equipo)
 - **Videos de Andrés:** pasos 2 y 4 ya rehechos (commit "Resultados de Andres rehechos"). Falta solo mirar en
   Windows cómo se ve la respuesta forzada en la ventana (Números y Comparar).
-- **Textura en 583/466/063/268:** por qué textura los deja NO REPORTABLES o cambia el conteo (583 ve
-  la vibración; 466 parte un evento, 5 → 6; 063/268 pierden la meseta con la ventana de 1.5 s).
-  Hoy se miden con bordes: no afecta resultados.
+- **Textura en 583/466/063/268: medido**, ver `data/_mediciones_fases/textura_falla_bordes/`. En 583, 063 y
+  268 la textura no se equivoca: ve movimiento real que los bordes tapan bajo su propio ruido (2.6–11.4
+  × el ruido de bordes, pero 21–35 % de su umbral); en 466 sí falla, la correlación de fase cae a 0.285
+  (mediana 0.98) en el fotograma más rápido y parte el evento. Falta decidir si se marcan como sin medida
+  los fotogramas con `respuesta_correlacion` baja (cambiaría el conteo de 466 por textura).
 
 ## 2. Esperando al equipo (preguntas en `preguntas-reunion-equipo.md`)
 - **Videos de frecuencia (304, 341, 491):** qué frecuencias, en qué orden y cuándo empieza el primer
@@ -46,4 +48,8 @@ Medido el 2026-10-26. No molesta hoy; unificarlo en `visor.py` y que `comparar.p
 - **D5:** `signal_check` nunca se probó con un video real sin contracciones.
 - **H38:** sin `--frecuencia-estimulo`, espontáneas agrupadas pueden salir "estimuladas" (28 % en el
   barajado de Video_prueba). Hoy lo protege la búsqueda dirigida.
-- **H13:** el control con la señal invertida supone ruido simétrico (sin caso real).
+- **H13: medido**, ver `data/_mediciones_fases/h13_ruido_asimetrico/`. El control solo se equivoca de forma
+  GRAVE (informar contracciones inventadas) con ruido asimétrico **a favor** de las contracciones: 18
+  eventos donde hay 6. Hacia el otro lado y con rebote ≥ 30 % se equivoca siempre hacia "no informar"
+  (eso explica 613 y 341). Los inventados duran 1 fotograma y los reales 2.5–3. Falta decidir si se
+  guarda la asimetría como diagnóstico y/o un piso de ancho (tocaría 1 de los 29 de Video_prueba).

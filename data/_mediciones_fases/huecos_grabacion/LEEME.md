@@ -131,6 +131,46 @@ Video_prueba a los 7.28 s es, por lo que se puede medir, **una coincidencia**.
    coincidencia. La pregunta vuelve a ser la de D: ¿un pico de 1 fotograma con 24.9 × el ruido es una
    contracción o no? Eso lo tiene que decir el equipo.
 
+## Anexo: los bordes del evento de 7.28 s contra contracciones reales (`comparacion_7_28.py`)
+
+Pregunta: en `fotogramas_7_28/` los dos bordes bajan juntos en el fotograma 209 y vuelven en el 210;
+¿es una sacudida (solo se corre el centro) o una contracción (cambia el largo de la franja)?
+
+**Con qué se compara.** En Video_prueba **ningún estimulado dura 2–3 fotogramas**: los 6 duran 6. Se
+usan los tres estimulados más cercanos (14.94, 24.94 y 34.94 s) y, como tienen el triple de amplitud,
+también las dos espontáneas vecinas (6.57 y 7.67 s), de amplitud parecida. Todo en px, relativo al
+fotograma −3 del pico (+ = hacia abajo); "largo" = `y_bottom − y_top`, "centro" = su promedio. La
+**zona fija** es una franja de 60 px por encima del gel (mismas columnas de la ROI), y su corrimiento
+vertical se mide por correlación de fase contra el fotograma −3. Detalle completo, fotograma a
+fotograma de −3 a +4: `comparacion_7_28/tabla.csv` y `salida.txt`.
+
+| evento | fot. en el pico | Δ top | Δ bottom | Δ largo | Δ centro | largo / centro | zona fija | fot. con Δcentro > 0.5 px |
+|---|---|---|---|---|---|---|---|---|
+| **7.28 s** | 209 | +2.78 | +1.65 | **−1.12** | +2.22 | **−0.51** | **+0.03** | **1** |
+| espont. 6.57 s | 198 | +2.92 | +2.13 | −0.79 | +2.52 | −0.31 | −0.00 | 4 |
+| espont. 7.67 s | 222 | +2.41 | +1.47 | −0.94 | +1.94 | −0.48 | +0.01 | 4 |
+| estim. 14.94 s | 440 | +7.06 | +6.74 | −0.32 | +6.90 | −0.05 | −0.06 | 4 |
+| estim. 24.94 s | 740 | +7.46 | +6.82 | −0.64 | +7.14 | −0.09 | +0.02 | 5 |
+| estim. 34.94 s | 1040 | +6.92 | +6.54 | −0.38 | +6.73 | −0.06 | +0.03 | 4 |
+
+En los estimulados el largo se acorta más **un fotograma después** del pico del centro (−1.0 a −1.4 px
+en +1): la traslación y el acortamiento no van exactamente juntos.
+
+**Conclusión (3 líneas)**
+
+1. **El de 7.28 s cambia el largo, no solo el centro:** el borde de arriba baja 1.1 px más que el de
+   abajo (largo −1.12 px), igual que en las espontáneas vecinas de amplitud parecida (−0.79 y −0.94 px;
+   cociente largo/centro −0.51 contra −0.31 y −0.48). Una traslación pura daría Δ largo ≈ 0.
+2. **La zona fija fuera del gel no se mueve** en el 209 (+0.03 px, contra los 2.22 px del centro): no
+   tiembla la imagen entera. Por forma de bordes, no parece una sacudida del montaje.
+3. **Lo único distinto es la duración:** 1 fotograma arriba de 0.5 px, contra 4–5 en todas las demás,
+   y sin subida ni bajada. Eso no lo decide esta medición; sigue siendo la pregunta de D para el equipo.
+
+**Límites del anexo.** La zona fija se corre 0.4–0.96 px en algunos fotogramas **después** de las dos
+espontáneas (199–202, 225–226) y no en el 209; no se investigó qué se mueve ahí (puede haber algo que
+flota en la franja de 60 px). La serie guarda un valor por borde y fotograma, no la parábola por
+columna, así que no se ve si el 209 se mueve igual en todo el ancho.
+
 ## Límites
 
 - Lo que se mide es **cercanía en el tiempo**, no causa. Con 0.5 s de ventana y 14–34 % de los

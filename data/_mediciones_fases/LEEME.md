@@ -40,6 +40,7 @@ análisis: son scripts y tablas para decidir.
 | `textura_resolucion/` | 2026-10-19 | ¿achicado o 4K? sintético → con ≤ 1 px las dos se equivocan 10–20 % |
 | `respuesta_forzada/` | 2026-10-19 | respuesta forzada → implementada; los 5 NO REPORTABLES de Andrés responden |
 | `cinetica_forzada/` | 2026-10-26 | TTP/RT50 desde la respuesta forzada → sirve pulso a pulso (±4 % contra el reporte), NO con la forma promedio |
+| `textura_falla_bordes/` | 2026-10-26 | textura en 583/466/063/268 → 583, 063 y 268: movimiento real que bordes no resuelve; 466: falla de la correlación en el pico |
 
 Nota: `b2_sensibilidad/`, `h30_ransac/` y `verificacion_limpieza_11/` tienen el mismo LEEME (uno solo que
 describe las tres mediciones de esa tarde).

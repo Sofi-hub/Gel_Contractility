@@ -1,0 +1,5 @@
+video,motivo_mirado,eventos_bordes,eventos_textura,emparejados,solo_bordes,solo_textura,reportable_bordes,reportable_textura,ruido_quieto_bordes_px,ruido_quieto_textura_px,cociente_ruido,umbral_diferencia_px,segundos_distintos,tramos_distintos_s,motivo_textura,ampl_textura_sobre_bordes,ampl_coc_min_max
+583,ráfaga/vibración del final,6,39,6,0,33,True,False,0.0623,0.0084,7.39,0.2567,1,72,no hay meseta en el escaneo de k,0.968,0.94-1.01
+466,el evento que se parte,5,6,5,0,1,True,False,0.1766,0.0947,1.86,0.7194,8,"14, 24, 28, 34, 44, 54, 56, 58",el conteo depende de la ventana del detrend (1.58 s: 6 | 2.1 s: 6 | 3.15 s: 5),0.867,0.79-0.92
+063,"primer evento, junto al borde",6,6,6,0,0,True,False,0.0231,0.0063,3.68,0.1078,7,"0, 11, 21, 31, 41, 45, 51",el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6),0.881,0.59-0.92
+268,arranque de la serie,6,6,6,0,0,True,False,0.0445,0.0101,4.39,0.2002,3,"42, 52, 62",el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6),0.891,0.85-0.92

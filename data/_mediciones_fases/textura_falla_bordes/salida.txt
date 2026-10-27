@@ -1,0 +1,50 @@
+﻿
+=== 583 ===
+  583: textura medida (2236 fotogramas, franja 399-735, grosor 258 px) -> 583_textura.csv
+  video=583 | motivo_mirado=ráfaga/vibración del final | eventos_bordes=6 | eventos_textura=39 | emparejados=6 | solo_bordes=0 | solo_textura=33 | reportable_bordes=True | reportable_textura=False | ruido_quieto_bordes_px=0.0623 | ruido_quieto_textura_px=0.0084 | cociente_ruido=7.39 | umbral_diferencia_px=0.2567 | segundos_distintos=1 | motivo_textura=no hay meseta en el escaneo de k | ampl_textura_sobre_bordes=0.968 | ampl_coc_min_max=0.94-1.01
+   bordes   ventana  auto ->   6 eventos, reportable True , meseta True   k=16.68 ruido=0.0725
+   textura  ventana  auto ->  39 eventos, reportable False, meseta False  k=8.56 ruido=0.0142  [no hay meseta en el escaneo de k]
+   bordes   ventana 1.5 s ->   6 eventos, reportable True , meseta True   k=16.68 ruido=0.0698
+   textura  ventana 1.5 s ->  44 eventos, reportable False, meseta False  k=8.56 ruido=0.0118  [no hay meseta en el escaneo de k]
+   bordes   ventana   2 s ->   6 eventos, reportable True , meseta True   k=16.68 ruido=0.0725
+   textura  ventana   2 s ->  39 eventos, reportable False, meseta False  k=8.56 ruido=0.0142  [no hay meseta en el escaneo de k]
+   bordes   ventana   3 s ->   6 eventos, reportable True , meseta True   k=16.68 ruido=0.0800
+   textura  ventana   3 s ->  30 eventos, reportable False, meseta False  k=8.56 ruido=0.0166  [no hay meseta en el escaneo de k]
+
+=== 466 ===
+  466: textura medida (2076 fotogramas, franja 345-632, grosor 221 px) -> 466_textura.csv
+  video=466 | motivo_mirado=el evento que se parte | eventos_bordes=5 | eventos_textura=6 | emparejados=5 | solo_bordes=0 | solo_textura=1 | reportable_bordes=True | reportable_textura=False | ruido_quieto_bordes_px=0.1766 | ruido_quieto_textura_px=0.0947 | cociente_ruido=1.86 | umbral_diferencia_px=0.7194 | segundos_distintos=8 | motivo_textura=el conteo depende de la ventana del detrend (1.58 s: 6 | 2.1 s: 6 | 3.15 s: 5) | ampl_textura_sobre_bordes=0.867 | ampl_coc_min_max=0.79-0.92
+   bordes   ventana  auto ->   5 eventos, reportable True , meseta True   k=11.39 ruido=0.1824
+   textura  ventana  auto ->   6 eventos, reportable False, meseta True   k=7.07 ruido=0.0981  [el conteo depende de la ventana del detrend (1.58 s: 6 | 2.1 s: 6 | 3.15 s: 5)]
+   bordes   ventana 1.5 s ->   5 eventos, reportable True , meseta True   k=12.53 ruido=0.1621
+   textura  ventana 1.5 s ->   6 eventos, reportable False, meseta True   k=9.41 ruido=0.0740  [el conteo depende de la ventana del detrend (1.12 s: sin meseta | 1.5 s: 6 | 2.25 s: 6)]
+   bordes   ventana   2 s ->   5 eventos, reportable True , meseta True   k=11.39 ruido=0.1824
+   textura  ventana   2 s ->   6 eventos, reportable False, meseta True   k=7.07 ruido=0.0981  [el conteo depende de la ventana del detrend (1.5 s: 6 | 2 s: 6 | 3 s: 5)]
+   bordes   ventana   3 s ->   5 eventos, reportable True , meseta True   k=10.36 ruido=0.2116
+   textura  ventana   3 s ->   5 eventos, reportable False, meseta True   k=15.16 ruido=0.0998  [el conteo depende de la ventana del detrend (2.25 s: 6 | 3 s: 5 | 4.5 s: sin meseta)]
+
+=== 063 ===
+  063: textura medida (1848 fotogramas, franja 273-656, grosor 295 px) -> 063_textura.csv
+  video=063 | motivo_mirado=primer evento, junto al borde | eventos_bordes=6 | eventos_textura=6 | emparejados=6 | solo_bordes=0 | solo_textura=0 | reportable_bordes=True | reportable_textura=False | ruido_quieto_bordes_px=0.0231 | ruido_quieto_textura_px=0.0063 | cociente_ruido=3.68 | umbral_diferencia_px=0.1078 | segundos_distintos=7 | motivo_textura=el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6) | ampl_textura_sobre_bordes=0.881 | ampl_coc_min_max=0.59-0.92
+   bordes   ventana  auto ->   6 eventos, reportable True , meseta True   k=11.39 ruido=0.0242
+   textura  ventana  auto ->   6 eventos, reportable False, meseta True   k=20.18 ruido=0.0073  [el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6)]
+   bordes   ventana 1.5 s ->   6 eventos, reportable True , meseta True   k=12.53 ruido=0.0228
+   textura  ventana 1.5 s ->   8 eventos, reportable False, meseta False  k=8.56 ruido=0.0061  [no hay meseta en el escaneo de k]
+   bordes   ventana   2 s ->   6 eventos, reportable True , meseta True   k=11.39 ruido=0.0242
+   textura  ventana   2 s ->   6 eventos, reportable False, meseta True   k=20.18 ruido=0.0073  [el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6)]
+   bordes   ventana   3 s ->   6 eventos, reportable True , meseta True   k=11.39 ruido=0.0255
+   textura  ventana   3 s ->   6 eventos, reportable True , meseta True   k=16.68 ruido=0.0091
+
+=== 268 ===
+  268: textura medida (2283 fotogramas, franja 240-603, grosor 279 px) -> 268_textura.csv
+  video=268 | motivo_mirado=arranque de la serie | eventos_bordes=6 | eventos_textura=6 | emparejados=6 | solo_bordes=0 | solo_textura=0 | reportable_bordes=True | reportable_textura=False | ruido_quieto_bordes_px=0.0445 | ruido_quieto_textura_px=0.0101 | cociente_ruido=4.39 | umbral_diferencia_px=0.2002 | segundos_distintos=3 | motivo_textura=el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6) | ampl_textura_sobre_bordes=0.891 | ampl_coc_min_max=0.85-0.92
+   bordes   ventana  auto ->   6 eventos, reportable True , meseta True   k=12.53 ruido=0.0494
+   textura  ventana  auto ->   6 eventos, reportable False, meseta True   k=22.20 ruido=0.0108  [el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6)]
+   bordes   ventana 1.5 s ->   6 eventos, reportable True , meseta True   k=12.53 ruido=0.0463
+   textura  ventana 1.5 s ->   9 eventos, reportable False, meseta False  k=8.56 ruido=0.0099  [no hay meseta en el escaneo de k]
+   bordes   ventana   2 s ->   6 eventos, reportable True , meseta True   k=12.53 ruido=0.0494
+   textura  ventana   2 s ->   6 eventos, reportable False, meseta True   k=22.20 ruido=0.0108  [el conteo depende de la ventana del detrend (1.5 s: sin meseta | 2 s: 6 | 3 s: 6)]
+   bordes   ventana   3 s ->   6 eventos, reportable True , meseta True   k=12.53 ruido=0.0498
+   textura  ventana   3 s ->   6 eventos, reportable False, meseta True   k=18.35 ruido=0.0134  [el conteo depende de la ventana del detrend (2.25 s: 7 | 3 s: 6 | 4.5 s: 7)]
+
+tablas: comparacion.csv, ventanas.csv, eventos.csv; figuras: serie_<video>.png

@@ -205,6 +205,10 @@ falso, pero tampoco para defenderlo.
 
 ## Conclusión de D
 
+> **Decidido (2026-10-27, Franco): sin piso de duración.** El evento de 7.28 s queda como contracción
+> (Video_prueba en 29): acorta la franja como sus vecinas y la imagen no tiembla
+> (`../huecos_grabacion/LEEME.md`, anexo). Pregunta 10 al equipo en `docs/preguntas-reunion-equipo.md`.
+
 1. El filtro por duración (piso de 2 fotogramas) **hace lo que promete el sintético**: no toca ningún
    evento de los videos reportables salvo uno, y limpia 14 de los 24 de 613, que es justamente el
    video donde el control se equivoca.

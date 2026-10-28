@@ -69,6 +69,8 @@ Videos de Andrés (textura, `data/_mediciones_fases/textura/LEEME.md`): 4 de 9 r
   en 7.28 s los dos bordes saltan juntos un fotograma y vuelven. El worktree viejo se borró; Claude Code
   trabaja en la carpeta principal.
 
+- **2026-10-27:** cierre de D/H13: sin piso de duración; el evento de 7.28 s queda como contracción
+  (Video_prueba 29). Pregunta 10 al equipo: eventos de 1 fotograma.
 - **2026-10-27:** cinética de la respuesta forzada (TTP/RT50 pulso a pulso) en consola, Excel,
   informe, ventana y tabla de carpeta; pasos 2 y 4 de los 9 de Andrés rehechos.
 - **2026-10-27:** asimetría del ruido (sesgo y cola arriba/abajo) guardada como diagnóstico sin umbral.

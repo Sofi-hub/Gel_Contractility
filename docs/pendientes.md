@@ -51,11 +51,8 @@ Medido el 2026-10-26. No molesta hoy; unificarlo en `visor.py` y que `comparar.p
 - **D5:** `signal_check` nunca se probó con un video real sin contracciones.
 - **H38:** sin `--frecuencia-estimulo`, espontáneas agrupadas pueden salir "estimuladas" (28 % en el
   barajado de Video_prueba). Hoy lo protege la búsqueda dirigida.
-- **H13: medido, falta decidir** — `data/_mediciones_fases/h13_ruido_asimetrico/`. El control solo se
-  equivoca de forma GRAVE (informar contracciones inventadas) con ruido asimétrico **a favor** de las
-  contracciones: 18 eventos donde hay 6. Hacia el otro lado y con rebote ≥ 30 % se equivoca siempre
-  hacia "no informar" (eso explica 613 y 341). La asimetría **ya se guarda como diagnóstico** (hecho el
-  2026-10-27, sin umbral). **Falta decidir el piso de ancho** (sección D del LEEME): un piso de 2
-  fotogramas no tocaría 16 de los 20 videos y limpiaría 14 de los 24 de 613, pero sacaría 1 de los 29
-  de Video_prueba —el de 7.28 s, que tiene la altura de una contracción (24.9 × el ruido) y la forma de
-  un artefacto (1 fotograma, justo después de un hueco de 0.4 s en la grabación).
+- **H13: cerrado (2026-10-27)** — `data/_mediciones_fases/h13_ruido_asimetrico/`. El control solo se
+  equivoca grave con ruido asimétrico **a favor**; la asimetría se guarda como diagnóstico sin umbral.
+  **Decisión de Franco: sin piso de duración.** El evento de 7.28 s de Video_prueba (1 fotograma) queda
+  como contracción: acorta la franja como sus vecinas y la imagen no tiembla
+  (`huecos_grabacion/LEEME.md`, anexo). Video_prueba sigue en 29. Queda la pregunta 10 al equipo.

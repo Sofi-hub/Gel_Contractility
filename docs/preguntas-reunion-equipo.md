@@ -179,3 +179,10 @@ Para contarle al equipo, en palabras simples, tres cosas que salen de los videos
    **¿Puede ser algo del montaje de ese gel** (cómo quedó anclado, una tensión previa, que el
    electrodo esté más cerca de un lado) **o es algo del tejido?** Saberlo cambia si ese video se
    puede comparar con los otros dos de 20 V o si conviene repetirlo.
+
+10. **Contracciones de 1 fotograma.** En Video_prueba hay una (7.28 s) que dura un solo
+    fotograma (33 ms), cuando las demás duran 4–6. Tiene la altura de una contracción (24.9 veces el
+    ruido), la franja se acorta como en las vecinas y el resto de la imagen no se mueve, así que la
+    contamos como contracción. **¿Es posible una contracción tan rápida en estos tejidos, o les parece
+    un artefacto?** Si fuera un artefacto, habría que exigir al menos 2 fotogramas por evento (eso
+    solo cambiaría ese video: 29 → 28).

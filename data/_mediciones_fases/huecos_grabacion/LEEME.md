@@ -166,6 +166,9 @@ en +1): la traslación y el acortamiento no van exactamente juntos.
 3. **Lo único distinto es la duración:** 1 fotograma arriba de 0.5 px, contra 4–5 en todas las demás,
    y sin subida ni bajada. Eso no lo decide esta medición; sigue siendo la pregunta de D para el equipo.
 
+> **Decidido (2026-10-27, Franco): sin piso de duración.** El evento de 7.28 s queda como
+> contracción; Video_prueba sigue en 29. Pregunta 10 al equipo en `docs/preguntas-reunion-equipo.md`.
+
 **Límites del anexo.** La zona fija se corre 0.4–0.96 px en algunos fotogramas **después** de las dos
 espontáneas (199–202, 225–226) y no en el 209; no se investigó qué se mueve ahí (puede haber algo que
 flota en la franja de 60 px). La serie guarda un valor por borde y fotograma, no la parábola por
